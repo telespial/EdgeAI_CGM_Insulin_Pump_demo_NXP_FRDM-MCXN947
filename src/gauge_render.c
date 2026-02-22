@@ -200,9 +200,9 @@ enum
     TERM_H = 176,
     RTC_TEXT_Y = 259,
     BAR_X0 = 0,
-    BAR_Y0 = 118,
+    BAR_Y0 = 246,
     BAR_X1 = 19,
-    BAR_Y1 = 238,
+    BAR_Y1 = 306,
     BAR_SEGMENTS = 10,
     SECTION2_CX = 240,
     AI_PILL_X0 = GAUGE_RENDER_AI_PILL_X0,
@@ -1918,18 +1918,30 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
     int32_t inner_y0 = BAR_Y0 + 2;
     int32_t inner_y1 = BAR_Y1 - 2;
     int32_t seg_step = (inner_y1 - inner_y0 + 1) / BAR_SEGMENTS;
+    int32_t y;
+    int32_t label_y = BAR_Y0 - 12;
 
-    par_lcd_s035_fill_rect(BAR_X0, BAR_Y0, BAR_X1, BAR_Y1, RGB565(8, 14, 10));
-    par_lcd_s035_fill_rect(inner_x0, inner_y0, inner_x1, inner_y1, RGB565(4, 8, 6));
+    for (y = label_y - 2; y <= BAR_Y1 + 1; y++)
+    {
+        if ((y >= 0) && (y < PUMP_BG_HEIGHT))
+        {
+            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 100, y,
+                                   (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + BAR_X0]);
+        }
+    }
+
+    DrawLine(BAR_X0, BAR_Y0, BAR_X1, BAR_Y0, 1, style->palette.text_primary);
+    DrawLine(BAR_X0, BAR_Y1, BAR_X1, BAR_Y1, 1, style->palette.text_primary);
+    DrawLine(BAR_X0, BAR_Y0, BAR_X0, BAR_Y1, 1, style->palette.text_primary);
+    DrawLine(BAR_X1, BAR_Y0, BAR_X1, BAR_Y1, 1, style->palette.text_primary);
 
     for (i = 1; i < BAR_SEGMENTS; i++)
     {
         int32_t y = inner_y1 - (i * seg_step);
-        DrawLine(inner_x0, y, inner_x1, y, 1, RGB565(18, 28, 20));
+        DrawLine(inner_x0, y, inner_x1, y, 1, RGB565(70, 120, 86));
     }
 
-    par_lcd_s035_fill_rect(BAR_X0, BAR_Y1 + 4, BAR_X0 + 96, BAR_Y1 + 16, RGB565(2, 3, 5));
-    DrawTextUi(BAR_X0 + 2, BAR_Y1 + 6, 1, "TEMP: --.-C/--.-F", style->palette.text_secondary);
+    DrawTextUi(BAR_X0 + 2, label_y, 1, "TEMP: --.-C/--.-F", style->palette.text_secondary);
 }
 
 static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t temp_c10)
@@ -1945,17 +1957,33 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
     int32_t seg_step = inner_h / BAR_SEGMENTS;
     bool over_temp = (temp_c10 >= 700);
     char line[16];
+    int32_t y;
+    int32_t label_y = BAR_Y0 - 12;
 
     if (((uint8_t)level == gPrevBarLevel) && (temp_c10 == gPrevBarTempC10) && (over_temp == gPrevOverTemp))
     {
         return;
     }
 
+    for (y = label_y - 2; y <= BAR_Y1 + 1; y++)
+    {
+        if ((y >= 0) && (y < PUMP_BG_HEIGHT))
+        {
+            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 100, y,
+                                   (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + BAR_X0]);
+        }
+    }
+
+    DrawLine(BAR_X0, BAR_Y0, BAR_X1, BAR_Y0, 1, style->palette.text_primary);
+    DrawLine(BAR_X0, BAR_Y1, BAR_X1, BAR_Y1, 1, style->palette.text_primary);
+    DrawLine(BAR_X0, BAR_Y0, BAR_X0, BAR_Y1, 1, style->palette.text_primary);
+    DrawLine(BAR_X1, BAR_Y0, BAR_X1, BAR_Y1, 1, style->palette.text_primary);
+
     for (i = 0; i < BAR_SEGMENTS; i++)
     {
         int32_t seg_top = inner_y1 - ((i + 1) * seg_step) + 2;
         int32_t seg_bot = inner_y1 - (i * seg_step) - 1;
-        uint16_t color = RGB565(8, 14, 10);
+        uint16_t color = RGB565(70, 120, 86);
 
         if (seg_top < inner_y0)
         {
@@ -1993,7 +2021,6 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
         par_lcd_s035_fill_rect(inner_x0, seg_top, inner_x1, seg_bot, color);
     }
 
-    par_lcd_s035_fill_rect(BAR_X0, BAR_Y1 + 4, BAR_X0 + 96, BAR_Y1 + 16, RGB565(2, 3, 5));
     {
         int16_t temp_f10 = TempC10ToF10(temp_c10);
         int16_t c_abs = (temp_c10 < 0) ? (int16_t)-temp_c10 : temp_c10;
@@ -2006,7 +2033,7 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
                  (int)(f_abs / 10),
                  (int)(f_abs % 10));
     }
-    DrawTextUi(BAR_X0 + 2, BAR_Y1 + 6, 1, line, over_temp ? style->palette.accent_red : style->palette.text_secondary);
+    DrawTextUi(BAR_X0 + 2, label_y, 1, line, over_temp ? style->palette.accent_red : style->palette.text_secondary);
 
     gPrevBarLevel = (uint8_t)level;
     gPrevBarTempC10 = temp_c10;
@@ -2026,8 +2053,8 @@ static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_
     DrawLine(0, BAR_Y0, 26, BAR_Y0, 1, style->palette.text_primary);
     DrawLine(26, BAR_Y0, 26, BAR_Y1, 1, style->palette.text_primary);
     DrawLine(26, MID_TOP_CY + 54, 50, MID_TOP_CY + 54, 1, style->palette.text_primary);
-    DrawLine(26, BAR_Y1, 26, BAR_Y1 + 30, 1, style->palette.text_primary);
-    DrawLine(26, BAR_Y1 + 30, 50, BAR_Y1 + 30, 1, style->palette.text_primary);
+    DrawLine(26, BAR_Y1, 26, BAR_Y1 + 6, 1, style->palette.text_primary);
+    DrawLine(26, BAR_Y1 + 6, 50, BAR_Y1 + 6, 1, style->palette.text_primary);
     DrawLine(TERM_X + TERM_W - 4, 78, TERM_X + TERM_W - 38, 78, 1, style->palette.text_primary);
     DrawLine(TERM_X + TERM_W - 38, 78, TERM_X + TERM_W - 38, 258, 1, style->palette.text_primary);
     DrawLine(TERM_X + TERM_W - 38, 258, TERM_X + 14, 258, 1, style->palette.text_primary);
