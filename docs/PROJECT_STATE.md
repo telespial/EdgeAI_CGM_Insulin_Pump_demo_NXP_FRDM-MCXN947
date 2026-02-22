@@ -123,3 +123,14 @@ Last updated: 2026-02-22
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-22
+- Change: Adjusted temp bargraph layout/detail styling:
+  - moved bargraph upward from the previous bottom-most position so temp text is fully visible
+  - increased bargraph height by 10% while keeping width unchanged
+  - set temp-text background box color to match `AX` trace color
+  - moved pump `IDLE/RATE/FILL` text right by ~2 characters and down by 2 text rows
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

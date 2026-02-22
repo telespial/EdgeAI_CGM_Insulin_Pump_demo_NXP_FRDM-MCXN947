@@ -200,9 +200,9 @@ enum
     TERM_H = 176,
     RTC_TEXT_Y = 259,
     BAR_X0 = 0,
-    BAR_Y0 = 246,
+    BAR_Y0 = 228,
     BAR_X1 = 19,
-    BAR_Y1 = 306,
+    BAR_Y1 = 294,
     BAR_SEGMENTS = 10,
     SECTION2_CX = 240,
     AI_PILL_X0 = GAUGE_RENDER_AI_PILL_X0,
@@ -926,11 +926,11 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Pump area (bottom-left icon). */
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
-    DrawTextUi(22, 204, 1, line, pumping ? okay : warn);
+    DrawTextUi(34, 220, 1, line, pumping ? okay : warn);
     snprintf(line, sizeof(line), "RATE:%3u mL/h", (unsigned int)(sample->power_mW / 10u));
-    DrawTextUi(22, 218, 1, line, okay);
+    DrawTextUi(34, 234, 1, line, okay);
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
-    DrawTextUi(22, 232, 1, line, okay);
+    DrawTextUi(34, 248, 1, line, okay);
 
     /* Human center area. */
     snprintf(line, sizeof(line), "GYR X:%4d Y:%4d", (int)gx, (int)gy);
@@ -1941,7 +1941,8 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
         DrawLine(inner_x0, y, inner_x1, y, 1, RGB565(70, 120, 86));
     }
 
-    DrawTextUi(BAR_X0 + 2, label_y, 1, "TEMP: --.-C/--.-F", style->palette.text_secondary);
+    par_lcd_s035_fill_rect(BAR_X0, label_y - 2, BAR_X0 + 96, label_y + 9, TRACE_AX_COLOR);
+    DrawTextUi(BAR_X0 + 2, label_y, 1, "TEMP: --.-C/--.-F", RGB565(4, 18, 26));
 }
 
 static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t temp_c10)
@@ -2033,7 +2034,8 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
                  (int)(f_abs / 10),
                  (int)(f_abs % 10));
     }
-    DrawTextUi(BAR_X0 + 2, label_y, 1, line, over_temp ? style->palette.accent_red : style->palette.text_secondary);
+    par_lcd_s035_fill_rect(BAR_X0, label_y - 2, BAR_X0 + 96, label_y + 9, TRACE_AX_COLOR);
+    DrawTextUi(BAR_X0 + 2, label_y, 1, line, over_temp ? style->palette.accent_red : RGB565(4, 18, 26));
 
     gPrevBarLevel = (uint8_t)level;
     gPrevBarTempC10 = temp_c10;
