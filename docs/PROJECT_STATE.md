@@ -105,3 +105,14 @@ Last updated: 2026-02-22
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-22
+- Change: Applied requested medical UI refinements on top of package-style baseline:
+  - magnetometer stream disabled in render path and `MAG` removed from terminal output
+  - left temperature bargraph reduced significantly while staying on far-left edge
+  - motor overlay labels shifted down by two text rows
+  - battery indicator moved between motor and pump regions and reduced by 20%
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

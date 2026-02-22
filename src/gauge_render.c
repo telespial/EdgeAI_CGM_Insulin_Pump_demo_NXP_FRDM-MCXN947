@@ -28,7 +28,6 @@ static uint8_t gTraceGy[100];
 static uint8_t gTraceGz[100];
 static uint8_t gTraceTemp[100];
 static uint8_t gTraceBaro[100];
-static uint8_t gTraceMag[100];
 static uint8_t gTraceRh[100];
 static uint16_t gTraceCount = 0u;
 static bool gTraceReady = false;
@@ -171,7 +170,6 @@ static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 #define TRACE_TEMP_YELLOW RGB565(255, 220, 72)
 #define TRACE_TEMP_RED RGB565(255, 72, 72)
 #define TRACE_BARO_COLOR RGB565(110, 190, 255)
-#define TRACE_MAG_COLOR RGB565(232, 120, 255)
 #define TRACE_RH_COLOR RGB565(120, 220, 255)
 
 enum
@@ -188,10 +186,10 @@ enum
     MID_BOT_CX = 76,
     MID_BOT_CY = 234,
     MID_R = 42,
-    BATT_X = 26,
-    BATT_Y = 22,
-    BATT_W = 82,
-    BATT_H = 26,
+    BATT_X = 28,
+    BATT_Y = 136,
+    BATT_W = 66,
+    BATT_H = 21,
     SCOPE_X = 328,
     SCOPE_Y = 24,
     SCOPE_W = 151,
@@ -202,10 +200,10 @@ enum
     TERM_H = 176,
     RTC_TEXT_Y = 259,
     BAR_X0 = 0,
-    BAR_Y0 = 78,
-    BAR_X1 = 25,
-    BAR_Y1 = 288,
-    BAR_SEGMENTS = 20,
+    BAR_Y0 = 118,
+    BAR_X1 = 19,
+    BAR_Y1 = 238,
+    BAR_SEGMENTS = 10,
     SECTION2_CX = 240,
     AI_PILL_X0 = GAUGE_RENDER_AI_PILL_X0,
     AI_PILL_Y0 = GAUGE_RENDER_AI_PILL_Y0,
@@ -543,8 +541,6 @@ static void PushScopeSample(void)
     uint8_t tp = ScaleTo8(t, 100u);
     uint8_t bp = ScaleTo8((uint32_t)ClampI32((int32_t)gBaroDhpa - 9600, 0, 1200), 1200u);
     uint8_t rh = ScaleTo8((uint32_t)ClampI32(gShtRhDpct, 0, 1000), 1000u);
-    int32_t mmag = (int32_t)sqrtf((float)((gMagXmgauss * gMagXmgauss) + (gMagYmgauss * gMagYmgauss) + (gMagZmgauss * gMagZmgauss)));
-    uint8_t mg = ScaleTo8((uint32_t)ClampI32(mmag, 0, 2400), 2400u);
 
     gScopeSampleAccumUs += SCOPE_FAST_STEP_US;
     if (gScopeSampleAccumUs < SCOPE_SAMPLE_PERIOD_US)
@@ -563,7 +559,6 @@ static void PushScopeSample(void)
         gTraceGz[gTraceCount] = gz;
         gTraceTemp[gTraceCount] = tp;
         gTraceBaro[gTraceCount] = bp;
-        gTraceMag[gTraceCount] = mg;
         gTraceRh[gTraceCount] = rh;
         gTraceCount++;
     }
@@ -580,7 +575,6 @@ static void PushScopeSample(void)
             gTraceGz[i - 1u] = gTraceGz[i];
             gTraceTemp[i - 1u] = gTraceTemp[i];
             gTraceBaro[i - 1u] = gTraceBaro[i];
-            gTraceMag[i - 1u] = gTraceMag[i];
             gTraceRh[i - 1u] = gTraceRh[i];
         }
         gTraceAx[cap - 1u] = ax;
@@ -591,7 +585,6 @@ static void PushScopeSample(void)
         gTraceGz[cap - 1u] = gz;
         gTraceTemp[cap - 1u] = tp;
         gTraceBaro[cap - 1u] = bp;
-        gTraceMag[cap - 1u] = mg;
         gTraceRh[cap - 1u] = rh;
         gTraceReady = true;
     }
@@ -925,11 +918,11 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Motor area (top-left icon). */
     snprintf(line, sizeof(line), "MTR RPM:%4u", (unsigned int)sample->voltage_mV);
-    DrawTextUi(22, 34, 1, line, okay);
+    DrawTextUi(22, 62, 1, line, okay);
     snprintf(line, sizeof(line), "I:%4umA AN:%3u%%", (unsigned int)sample->current_mA, (unsigned int)sample->anomaly_score_pct);
-    DrawTextUi(22, 48, 1, line, sev);
+    DrawTextUi(22, 76, 1, line, sev);
     snprintf(line, sizeof(line), "WR:%3u%%", (unsigned int)sample->connector_wear_pct);
-    DrawTextUi(22, 62, 1, line, sev);
+    DrawTextUi(22, 90, 1, line, sev);
 
     /* Pump area (bottom-left icon). */
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
@@ -1722,38 +1715,22 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
         snprintf(line, sizeof(line), "ACC +0.000 +0.000 +1.000g");
     }
     DrawTerminalLine(TERM_Y + 90, line, RGB565(170, 240, 255));
-    if (gMagEverValid)
-    {
-        snprintf(line,
-                 sizeof(line),
-                 "MAG X%+4d Y%+4d Z%+4d%s",
-                 (int)gMagXmgauss,
-                 (int)gMagYmgauss,
-                 (int)gMagZmgauss,
-                 gMagValid ? "" : " !");
-    }
-    else
-    {
-        snprintf(line, sizeof(line), "MAG X ---- Y ---- Z ----");
-    }
-    DrawTerminalLine(TERM_Y + 106, line, RGB565(170, 240, 255));
-
     FormatShieldEnvCompact(line, sizeof(line));
-    DrawTerminalLine(TERM_Y + 122, line, RGB565(176, 218, 238));
+    DrawTerminalLine(TERM_Y + 106, line, RGB565(176, 218, 238));
 
     FormatDewAltCompact(line, sizeof(line));
-    DrawTerminalLine(TERM_Y + 138, line, RGB565(176, 218, 238));
+    DrawTerminalLine(TERM_Y + 122, line, RGB565(176, 218, 238));
 
     snprintf(line, sizeof(line), "%s %s", AnomModeText(gAnomMode, gAnomTraining), gAnomTrainedReady ? "RDY" : "");
-    DrawTerminalLine(TERM_Y + 154, line, AnomLevelColor(gAnomOverall));
+    DrawTerminalLine(TERM_Y + 138, line, AnomLevelColor(gAnomOverall));
 
     if (gHelpVisible)
     {
-        DrawTerminalLine(TERM_Y + 170, "*:SET ?:HELP", RGB565(180, 220, 248));
+        DrawTerminalLine(TERM_Y + 154, "*:SET ?:HELP", RGB565(180, 220, 248));
     }
     else
     {
-        DrawTerminalLine(TERM_Y + 170, "              ", style->palette.text_secondary);
+        DrawTerminalLine(TERM_Y + 154, "              ", style->palette.text_secondary);
     }
 }
 
@@ -1951,8 +1928,8 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
         DrawLine(inner_x0, y, inner_x1, y, 1, RGB565(18, 28, 20));
     }
 
-    par_lcd_s035_fill_rect(BAR_X0, 292, BAR_X0 + 96, 304, RGB565(2, 3, 5));
-    DrawTextUi(BAR_X0 + 2, 294, 1, "TEMP: --.-C/--.-F", style->palette.text_secondary);
+    par_lcd_s035_fill_rect(BAR_X0, BAR_Y1 + 4, BAR_X0 + 96, BAR_Y1 + 16, RGB565(2, 3, 5));
+    DrawTextUi(BAR_X0 + 2, BAR_Y1 + 6, 1, "TEMP: --.-C/--.-F", style->palette.text_secondary);
 }
 
 static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t temp_c10)
@@ -2016,7 +1993,7 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
         par_lcd_s035_fill_rect(inner_x0, seg_top, inner_x1, seg_bot, color);
     }
 
-    par_lcd_s035_fill_rect(BAR_X0, 292, BAR_X0 + 96, 304, RGB565(2, 3, 5));
+    par_lcd_s035_fill_rect(BAR_X0, BAR_Y1 + 4, BAR_X0 + 96, BAR_Y1 + 16, RGB565(2, 3, 5));
     {
         int16_t temp_f10 = TempC10ToF10(temp_c10);
         int16_t c_abs = (temp_c10 < 0) ? (int16_t)-temp_c10 : temp_c10;
@@ -2029,7 +2006,7 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
                  (int)(f_abs / 10),
                  (int)(f_abs % 10));
     }
-    DrawTextUi(BAR_X0 + 2, 294, 1, line, over_temp ? style->palette.accent_red : style->palette.text_secondary);
+    DrawTextUi(BAR_X0 + 2, BAR_Y1 + 6, 1, line, over_temp ? style->palette.accent_red : style->palette.text_secondary);
 
     gPrevBarLevel = (uint8_t)level;
     gPrevBarTempC10 = temp_c10;
@@ -2043,14 +2020,14 @@ static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_
     (void)profile;
 
     DrawSpaceboxBackground();
-    DrawTextUi(2, BATT_Y - 10, 1, "(c)RICHARD HABERKERN", style->palette.text_secondary);
+    DrawTextUi(2, 12, 1, "(c)RICHARD HABERKERN", style->palette.text_secondary);
 
     DrawLeftBargraphFrame(style);
-    DrawLine(0, 78, 26, 78, 1, style->palette.text_primary);
-    DrawLine(26, 78, 26, 258, 1, style->palette.text_primary);
+    DrawLine(0, BAR_Y0, 26, BAR_Y0, 1, style->palette.text_primary);
+    DrawLine(26, BAR_Y0, 26, BAR_Y1, 1, style->palette.text_primary);
     DrawLine(26, MID_TOP_CY + 54, 50, MID_TOP_CY + 54, 1, style->palette.text_primary);
-    DrawLine(26, 258, 26, 288, 1, style->palette.text_primary);
-    DrawLine(26, 288, 50, 288, 1, style->palette.text_primary);
+    DrawLine(26, BAR_Y1, 26, BAR_Y1 + 30, 1, style->palette.text_primary);
+    DrawLine(26, BAR_Y1 + 30, 50, BAR_Y1 + 30, 1, style->palette.text_primary);
     DrawLine(TERM_X + TERM_W - 4, 78, TERM_X + TERM_W - 38, 78, 1, style->palette.text_primary);
     DrawLine(TERM_X + TERM_W - 38, 78, TERM_X + TERM_W - 38, 258, 1, style->palette.text_primary);
     DrawLine(TERM_X + TERM_W - 38, 258, TERM_X + 14, 258, 1, style->palette.text_primary);
@@ -2140,33 +2117,15 @@ void GaugeRender_SetGyro(int16_t gx_dps, int16_t gy_dps, int16_t gz_dps, bool va
 
 void GaugeRender_SetMag(int16_t mx_mgauss, int16_t my_mgauss, int16_t mz_mgauss, bool valid)
 {
-    if (valid)
-    {
-        gMagXmgauss = mx_mgauss;
-        gMagYmgauss = my_mgauss;
-        gMagZmgauss = mz_mgauss;
-        gMagEverValid = true;
-        if (!gMagCalPrimed)
-        {
-            gMagCalMinX = mx_mgauss;
-            gMagCalMaxX = mx_mgauss;
-            gMagCalMinY = my_mgauss;
-            gMagCalMaxY = my_mgauss;
-            gMagCalMinZ = mz_mgauss;
-            gMagCalMaxZ = mz_mgauss;
-            gMagCalPrimed = true;
-        }
-        else
-        {
-            if (mx_mgauss < gMagCalMinX) gMagCalMinX = mx_mgauss;
-            if (mx_mgauss > gMagCalMaxX) gMagCalMaxX = mx_mgauss;
-            if (my_mgauss < gMagCalMinY) gMagCalMinY = my_mgauss;
-            if (my_mgauss > gMagCalMaxY) gMagCalMaxY = my_mgauss;
-            if (mz_mgauss < gMagCalMinZ) gMagCalMinZ = mz_mgauss;
-            if (mz_mgauss > gMagCalMaxZ) gMagCalMaxZ = mz_mgauss;
-        }
-    }
-    gMagValid = valid;
+    (void)mx_mgauss;
+    (void)my_mgauss;
+    (void)mz_mgauss;
+    (void)valid;
+    gMagXmgauss = 0;
+    gMagYmgauss = 0;
+    gMagZmgauss = 0;
+    gMagValid = false;
+    gMagEverValid = false;
 }
 
 void GaugeRender_SetBaro(int16_t pressure_dhpa, bool valid)

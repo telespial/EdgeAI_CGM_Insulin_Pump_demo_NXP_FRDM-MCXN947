@@ -54,3 +54,9 @@ Format:
 - 2026-02-22T18:34:30Z | cmd: update docs/TODO.md for style parity and transparent overlay completion | result: ok
 - 2026-02-22T18:34:42Z | cmd: git status --short --branch (medical repo) | result: 4 modified files (renderer+docs)
 - 2026-02-22T18:34:59Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/TODO.md docs/COMMAND_LOG.md && git commit && git push origin main | result: ok (commit ef133e2)
+- 2026-02-22T18:38:32Z | cmd: inspect gauge_render.c for mag stream, terminal MAG line, bargraph geometry, motor overlay, battery geometry | result: ok
+- 2026-02-22T18:38:32Z | cmd: patch src/gauge_render.c for requested UI/data-stream changes (disable mag, remove MAG terminal line, shrink/move left temp bargraph, shift motor lines, resize/reposition battery) | result: ok
+- 2026-02-22T18:39:03Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+- 2026-02-22T18:39:03Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver probe #1)
+- 2026-02-22T18:39:17Z | cmd: update docs/PROJECT_STATE.md for mag-disable/layout-adjustments milestone | result: ok
+- 2026-02-22T18:39:28Z | cmd: git status --short --branch | result: 3 modified files
