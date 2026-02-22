@@ -41,3 +41,5 @@ Format:
 - 2026-02-22T18:19:25Z | cmd: rg search for proprietary root references in project files and inspect docs/COMMAND_LOG.md | result: one reference found and scrubbed
 - 2026-02-22T18:19:25Z | cmd: update .gitignore to exclude mcuxsdk_ws/ workspace from version control | result: ok
 - 2026-02-22T18:19:37Z | cmd: git add -A; git status --short --branch (pre-commit review) | result: ok
+- 2026-02-22T18:19:56Z | cmd: git commit -m "Wire medical LCD renderer to MCU build/flash and remove gyro sphere/accel ball" | result: ok (db10a49)
+- 2026-02-22T18:19:56Z | cmd: git push origin main | result: ok
