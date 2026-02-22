@@ -21,3 +21,7 @@ Last updated: 2026-02-22
 ## Update 2026-02-22
 - Change: Initial standalone framework scaffold with docs/scripts/source layout.
 - Result: ok
+
+## Update 2026-02-22
+- Change: Added project-local AGENTS instructions (gitignored), initialized git, committed framework scaffold, and pushed `main` to GitHub.
+- Result: ok
