@@ -24,4 +24,5 @@ __pycache__/
 # Runtime data
 captures/*.log
 failsafe/*.bin
+mcuxsdk_ws/
 mcuxsdk_ws/build*/
