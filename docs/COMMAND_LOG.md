@@ -43,3 +43,13 @@ Format:
 - 2026-02-22T18:19:37Z | cmd: git add -A; git status --short --branch (pre-commit review) | result: ok
 - 2026-02-22T18:19:56Z | cmd: git commit -m "Wire medical LCD renderer to MCU build/flash and remove gyro sphere/accel ball" | result: ok (db10a49)
 - 2026-02-22T18:19:56Z | cmd: git push origin main | result: ok
+- 2026-02-22T18:34:10Z | cmd: read package demo gauge_render.c to restore baseline layout/style positions/colors | result: ok
+- 2026-02-22T18:34:10Z | cmd: replace medical src/gauge_render.c with package baseline and retarget background to pump_bg | result: ok
+- 2026-02-22T18:34:10Z | cmd: patch renderer to remove gyro sphere + accel box/ball + wire box visuals and add transparent motor/pump/human overlays | result: ok
+- 2026-02-22T18:34:10Z | cmd: ./tools/build_frdmmcxn947.sh debug (first attempt) | result: fail (unused-function Werror after widget removal)
+- 2026-02-22T18:34:10Z | cmd: patch gauge_render.c to mark unused legacy widget helpers and keep scope sampling active | result: ok
+- 2026-02-22T18:34:10Z | cmd: ./tools/build_frdmmcxn947.sh debug (retry) | result: ok
+- 2026-02-22T18:34:10Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver probe #1)
+- 2026-02-22T18:34:30Z | cmd: update docs/PROJECT_STATE.md with package-style parity + no-widget/no-box change and build/flash verification | result: ok
+- 2026-02-22T18:34:30Z | cmd: update docs/TODO.md for style parity and transparent overlay completion | result: ok
+- 2026-02-22T18:34:42Z | cmd: git status --short --branch (medical repo) | result: 4 modified files (renderer+docs)

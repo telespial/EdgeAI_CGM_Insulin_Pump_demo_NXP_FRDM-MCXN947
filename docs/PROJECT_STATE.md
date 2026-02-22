@@ -88,3 +88,20 @@ Last updated: 2026-02-22
 - Notes:
   - `west update` in setup reported non-critical failures for unrelated repos; required demo build/flash path still completed successfully.
 - Result: ok
+
+## Update 2026-02-22
+- Change: Restored package-demo visual baseline for LCD rendering behavior in medical firmware:
+  - same `NXP EDGEAI` placement/color/size as package demo
+  - same elapsed-time placement/color/size as package demo
+  - right-third timeline buttons (`PLAY/STOP`, `REC`, `LIVE`), graph, and terminal kept in package-demo style/flow
+- Change: Removed center motion widgets per direction:
+  - removed gyro sphere/ring widget rendering path
+  - removed accel wire-box and accel ball rendering path
+- Change: Added transparent medical data labels (no black boxes/borders) positioned over background icons:
+  - motor labels (`RPM`, current, anomaly, wear)
+  - pump labels (state/rate/fill)
+  - human labels (gyro values, pose inversion, drop risk)
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
