@@ -328,6 +328,9 @@ static void UpdateActivityModel(void)
 {
     uint32_t now_ds = UiNowDs();
     float dt_s = 0.1f;
+    float accel_mag_mg = 1000.0f;
+    float accel_dev_mg = 0.0f;
+    float lin_mag_mg = 0.0f;
     float accel_dyn_mg;
     float accel_norm;
     float gyro_mag_dps;
@@ -354,24 +357,39 @@ static void UpdateActivityModel(void)
         }
     }
 
+    if (gAccelValid)
+    {
+        accel_mag_mg = sqrtf((float)(gAccelXmg * gAccelXmg) +
+                             (float)(gAccelYmg * gAccelYmg) +
+                             (float)(gAccelZmg * gAccelZmg));
+        accel_dev_mg = fabsf(accel_mag_mg - 1000.0f);
+    }
+
     if (gLinAccelValid)
     {
-        accel_dyn_mg = sqrtf((float)(gLinAccelXmg * gLinAccelXmg) +
-                             (float)(gLinAccelYmg * gLinAccelYmg) +
-                             (float)(gLinAccelZmg * gLinAccelZmg));
+        lin_mag_mg = sqrtf((float)(gLinAccelXmg * gLinAccelXmg) +
+                           (float)(gLinAccelYmg * gLinAccelYmg) +
+                           (float)(gLinAccelZmg * gLinAccelZmg));
+
+        /* Guard against feeds where "linear" stream still carries gravity magnitude. */
+        if (lin_mag_mg < 550.0f)
+        {
+            accel_dyn_mg = lin_mag_mg;
+        }
+        else
+        {
+            accel_dyn_mg = accel_dev_mg;
+        }
     }
     else if (gAccelValid)
     {
-        float amag = sqrtf((float)(gAccelXmg * gAccelXmg) +
-                           (float)(gAccelYmg * gAccelYmg) +
-                           (float)(gAccelZmg * gAccelZmg));
-        accel_dyn_mg = fabsf(amag - 1000.0f);
+        accel_dyn_mg = accel_dev_mg;
     }
     else
     {
         accel_dyn_mg = 0.0f;
     }
-    accel_norm = ClampF32(accel_dyn_mg / 450.0f, 0.0f, 1.0f);
+    accel_norm = ClampF32(accel_dyn_mg / 320.0f, 0.0f, 1.0f);
 
     if (gGyroValid)
     {
@@ -394,12 +412,19 @@ static void UpdateActivityModel(void)
     baro_norm = ClampF32(fabsf(baro_rate_hpa_s) / 0.10f, 0.0f, 1.0f);
 
     /* Automatic transport-mode estimate (no user setting required). */
-    if ((fabsf(baro_rate_hpa_s) > 0.18f) && (gyro_mag_dps < 35.0f) && (accel_dyn_mg < 180.0f))
+    if ((accel_dyn_mg < 28.0f) && (gyro_mag_dps < 8.0f) && (baro_norm < 0.18f))
+    {
+        transport_detected = TRANSPORT_ON_FOOT;
+        transport_conf = 92u;
+    }
+    else if ((fabsf(baro_rate_hpa_s) > 0.18f) && (gyro_mag_dps < 35.0f) && (accel_dyn_mg < 180.0f))
     {
         transport_detected = TRANSPORT_AIR;
         transport_conf = 84u;
     }
-    else if ((accel_dyn_mg < 95.0f) && (gyro_mag_dps < 28.0f) && (baro_norm < 0.40f))
+    else if ((accel_dyn_mg > 40.0f) && (accel_dyn_mg < 180.0f) &&
+             (gyro_mag_dps > 10.0f) && (gyro_mag_dps < 65.0f) &&
+             (baro_norm < 0.35f))
     {
         transport_detected = TRANSPORT_CAR;
         transport_conf = 75u;
@@ -448,6 +473,10 @@ static void UpdateActivityModel(void)
     }
 
     score = (0.52f * accel_norm) + (0.33f * gyro_norm) + (0.15f * baro_norm);
+    if ((accel_dyn_mg < 40.0f) && (gyro_mag_dps < 10.0f) && (baro_norm < 0.22f))
+    {
+        score *= 0.25f;
+    }
     score = ClampF32(score * effort_scale, 0.0f, 1.0f);
     gActivityScoreFilt = (gActivityScoreFilt * 0.78f) + (score * 0.22f);
     gActivityPct = (uint8_t)(gActivityScoreFilt * 100.0f + 0.5f);

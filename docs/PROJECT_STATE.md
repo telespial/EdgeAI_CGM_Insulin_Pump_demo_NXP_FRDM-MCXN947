@@ -980,3 +980,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed activity arc baseline so resting state maps to early green region instead of yellow.
+  - corrected activity accel feature to primarily use accel-magnitude deviation from `1g` (rest baseline) rather than raw gravity-contaminated magnitude
+  - added guard for linear-accel streams that still include gravity
+  - tightened rest clamp (`low accel + low gyro + low baro trend`) to suppress false motion
+  - adjusted transport gating so very low-motion rest no longer auto-classifies as `CAR`
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

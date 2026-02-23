@@ -420,3 +420,7 @@ Format:
 2026-02-23T05:44:53Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:44:53Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:44:53Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Add automatic transport classification and transport-aware activity scoring' && git push origin main | result: ok (b51f833)
+2026-02-23T05:49:04Z | cmd: rg/sed inspect UpdateActivityModel and accel feed paths in src/gauge_render.c and src/edgeai_package_transport_anomaly_demo.c to diagnose yellow-at-rest behavior | result: ok
+2026-02-23T05:49:04Z | cmd: apply_patch src/gauge_render.c recalibrate activity baseline (use accel magnitude deviation from 1g, guard linear-accel gravity contamination, adjust rest clamp and transport gating) | result: ok
+2026-02-23T05:49:04Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:49:04Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
