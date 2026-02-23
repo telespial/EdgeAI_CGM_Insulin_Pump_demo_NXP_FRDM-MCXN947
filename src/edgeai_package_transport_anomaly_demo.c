@@ -2749,7 +2749,10 @@ static void ShieldGyroUpdate(void)
     s_ui_gyro_z = filt_az;
     GaugeRender_SetLinearAccel(s_accel_raw_x_mg, s_accel_raw_y_mg, s_accel_raw_z_mg, true);
     GaugeRender_SetAccel(s_ui_gyro_x, s_ui_gyro_y, s_ui_gyro_z, true);
-    GaugeRender_SetGyro(gx_dps_signed, gy_dps_signed, gz_dps_signed, true);
+    GaugeRender_SetGyro((int16_t)((gx_raw * 7) / 10),
+                        (int16_t)((gy_raw * 7) / 10),
+                        (int16_t)((gz_raw * 7) / 10),
+                        true);
 }
 
 static bool BoardTempReadRaw(uint8_t addr, i3c_bus_type_t bus_type, uint8_t *raw2)
@@ -4446,7 +4449,10 @@ int main(void)
                     s_accel_raw_z_mg = playback_sample.az_mg;
                     GaugeRender_SetLinearAccel(s_accel_raw_x_mg, s_accel_raw_y_mg, s_accel_raw_z_mg, true);
                     GaugeRender_SetAccel(s_accel_y_mg, s_accel_x_mg, s_accel_z_mg, true);
-                    GaugeRender_SetGyro(playback_sample.gx_mdps, playback_sample.gy_mdps, playback_sample.gz_mdps, true);
+                    GaugeRender_SetGyro((int16_t)(playback_sample.gx_mdps * 10),
+                                        (int16_t)(playback_sample.gy_mdps * 10),
+                                        (int16_t)(playback_sample.gz_mdps * 10),
+                                        true);
                     s_mag_x_mgauss = playback_sample.mag_x_mgauss;
                     s_mag_y_mgauss = playback_sample.mag_y_mgauss;
                     s_mag_z_mgauss = playback_sample.mag_z_mgauss;

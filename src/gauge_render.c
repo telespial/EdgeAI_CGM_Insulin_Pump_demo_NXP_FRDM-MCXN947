@@ -535,9 +535,9 @@ static void PushScopeSample(void)
     uint8_t ax = ScaleSignedTo8(acc_x, 2000);
     uint8_t ay = ScaleSignedTo8(acc_y, 2000);
     uint8_t az = ScaleSignedTo8(acc_z, 2000);
-    uint8_t gx = gGyroValid ? ScaleSignedTo8(gGyroXdps, 2000) : ScaleSignedTo8(0, 2000);
-    uint8_t gy = gGyroValid ? ScaleSignedTo8(gGyroYdps, 2000) : ScaleSignedTo8(0, 2000);
-    uint8_t gz = gGyroValid ? ScaleSignedTo8(gGyroZdps, 2000) : ScaleSignedTo8(0, 2000);
+    uint8_t gx = gGyroValid ? ScaleSignedTo8(gGyroXdps / 10, 2000) : ScaleSignedTo8(0, 2000);
+    uint8_t gy = gGyroValid ? ScaleSignedTo8(gGyroYdps / 10, 2000) : ScaleSignedTo8(0, 2000);
+    uint8_t gz = gGyroValid ? ScaleSignedTo8(gGyroZdps / 10, 2000) : ScaleSignedTo8(0, 2000);
     uint8_t tp = ScaleTo8(t, 100u);
     uint8_t bp = ScaleTo8((uint32_t)ClampI32((int32_t)gBaroDhpa - 9600, 0, 1200), 1200u);
     uint8_t rh = ScaleTo8((uint32_t)ClampI32(gShtRhDpct, 0, 1000), 1000u);
@@ -954,7 +954,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 {
     int32_t cx = MAIN_CX + 2;
     int32_t cy = MAIN_CY - 22;
-    int32_t r = ((MAIN_R - 6) * 5) / 4;
+    int32_t r = MAIN_R - 6;
     float angle_deg = 0.0f;
     float angle_rad;
     int32_t tip_x;
@@ -967,9 +967,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t by1;
     int32_t bx2;
     int32_t by2;
-    uint16_t ring_color = RGB565(94, 200, 244);
     uint16_t ptr_color = style->palette.text_primary;
-    uint16_t i;
 
     if (gAccelValid)
     {
@@ -986,17 +984,6 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 
     /* Restore the human-circle area before redrawing gauge to prevent pointer trails. */
     BlitPumpBgRegion(cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8);
-
-    /* Draw a speedometer-style ring with 30-degree tick marks. */
-    for (i = 0u; i < 12u; i++)
-    {
-        float tick_rad = ((float)i * 30.0f) * (3.14159265f / 180.0f);
-        int32_t x0 = cx + (int32_t)(cosf(tick_rad) * (float)(r - 8));
-        int32_t y0 = cy - (int32_t)(sinf(tick_rad) * (float)(r - 8));
-        int32_t x1 = cx + (int32_t)(cosf(tick_rad) * (float)r);
-        int32_t y1 = cy - (int32_t)(sinf(tick_rad) * (float)r);
-        DrawLine(x0, y0, x1, y1, 1, ring_color);
-    }
 
     angle_rad = angle_deg * (3.14159265f / 180.0f);
     tip_x = cx + (int32_t)(cosf(angle_rad) * (float)r);
@@ -1748,6 +1735,12 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
 static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_sample_t *sample, uint16_t cpu_pct, bool ai_enabled)
 {
     char line[48];
+    int16_t gx10 = gGyroValid ? gGyroXdps : 0;
+    int16_t gy10 = gGyroValid ? gGyroYdps : 0;
+    int16_t gz10 = gGyroValid ? gGyroZdps : 0;
+    int16_t gx_abs = (gx10 < 0) ? (int16_t)-gx10 : gx10;
+    int16_t gy_abs = (gy10 < 0) ? (int16_t)-gy10 : gy10;
+    int16_t gz_abs = (gz10 < 0) ? (int16_t)-gz10 : gz10;
     const char *mode_text = gLiveBannerMode ? "LIVE" : ((gAnomMode == 1u && gScopePaused) ? "TRAIN" : (gScopePaused ? "PLAY" : "REC"));
     uint8_t status = sample->ai_status;
     uint16_t ai_color = AiStatusColor(style, status);
@@ -1778,10 +1771,16 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     DrawTerminalLine(TERM_Y + 58, line, style->palette.text_primary);
 
     snprintf(line, sizeof(line),
-             "GYR X%+4d Y%+4d Z%+4d",
-             (int)(gGyroValid ? gGyroXdps : 0),
-             (int)(gGyroValid ? gGyroYdps : 0),
-             (int)(gGyroValid ? gGyroZdps : 0));
+             "GYR X%c%4d.%1d Y%c%4d.%1d Z%c%4d.%1d",
+             (gx10 < 0) ? '-' : '+',
+             (int)(gx_abs / 10),
+             (int)(gx_abs % 10),
+             (gy10 < 0) ? '-' : '+',
+             (int)(gy_abs / 10),
+             (int)(gy_abs % 10),
+             (gz10 < 0) ? '-' : '+',
+             (int)(gz_abs / 10),
+             (int)(gz_abs % 10));
     DrawTerminalLine(TERM_Y + 74, line, RGB565(170, 240, 255));
 
     if (gLinAccelValid)

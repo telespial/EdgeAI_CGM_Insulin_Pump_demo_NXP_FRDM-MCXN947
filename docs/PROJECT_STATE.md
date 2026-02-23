@@ -362,3 +362,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS (after removing now-unused helper)
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Applied combined gyro-display and pointer-style refinements:
+  - terminal gyro line now shows one decimal place (`X/Y/Z` as `dps` with tenths)
+  - live gyro feed to renderer upgraded to 0.1 dps resolution (with playback scaling compatibility)
+  - orientation pointer circle diameter reduced by 20%
+  - removed all tick marks from the pointer circle
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
