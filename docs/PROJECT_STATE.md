@@ -620,3 +620,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated motor RPM/current demo lines.
+  - random RPM non-zero range expanded from `0.1..25.0` to `0.1..49.0`, so values like `21.x` and `49.0` can occur.
+  - rewired the `I` row to display only current value text (`NNmA`) with no label.
+  - current is now derived from RPM via linear mapping `0.0..49.0 RPM` -> `0..95 mA`.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

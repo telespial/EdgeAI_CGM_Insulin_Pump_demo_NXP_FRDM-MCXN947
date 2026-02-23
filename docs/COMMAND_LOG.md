@@ -294,3 +294,5 @@ Format:
 - 2026-02-23T04:41:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T04:46:17Z | cmd: patch src/gauge_render.c add zero-hold mode so when RPM enters 0.0 it stays 5-20 seconds before returning to non-zero updates | result: ok
 - 2026-02-23T04:46:57Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:54:12Z | cmd: patch src/gauge_render.c expand RPM random range to 0.1..49.0 (includes 21 and 49) and replace I row with speed-tracked value-only current in 0-95mA | result: ok
+- 2026-02-23T04:54:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

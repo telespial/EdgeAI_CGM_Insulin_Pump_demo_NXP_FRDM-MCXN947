@@ -969,6 +969,7 @@ static __attribute__((unused)) void DrawCenterAccelBall(void)
 static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
 {
     char line[40];
+    uint16_t rpm_ma;
     uint16_t okay = style->palette.text_primary;
     uint16_t warn = WARN_YELLOW;
     uint16_t sev = (sample->anomaly_score_pct >= 65u) ? ALERT_RED :
@@ -986,7 +987,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
             uint32_t r = NextUiRand();
             if (gUiRpmZeroHold)
             {
-                gUiRpmTenths = (uint16_t)(1u + (r % 250u)); /* 0.1 .. 25.0 */
+                gUiRpmTenths = (uint16_t)(1u + (r % 490u)); /* 0.1 .. 49.0 */
                 gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
                 gUiRpmZeroHold = false;
             }
@@ -1000,7 +1001,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
                 }
                 else
                 {
-                    gUiRpmTenths = (uint16_t)(1u + (r % 250u)); /* 0.1 .. 25.0 */
+                    gUiRpmTenths = (uint16_t)(1u + (r % 490u)); /* 0.1 .. 49.0 */
                     gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
                 }
             }
@@ -1011,7 +1012,8 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
              (unsigned int)(gUiRpmTenths / 10u),
              (unsigned int)(gUiRpmTenths % 10u));
     DrawTextUi(22, 24, 2, line, okay);
-    snprintf(line, sizeof(line), "I:%4umA AN:%3u%%", (unsigned int)sample->current_mA, (unsigned int)sample->anomaly_score_pct);
+    rpm_ma = (uint16_t)((((uint32_t)gUiRpmTenths * 95u) + 245u) / 490u); /* map 0.0..49.0 RPM to 0..95mA */
+    snprintf(line, sizeof(line), "%2umA", (unsigned int)rpm_ma);
     DrawTextUi(22, 76, 1, line, sev);
     snprintf(line, sizeof(line), "WR:%3u%%", (unsigned int)sample->connector_wear_pct);
     DrawTextUi(22, 90, 1, line, sev);
