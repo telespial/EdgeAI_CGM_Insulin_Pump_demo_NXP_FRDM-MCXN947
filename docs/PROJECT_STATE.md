@@ -439,3 +439,11 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Moved the full pump text block down toward the bottom-left F/C area while preserving 50%-larger yellow styling.
+  - `PUMP`/`RATE`/`FILL` Y positions shifted by +20 px (`218/236/254` -> `238/256/274`).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
