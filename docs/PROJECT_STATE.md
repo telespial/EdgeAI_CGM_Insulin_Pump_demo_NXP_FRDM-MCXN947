@@ -491,3 +491,15 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Corrected remaining unit rendering and improved orientation-ball behavior.
+  - added `/` glyph to `text5x7` font so `ML/H` renders correctly on-screen.
+  - replaced center ball motion model with filtered accel X/Y projection and circular clamp:
+    - table-flat -> ball near center,
+    - tilt/motion -> ball moves in corresponding 2D direction within circle bounds.
+  - removed now-unused angle-based ball state variables from renderer.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

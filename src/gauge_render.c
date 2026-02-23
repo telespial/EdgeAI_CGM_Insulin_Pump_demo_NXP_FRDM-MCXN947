@@ -122,13 +122,9 @@ static uint8_t gLogRateHz = 10u;
 static char gModelName[48] = "UNKNOWN";
 static char gModelVersion[16] = "0.0.0";
 static char gExtensionVersion[16] = "0.1.0";
-static float gUiOrientYFilt = 0.0f;
-static float gUiOrientZFilt = 1000.0f;
-static bool gUiOrientFiltPrimed = false;
-static float gUiOrientAngleDeg = 180.0f;
-static bool gUiOrientAnglePrimed = false;
-static float gUiTiltFracFilt = 0.0f;
-static bool gUiTiltFiltPrimed = false;
+static float gUiBallXmgFilt = 0.0f;
+static float gUiBallYmgFilt = 0.0f;
+static bool gUiBallFiltPrimed = false;
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 {
@@ -963,10 +959,6 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t cx = MAIN_CX + 2;
     int32_t cy = MAIN_CY - 22;
     int32_t r = MAIN_R - 6;
-    int32_t ball_r = r - 8;
-    float angle_deg = 0.0f;
-    float angle_rad;
-    float tilt_frac = 0.0f;
     int32_t ball_x = cx;
     int32_t ball_y = cy;
     uint16_t ball_color = RGB565(156, 244, 178); /* light green */
@@ -974,103 +966,34 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 
     if (gAccelValid)
     {
-        float raw_x = (float)gAccelXmg;
-        float raw_y = (float)(-gAccelYmg);
-        float raw_z = (float)gAccelZmg;
-        float g_norm;
-        float raw_tilt;
-        float delta;
+        float fx;
+        float fy;
+        float maxr = (float)(r - 8);
+        float mag;
 
-        if (!gUiOrientFiltPrimed)
+        if (!gUiBallFiltPrimed)
         {
-            gUiOrientYFilt = raw_y;
-            gUiOrientZFilt = raw_z;
-            gUiOrientFiltPrimed = true;
+            gUiBallXmgFilt = (float)gAccelXmg;
+            gUiBallYmgFilt = (float)gAccelYmg;
+            gUiBallFiltPrimed = true;
         }
         else
         {
-            /* UI-only damping for visual stability; raw sensor streams remain unchanged. */
-            gUiOrientYFilt = (gUiOrientYFilt * 0.65f) + (raw_y * 0.35f);
-            gUiOrientZFilt = (gUiOrientZFilt * 0.65f) + (raw_z * 0.35f);
+            /* UI-only accel projection filter for stable but responsive motion. */
+            gUiBallXmgFilt = (gUiBallXmgFilt * 0.70f) + ((float)gAccelXmg * 0.30f);
+            gUiBallYmgFilt = (gUiBallYmgFilt * 0.70f) + ((float)gAccelYmg * 0.30f);
         }
 
-        g_norm = sqrtf((raw_x * raw_x) + (raw_y * raw_y) + (raw_z * raw_z));
-        if (g_norm < 1.0f)
+        fx = (gUiBallXmgFilt / 1000.0f) * maxr;
+        fy = (-gUiBallYmgFilt / 1000.0f) * maxr;
+        mag = sqrtf((fx * fx) + (fy * fy));
+        if ((mag > maxr) && (mag > 0.001f))
         {
-            g_norm = 1.0f;
+            fx = fx * (maxr / mag);
+            fy = fy * (maxr / mag);
         }
-        raw_tilt = sqrtf((raw_x * raw_x) + (raw_y * raw_y)) / g_norm;
-        if (raw_tilt > 1.0f)
-        {
-            raw_tilt = 1.0f;
-        }
-        if (!gUiTiltFiltPrimed)
-        {
-            gUiTiltFracFilt = raw_tilt;
-            gUiTiltFiltPrimed = true;
-        }
-        else
-        {
-            gUiTiltFracFilt = (gUiTiltFracFilt * 0.60f) + (raw_tilt * 0.40f);
-        }
-        tilt_frac = gUiTiltFracFilt;
-
-        /* Invert Y so "screen facing user" posture maps to pointer-down. */
-        angle_deg = atan2f(gUiOrientYFilt, gUiOrientZFilt) * (180.0f / 3.14159265f);
-        angle_deg += 180.0f; /* Apply phase offset: current hardware frame is 180 deg inverted. */
-        if (angle_deg < 0.0f)
-        {
-            angle_deg += 360.0f;
-        }
-        if (angle_deg >= 360.0f)
-        {
-            angle_deg -= 360.0f;
-        }
-
-        if (!gUiOrientAnglePrimed)
-        {
-            gUiOrientAngleDeg = angle_deg;
-            gUiOrientAnglePrimed = true;
-        }
-        else
-        {
-            delta = angle_deg - gUiOrientAngleDeg;
-            while (delta > 180.0f)
-            {
-                delta -= 360.0f;
-            }
-            while (delta < -180.0f)
-            {
-                delta += 360.0f;
-            }
-            if (delta > 16.0f)
-            {
-                delta = 16.0f;
-            }
-            else if (delta < -16.0f)
-            {
-                delta = -16.0f;
-            }
-            gUiOrientAngleDeg += delta;
-            if (gUiOrientAngleDeg < 0.0f)
-            {
-                gUiOrientAngleDeg += 360.0f;
-            }
-            if (gUiOrientAngleDeg >= 360.0f)
-            {
-                gUiOrientAngleDeg -= 360.0f;
-            }
-        }
-        angle_deg = gUiOrientAngleDeg;
-        ball_r = (int32_t)((float)(r - 8) * tilt_frac);
-        if (ball_r < 0)
-        {
-            ball_r = 0;
-        }
-        if (ball_r > (r - 8))
-        {
-            ball_r = r - 8;
-        }
+        ball_x = cx + (int32_t)fx;
+        ball_y = cy + (int32_t)fy;
     }
     if (gAccelValid && (gAccelZmg < -200))
     {
@@ -1079,10 +1002,6 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 
     /* Restore the human-circle area before redrawing gauge to prevent pointer trails. */
     BlitPumpBgRegion(cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8);
-
-    angle_rad = angle_deg * (3.14159265f / 180.0f);
-    ball_x = cx + (int32_t)(cosf(angle_rad) * (float)ball_r);
-    ball_y = cy - (int32_t)(sinf(angle_rad) * (float)ball_r);
 
     /* ~14x14 filled circle (line-filled) for the rolling marker (2x larger). */
     DrawLine(ball_x - 2, ball_y - 6, ball_x + 2, ball_y - 6, 1, ball_color);
@@ -2555,9 +2474,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevThermalRisk = 65535u;
         gPrevDrift = 255u;
         gAlertVisualValid = false;
-        gUiOrientFiltPrimed = false;
-        gUiOrientAnglePrimed = false;
-        gUiTiltFiltPrimed = false;
+        gUiBallFiltPrimed = false;
     }
 
     cpu_pct = (uint16_t)(20u + (sample->current_mA / 1400u) + (sample->temp_c / 2u));

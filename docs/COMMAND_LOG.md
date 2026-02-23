@@ -247,3 +247,6 @@ Format:
 - 2026-02-23T03:45:18Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:45:18Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Fix pump text artifacts and center ball clipping overlap" && git push origin main | result: ok (commit f9f71b4 pushed)
 - 2026-02-23T03:45:50Z | cmd: git add docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Sync logs/state for ML-H label and pump redraw bounds fix" && git push origin main | result: ok (commit 1a9d56f pushed)
+- 2026-02-23T03:49:45Z | cmd: patch src/text5x7.c add missing '/' glyph (GLYPH_SLASH + switch case '/') to render ML/H correctly | result: ok
+- 2026-02-23T03:49:45Z | cmd: patch src/gauge_render.c rework center ball orientation to filtered accel X/Y projection with circular clamp; remove legacy angle/radius state vars | result: ok
+- 2026-02-23T03:49:45Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

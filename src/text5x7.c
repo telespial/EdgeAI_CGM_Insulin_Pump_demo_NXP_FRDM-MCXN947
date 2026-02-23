@@ -8,6 +8,7 @@
 static const uint8_t GLYPH_SPACE[7] = {0, 0, 0, 0, 0, 0, 0};
 static const uint8_t GLYPH_COLON[7] = {0x00, 0x04, 0x04, 0x00, 0x04, 0x04, 0x00};
 static const uint8_t GLYPH_DOT[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x06};
+static const uint8_t GLYPH_SLASH[7] = {0x01, 0x02, 0x02, 0x04, 0x08, 0x08, 0x10};
 static const uint8_t GLYPH_QMARK[7] = {0x0E, 0x11, 0x01, 0x02, 0x04, 0x00, 0x04};
 static const uint8_t GLYPH_ASTERISK[7] = {0x00, 0x15, 0x0E, 0x1F, 0x0E, 0x15, 0x00};
 
@@ -100,6 +101,7 @@ static const uint8_t *edgeai_glyph5x7(char c)
         case 'Z': return GLYPH_Z;
         case ':': return GLYPH_COLON;
         case '.': return GLYPH_DOT;
+        case '/': return GLYPH_SLASH;
         case '?': return GLYPH_QMARK;
         case '*': return GLYPH_ASTERISK;
         case '%': return GLYPH_PERCENT;
