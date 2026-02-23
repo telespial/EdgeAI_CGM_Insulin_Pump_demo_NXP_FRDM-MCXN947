@@ -129,7 +129,8 @@ static uint32_t gUiRpmRand = 0x73A51C9Du;
 static uint16_t gUiRpmTenths = 0u;
 static uint32_t gUiRpmNextUpdateDs = 0u;
 static bool gUiRpmSchedulePrimed = false;
-static bool gUiRpmZeroHold = false;
+static bool gUiMotorRunning = false;
+static uint16_t gUiDoseRateMlH = 0u;
 static uint8_t gUiGlucoseMgdl = 98u;
 static int8_t gUiGlucoseDir = 1;
 static uint32_t gUiGlucoseNextStepDs = 0u;
@@ -1021,7 +1022,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     uint16_t warn = WARN_YELLOW;
     uint16_t sev = (sample->anomaly_score_pct >= 65u) ? ALERT_RED :
                    ((sample->anomaly_score_pct >= 35u) ? warn : okay);
-    bool pumping = (sample->power_mW > 180u);
+    bool pumping = false;
     uint16_t pump_color = WARN_YELLOW;
     (void)ai_enabled;
 
@@ -1029,32 +1030,35 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     BlitPumpBgRegion(20, 18, 142, 102);
     {
         uint32_t now_ds = UiNowDs();
-        if ((!gUiRpmSchedulePrimed) || ((int32_t)(now_ds - gUiRpmNextUpdateDs) >= 0))
+        if (!gUiRpmSchedulePrimed)
         {
             uint32_t r = NextUiRand();
-            if (gUiRpmZeroHold)
+            gUiMotorRunning = false;
+            gUiRpmTenths = 0u;
+            gUiDoseRateMlH = 0u;
+            gUiRpmNextUpdateDs = now_ds + 100u + (r % 101u); /* stop for 10.0 .. 20.0 seconds */
+            gUiRpmSchedulePrimed = true;
+        }
+        else if ((int32_t)(now_ds - gUiRpmNextUpdateDs) >= 0)
+        {
+            uint32_t r = NextUiRand();
+            if (gUiMotorRunning)
             {
-                gUiRpmTenths = (uint16_t)(1u + (r % 490u)); /* 0.1 .. 49.0 */
-                gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
-                gUiRpmZeroHold = false;
+                gUiMotorRunning = false;
+                gUiRpmTenths = 0u;
+                gUiDoseRateMlH = 0u;
+                gUiRpmNextUpdateDs = now_ds + 100u + (r % 101u); /* stop for 10.0 .. 20.0 seconds */
             }
             else
             {
-                if ((r % 5u) == 0u)
-                {
-                    gUiRpmTenths = 0u;
-                    gUiRpmNextUpdateDs = now_ds + 50u + (r % 151u); /* 5.0 .. 20.0 seconds */
-                    gUiRpmZeroHold = true;
-                }
-                else
-                {
-                    gUiRpmTenths = (uint16_t)(1u + (r % 490u)); /* 0.1 .. 49.0 */
-                    gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
-                }
+                gUiMotorRunning = true;
+                gUiRpmTenths = (uint16_t)(10u + (r % 481u)); /* 1.0 .. 49.0 */
+                gUiDoseRateMlH = (uint16_t)(1u + (NextUiRand() % 95u)); /* random dosing: 1 .. 95 mL/h */
+                gUiRpmNextUpdateDs = now_ds + 50u + (r % 51u); /* run for 5.0 .. 10.0 seconds */
             }
-            gUiRpmSchedulePrimed = true;
         }
     }
+    pumping = gUiMotorRunning;
     snprintf(line, sizeof(line), "RPM:%2u.%1u",
              (unsigned int)(gUiRpmTenths / 10u),
              (unsigned int)(gUiRpmTenths % 10u));
@@ -1073,7 +1077,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     BlitPumpBgRegion(30, 282, 169, 300);
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
     DrawTextUi(34, 246, 2, line, pump_color);
-    snprintf(line, sizeof(line), "RATE:%3u ML/H", (unsigned int)(sample->power_mW / 10u));
+    snprintf(line, sizeof(line), "RATE:%3u ML/H", (unsigned int)gUiDoseRateMlH);
     DrawTextUi(34, 262, 2, line, pump_color);
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
     DrawTextUi(34, 278, 2, line, pump_color);

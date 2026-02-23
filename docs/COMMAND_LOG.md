@@ -334,3 +334,8 @@ Format:
 2026-02-23T04:48:36Z | cmd: update docs/PROJECT_STATE.md for mg/dL row move + build/flash verification | result: ok
 2026-02-23T04:48:53Z | cmd: git status --short --branch && git remote -v | result: ok
 2026-02-23T04:49:14Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Move glucose mg/dL row up two lines' && git push origin main | result: ok (36df162)
+2026-02-23T04:51:22Z | cmd: inspect glucose/motor/pump render paths in src/gauge_render.c via rg/sed and check git status | result: ok
+2026-02-23T04:51:22Z | cmd: apply_patch src/gauge_render.c wire pump state to rpm scheduler (STOP 10-20s at 0 RPM, RUN 5-10s with random dosing rates) | result: ok
+2026-02-23T04:51:22Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T04:51:22Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T04:51:40Z | cmd: git status --short --branch and rg verification of new pump/rpm scheduler symbols | result: ok

@@ -782,3 +782,15 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Wired pump state to motor RPM scheduler in `src/gauge_render.c`:
+  - motor STOP phase: `0 RPM` for random `10..20s`
+  - motor RUN phase: non-zero RPM for random `5..10s`
+  - pump status now follows motor phase (`PUMP IDLE` when stopped, `PUMP ACTIVE` when running)
+  - pump `RATE` now uses randomized dosing value (`1..95 ML/H`) generated each RUN phase
+  - current (`mA`) remains mapped from RPM in `0..95mA`
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
