@@ -945,11 +945,11 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     /* Pump area (bottom-left icon). */
     BlitPumpBgRegion(30, 228, 198, 300);
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
-    DrawTextUi(34, 232, 2, line, pump_color);
+    DrawTextUi(34, 246, 2, line, pump_color);
     snprintf(line, sizeof(line), "RATE:%3u ML/H", (unsigned int)(sample->power_mW / 10u));
-    DrawTextUi(34, 248, 2, line, pump_color);
+    DrawTextUi(34, 262, 2, line, pump_color);
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
-    DrawTextUi(34, 264, 2, line, pump_color);
+    DrawTextUi(34, 278, 2, line, pump_color);
 
     /* Human status text is no longer drawn here; keep center area untouched. */
 }
