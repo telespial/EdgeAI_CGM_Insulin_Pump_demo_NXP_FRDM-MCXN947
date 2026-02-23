@@ -96,3 +96,8 @@ Format:
 - 2026-02-23T02:04:35Z | cmd: update docs/PROJECT_STATE.md for +1 char blue temp background extension | result: ok
 - 2026-02-23T02:04:40Z | cmd: git status --short --branch | result: 3 modified files
 - 2026-02-23T02:04:51Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit && git push origin main | result: ok (597016e)
+- 2026-02-23T02:05:32Z | cmd: patch gauge_render.c bargraph geometry to approx 2x height and +25% width (BAR_Y0=161, BAR_Y1=294, BAR_X1=24) | result: ok
+- 2026-02-23T02:06:06Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+- 2026-02-23T02:06:06Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver probe #1)
+- 2026-02-23T02:06:06Z | cmd: update docs/PROJECT_STATE.md for bargraph 2x height and +25% width | result: ok
+- 2026-02-23T02:06:13Z | cmd: git status --short --branch | result: 3 modified files
