@@ -1556,3 +1556,17 @@ Last updated: 2026-02-23
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 8 with conservative lag/kinetics handling.
+  - `src/cgm_preprocess.h/.c` updates:
+    - added optional lag/kinetics configuration and state (`lag_enable`, `lag_tau_s`, `lag_gain_min/max`, bounded lag compensation)
+    - implemented low-gain lag correction with SQI-adaptive gain and compensation clamp
+    - trend derivative now computed from kinetics-corrected glucose signal
+    - exposed lag diagnostics in preprocessing output (`lag_comp_mgdl`, `lag_gain_applied`)
+  - behavior remains conservative by default (no aggressive look-forward extrapolation)
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok

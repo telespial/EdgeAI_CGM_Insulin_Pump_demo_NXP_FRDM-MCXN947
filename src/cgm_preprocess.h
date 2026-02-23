@@ -25,6 +25,8 @@ typedef struct
     bool calibration_stale;
     bool drift_warn;
     bool sensitivity_change;
+    float lag_comp_mgdl;
+    float lag_gain_applied;
 } cgm_preprocess_output_t;
 
 typedef struct
@@ -57,6 +59,11 @@ typedef struct
     float sensitivity_ratio_low;
     float sensitivity_ratio_high;
     uint8_t sensitivity_hold_samples;
+    bool lag_enable;
+    float lag_tau_s;
+    float lag_gain_max;
+    float lag_gain_min;
+    float lag_comp_limit_mgdl;
 } cgm_preprocess_config_t;
 
 typedef struct
@@ -91,6 +98,8 @@ typedef struct
     uint8_t sensitivity_counter;
     bool sensitivity_change_active;
     float prev_sensor_current_na;
+    float lag_state_mgdl;
+    float prev_kinetic_mgdl;
 } cgm_preprocess_t;
 
 void CgmPreprocess_Init(cgm_preprocess_t *st, const cgm_preprocess_config_t *cfg);

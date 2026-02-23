@@ -114,6 +114,10 @@ void CgmPreprocess_Init(cgm_preprocess_t *st, const cgm_preprocess_config_t *cfg
     st->cfg.sensitivity_long_alpha = ClampF32(st->cfg.sensitivity_long_alpha, 0.001f, 0.50f);
     st->cfg.sensitivity_ratio_low = ClampF32(st->cfg.sensitivity_ratio_low, 0.10f, 0.95f);
     st->cfg.sensitivity_ratio_high = ClampF32(st->cfg.sensitivity_ratio_high, 1.05f, 5.0f);
+    st->cfg.lag_tau_s = ClampF32(st->cfg.lag_tau_s, 30.0f, 1200.0f);
+    st->cfg.lag_gain_min = ClampF32(st->cfg.lag_gain_min, 0.0f, 0.20f);
+    st->cfg.lag_gain_max = ClampF32(st->cfg.lag_gain_max, st->cfg.lag_gain_min, 0.30f);
+    st->cfg.lag_comp_limit_mgdl = ClampF32(st->cfg.lag_comp_limit_mgdl, 0.5f, 20.0f);
     if (st->cfg.sensitivity_hold_samples == 0u)
     {
         st->cfg.sensitivity_hold_samples = 3u;
@@ -156,6 +160,11 @@ void CgmPreprocess_InitDefault(cgm_preprocess_t *st)
     cfg.sensitivity_ratio_low = 0.72f;
     cfg.sensitivity_ratio_high = 1.30f;
     cfg.sensitivity_hold_samples = 3u;
+    cfg.lag_enable = true;
+    cfg.lag_tau_s = 180.0f;
+    cfg.lag_gain_max = 0.08f;
+    cfg.lag_gain_min = 0.02f;
+    cfg.lag_comp_limit_mgdl = 4.0f;
 
     CgmPreprocess_Init(st, &cfg);
 }
@@ -210,6 +219,10 @@ void CgmPreprocess_Push(cgm_preprocess_t *st,
     bool sensitivity_change;
     bool calibration_stale;
     bool drift_warn;
+    float lag_alpha;
+    float lag_gain;
+    float lag_comp_mgdl;
+    float glucose_kinetics_mgdl;
 
     if ((st == NULL) || (sample == NULL) || (out == NULL))
     {
@@ -362,20 +375,42 @@ void CgmPreprocess_Push(cgm_preprocess_t *st,
     {
         st->prev_glucose_mgdl = glucose_mgdl;
         st->prev_glucose_filt_mgdl = glucose_mgdl;
+        st->prev_kinetic_mgdl = glucose_mgdl;
         st->prev_trend_mgdl_min = 0.0f;
         st->trend_primed = true;
     }
 
     glucose_filt_mgdl = (1.0f - filter_alpha) * st->prev_glucose_filt_mgdl + filter_alpha * glucose_mgdl;
-    trend_raw_mgdl_min = (glucose_filt_mgdl - st->prev_glucose_filt_mgdl) * st->cfg.sample_rate_hz * 60.0f;
+    glucose_kinetics_mgdl = glucose_filt_mgdl;
+    lag_comp_mgdl = 0.0f;
+    lag_gain = 0.0f;
+    if (st->cfg.lag_enable)
+    {
+        float dt_kin_s = 1.0f / st->cfg.sample_rate_hz;
+        if (dt_kin_s < 0.01f)
+        {
+            dt_kin_s = 1.0f;
+        }
+        lag_alpha = expf(-dt_kin_s / st->cfg.lag_tau_s);
+        st->lag_state_mgdl = lag_alpha * st->lag_state_mgdl + (glucose_filt_mgdl - st->prev_glucose_filt_mgdl);
+        lag_gain = st->cfg.lag_gain_min + sqi_norm * (st->cfg.lag_gain_max - st->cfg.lag_gain_min);
+        lag_gain = ClampF32(lag_gain, st->cfg.lag_gain_min, st->cfg.lag_gain_max);
+        lag_comp_mgdl = ClampF32(lag_gain * st->lag_state_mgdl,
+                                 -st->cfg.lag_comp_limit_mgdl,
+                                 st->cfg.lag_comp_limit_mgdl);
+        glucose_kinetics_mgdl = ClampF32(glucose_filt_mgdl + lag_comp_mgdl, 40.0f, 400.0f);
+    }
+
+    trend_raw_mgdl_min = (glucose_kinetics_mgdl - st->prev_kinetic_mgdl) * st->cfg.sample_rate_hz * 60.0f;
     trend_mgdl_min = (1.0f - trend_alpha) * st->prev_trend_mgdl_min + trend_alpha * trend_raw_mgdl_min;
 
-    st->prev_glucose_mgdl = glucose_mgdl;
+    st->prev_glucose_mgdl = glucose_kinetics_mgdl;
     st->prev_glucose_filt_mgdl = glucose_filt_mgdl;
+    st->prev_kinetic_mgdl = glucose_kinetics_mgdl;
     st->prev_trend_mgdl_min = trend_mgdl_min;
 
     out->output_ready = true;
-    out->glucose_mgdl = glucose_mgdl;
+    out->glucose_mgdl = glucose_kinetics_mgdl;
     out->glucose_filtered_mgdl = glucose_filt_mgdl;
     out->trend_mgdl_min = trend_mgdl_min;
     out->sensor_current_na = x_notch;
@@ -386,4 +421,6 @@ void CgmPreprocess_Push(cgm_preprocess_t *st,
     out->calibration_stale = calibration_stale;
     out->drift_warn = drift_warn;
     out->sensitivity_change = sensitivity_change;
+    out->lag_comp_mgdl = lag_comp_mgdl;
+    out->lag_gain_applied = lag_gain;
 }
