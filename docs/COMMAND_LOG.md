@@ -436,3 +436,5 @@ Format:
 2026-02-23T06:02:04Z | cmd: inspect docs headers and status files (docs/*.md, README.md, STATUS.md) for dating and restore-point updates | result: ok
 2026-02-23T06:02:04Z | cmd: apply_patch docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md README.md add Last updated date line | result: ok
 2026-02-23T06:02:04Z | cmd: apply_patch docs/PROJECT_STATE.md and STATUS.md set GOLDEN/FAILSAFE restore-point markers and active status | result: ok
+2026-02-23T06:02:04Z | cmd: git add README.md STATUS.md docs/COMMAND_LOG.md docs/HARDWARE_SETUP.md docs/OPS_RUNBOOK.md docs/PROJECT_STATE.md docs/START_HERE.md docs/TODO.md && git commit -m 'Date docs and mark golden/failsafe restore baseline' && git push origin main | result: ok (b8a37ee)
+2026-02-23T06:02:04Z | cmd: git tag -f GOLDEN-2026-02-23 && git tag -f FAILSAFE-2026-02-23 && git push origin GOLDEN-2026-02-23 FAILSAFE-2026-02-23 | result: ok
