@@ -307,3 +307,5 @@ Format:
 - 2026-02-23T05:19:24Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T05:22:08Z | cmd: patch src/gauge_render.c move mA row left one character width and up ~2/3 text height (x 46->34, y 76->67) | result: ok
 - 2026-02-23T05:22:48Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:27:14Z | cmd: patch src/gauge_render.c delete WR row and add ANOM/WEAR rows at scale-2; ANOM placed exactly 2.5 mA-row heights below mA (y 67->102), WEAR one row below (y 116) | result: ok
+- 2026-02-23T05:27:54Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

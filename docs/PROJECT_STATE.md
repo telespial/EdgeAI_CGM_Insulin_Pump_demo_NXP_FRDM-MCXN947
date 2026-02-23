@@ -675,3 +675,15 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Replaced motor wear row layout per request.
+  - removed legacy `WR` row.
+  - kept `mA` row at `x=34,y=67`.
+  - added `ANOM:` row at `x=22,y=102` (exactly +35 px, i.e., 2.5 scale-2 row heights from mA row).
+  - added `WEAR:` row at `x=22,y=116` (one additional scale-2 row below ANOM).
+  - both `ANOM` and `WEAR` use same font/text height as `mA` (`DrawTextUi`, scale 2).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

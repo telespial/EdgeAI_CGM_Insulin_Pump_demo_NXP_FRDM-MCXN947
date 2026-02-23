@@ -1015,8 +1015,10 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     rpm_ma = (uint16_t)((((uint32_t)gUiRpmTenths * 95u) + 245u) / 490u); /* map 0.0..49.0 RPM to 0..95mA */
     snprintf(line, sizeof(line), "%2umA", (unsigned int)rpm_ma);
     DrawTextUi(34, 67, 2, line, sev);
-    snprintf(line, sizeof(line), "WR:%3u%%", (unsigned int)sample->connector_wear_pct);
-    DrawTextUi(22, 90, 1, line, sev);
+    snprintf(line, sizeof(line), "ANOM:%3u%%", (unsigned int)sample->anomaly_score_pct);
+    DrawTextUi(22, 102, 2, line, sev);
+    snprintf(line, sizeof(line), "WEAR:%3u%%", (unsigned int)sample->connector_wear_pct);
+    DrawTextUi(22, 116, 2, line, sev);
 
     /* Pump area (bottom-left icon). */
     /* Keep pump text clean but avoid the elapsed-time band in the center segment. */
