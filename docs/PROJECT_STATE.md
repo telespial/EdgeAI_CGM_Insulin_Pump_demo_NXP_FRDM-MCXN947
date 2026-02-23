@@ -1028,6 +1028,13 @@ Last updated: 2026-02-23
 - Result: ok
 
 ## Update 2026-02-23
+- Change: Fixed AI settings row label placement/format so the left-side row label is explicitly `AI:` before the `MCU` and `NPU` buttons.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
+
+## Update 2026-02-23
 - Change: Replaced AI mode wording from ON/OFF to MCU/NPU across the runtime UI and settings popup.
   - top mode pill now shows `AI MCU` (left selection) or `AI NPU` (right selection)
   - settings popup AI buttons now read `AI: MCU` on the left and `AI: NPU` on the right

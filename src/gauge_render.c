@@ -1947,7 +1947,7 @@ static void DrawSettingsPopup(void)
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "MODE"), mode_label_y, 1, "MODE", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "RUN"), run_label_y, 1, "RUN", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "SENS"), tune_label_y, 1, "SENS", body);
-    DrawTextUi(label_col_right - edgeai_text5x7_width(1, "AI"), ai_label_y, 1, "AI", body);
+    DrawTextUi(label_col_right - edgeai_text5x7_width(1, "AI:"), ai_label_y, 1, "AI:", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "LIMITS"), lim_label_y, 1, "LIMITS", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "FLASH"), clear_label_y, 1, "FLASH", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "LOG HZ"), log_label_y, 1, "LOG HZ", body);
