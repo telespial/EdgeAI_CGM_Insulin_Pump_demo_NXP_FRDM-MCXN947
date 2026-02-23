@@ -726,3 +726,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated center blood sugar text formatting/placement.
+  - removed `BG` prefix; text now `98 mg/dL`.
+  - increased size to scale 3 (100% larger than previous 1.5x style).
+  - moved up by roughly two rows and centered in middle segment using `SECTION2_CX` anchor.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

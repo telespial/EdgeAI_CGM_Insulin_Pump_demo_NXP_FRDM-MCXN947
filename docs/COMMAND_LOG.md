@@ -317,3 +317,5 @@ Format:
 - 2026-02-23T05:39:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T05:43:40Z | cmd: patch src/gauge_render.c move blood sugar text to centered-below-human location and increase size ~50% using DrawTextUi125 | result: ok
 - 2026-02-23T05:44:20Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:48:10Z | cmd: patch src/gauge_render.c simplify blood sugar text by removing BG prefix and center with scale-3 rendering in center segment; move up about two rows | result: ok
+- 2026-02-23T05:48:50Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
