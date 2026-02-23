@@ -167,3 +167,4 @@ Format:
 - 2026-02-23T02:33:13Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Rename GYRO label and enlarge human-status text" && git push origin main | result: ok (commit 3f8ca6c pushed)
 - 2026-02-23T02:34:59Z | cmd: patch src/gauge_render.c to add BlitPumpBgRegion() and clear center human-status text band each frame before drawing GYRO/POSE/DROP | result: ok
 - 2026-02-23T02:34:59Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T02:34:59Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Fix center status text ghosting by restoring background before redraw" && git push origin main | result: ok (commit b410cf0 pushed)
