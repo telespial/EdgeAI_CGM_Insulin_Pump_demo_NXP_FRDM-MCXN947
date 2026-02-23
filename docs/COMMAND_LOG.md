@@ -292,3 +292,5 @@ Format:
 - 2026-02-23T04:39:59Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T04:41:16Z | cmd: patch src/gauge_render.c change random RPM update timing to random interval 10-30 seconds using RTC decisecond scheduling (with frame fallback) | result: ok
 - 2026-02-23T04:41:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:46:17Z | cmd: patch src/gauge_render.c add zero-hold mode so when RPM enters 0.0 it stays 5-20 seconds before returning to non-zero updates | result: ok
+- 2026-02-23T04:46:57Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

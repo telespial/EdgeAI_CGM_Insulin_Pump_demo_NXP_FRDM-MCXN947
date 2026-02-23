@@ -611,3 +611,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added timed zero behavior to synthetic RPM demo.
+  - when random RPM enters `0.0`, it now holds at zero for a random `5.0..20.0` seconds.
+  - after zero-hold expires, it resumes non-zero random RPM updates with the existing `10.0..30.0` second cadence.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

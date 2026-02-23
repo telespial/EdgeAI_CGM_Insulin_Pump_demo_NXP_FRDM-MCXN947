@@ -129,6 +129,7 @@ static uint32_t gUiRpmRand = 0x73A51C9Du;
 static uint16_t gUiRpmTenths = 0u;
 static uint32_t gUiRpmNextUpdateDs = 0u;
 static bool gUiRpmSchedulePrimed = false;
+static bool gUiRpmZeroHold = false;
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 {
@@ -983,15 +984,26 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
         if ((!gUiRpmSchedulePrimed) || ((int32_t)(now_ds - gUiRpmNextUpdateDs) >= 0))
         {
             uint32_t r = NextUiRand();
-            if ((r % 5u) == 0u)
+            if (gUiRpmZeroHold)
             {
-                gUiRpmTenths = 0u;
+                gUiRpmTenths = (uint16_t)(1u + (r % 250u)); /* 0.1 .. 25.0 */
+                gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
+                gUiRpmZeroHold = false;
             }
             else
             {
-                gUiRpmTenths = (uint16_t)(1u + (r % 250u)); /* 0.1 .. 25.0 */
+                if ((r % 5u) == 0u)
+                {
+                    gUiRpmTenths = 0u;
+                    gUiRpmNextUpdateDs = now_ds + 50u + (r % 151u); /* 5.0 .. 20.0 seconds */
+                    gUiRpmZeroHold = true;
+                }
+                else
+                {
+                    gUiRpmTenths = (uint16_t)(1u + (r % 250u)); /* 0.1 .. 25.0 */
+                    gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
+                }
             }
-            gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
             gUiRpmSchedulePrimed = true;
         }
     }
