@@ -146,3 +146,6 @@ Format:
 - 2026-02-23T02:23:12Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T02:23:12Z | cmd: review docs/COMMAND_LOG.md and docs/PROJECT_STATE.md before state/log append | result: ok
 - 2026-02-23T02:23:12Z | cmd: git status --short --branch; git add src/gauge_render.c docs/COMMAND_LOG.md docs/PROJECT_STATE.md; git commit -m "Improve battery icon readability with thicker centered terminal"; git push origin main | result: ok (commit deffdd5 pushed)
+- 2026-02-23T02:24:27Z | cmd: git status --short --branch; rg -n BATT constants in src/gauge_render.c; date -u | result: ok
+- 2026-02-23T02:24:55Z | cmd: patch src/gauge_render.c (BATT_Y 287 -> 289; move battery down ~10%) | result: ok
+- 2026-02-23T02:24:55Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

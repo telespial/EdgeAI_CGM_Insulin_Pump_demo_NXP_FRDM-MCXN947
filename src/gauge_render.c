@@ -187,7 +187,7 @@ enum
     MID_BOT_CY = 234,
     MID_R = 42,
     BATT_X = 391,
-    BATT_Y = 287,
+    BATT_Y = 289,
     BATT_W = 66,
     BATT_H = 21,
     SCOPE_X = 328,
