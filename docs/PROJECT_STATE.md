@@ -882,3 +882,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed `mg/dL` row being erased by center-area background refresh:
+  - in `DrawHumanOrientationPointer()`, split human-circle background restore into two blits and skipped the glucose text band (`y=220..242`)
+  - preserves one-write-on-value-change behavior for `mg/dL` without center blanking side effects
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

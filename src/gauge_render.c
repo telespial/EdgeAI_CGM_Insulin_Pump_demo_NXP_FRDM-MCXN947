@@ -1181,6 +1181,10 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t cx = MAIN_CX + 2;
     int32_t cy = MAIN_CY - 22;
     int32_t r = MAIN_R - 6;
+    int32_t ring_x0 = cx - r - 8;
+    int32_t ring_y0 = cy - r - 8;
+    int32_t ring_x1 = cx + r + 8;
+    int32_t ring_y1 = cy + r + 8;
     int32_t ball_x = cx;
     int32_t ball_y = cy;
     uint16_t ball_color = RGB565(46, 102, 190); /* medium dark blue when right-side up */
@@ -1222,8 +1226,10 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
         ball_color = RGB565(255, 186, 104); /* light orange when upside down */
     }
 
-    /* Restore the human-circle area before redrawing gauge to prevent pointer trails. */
-    BlitPumpBgRegion(cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8);
+    /* Restore the human-circle area before redrawing gauge to prevent pointer trails,
+     * but do not overwrite the mg/dL row (written only on value changes). */
+    BlitPumpBgRegion(ring_x0, ring_y0, ring_x1, 219);
+    BlitPumpBgRegion(ring_x0, 243, ring_x1, ring_y1);
 
     /* ~14x14 filled circle (line-filled) for the rolling marker (2x larger). */
     DrawLine(ball_x - 2, ball_y - 6, ball_x + 2, ball_y - 6, 1, ball_color);

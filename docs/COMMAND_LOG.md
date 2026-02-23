@@ -379,3 +379,5 @@ Format:
 2026-02-23T05:10:12Z | cmd: patch src/gauge_render.c reduce left-bargraph restore width (x+188->x+170) to prevent mg/dL line erase and add ANOM/WEAR spacing (WEAR y 139->143) | result: ok
 2026-02-23T05:10:12Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:10:24Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Fix mg/dL clipping and add ANOM/WEAR row spacing' && git push origin main | result: ok (c61226f)
+2026-02-23T05:13:05Z | cmd: inspect center refresh path and patch DrawHumanOrientationPointer to exclude mg/dL band from BlitPumpBgRegion restores | result: ok
+2026-02-23T05:13:05Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
