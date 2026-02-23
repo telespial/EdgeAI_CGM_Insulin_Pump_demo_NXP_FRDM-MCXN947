@@ -648,3 +648,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Repositioned motor `mA` row for alignment.
+  - moved left by one character width (`x: 46 -> 34`, -12 px at scale-2).
+  - moved up by roughly two-thirds of a row (`y: 76 -> 71`, -5 px).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
