@@ -355,3 +355,4 @@ Format:
 2026-02-23T05:02:23Z | cmd: apply_patch src/gauge_render.c repurpose left bargraph to FILL%, add low-fill red behavior (<20%), update label text, and wire dynamic draw to reservoir fill state | result: ok
 2026-02-23T05:02:23Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:02:23Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:02:39Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Remove stray ANOM text and drive left bargraph from fill level' && git push origin main | result: ok (36b6887)
