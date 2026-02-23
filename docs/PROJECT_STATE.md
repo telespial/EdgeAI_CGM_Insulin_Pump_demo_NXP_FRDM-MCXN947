@@ -716,3 +716,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Repositioned and enlarged blood sugar indicator.
+  - moved from left side to centered below human figure.
+  - new placement computed from center geometry (`x = MAIN_CX - 0.75*text_width`, `y = MAIN_CY + 56`).
+  - increased text size by ~50% via `DrawTextUi125` while keeping green color.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

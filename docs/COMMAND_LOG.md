@@ -315,3 +315,5 @@ Format:
 - 2026-02-23T05:34:48Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T05:38:20Z | cmd: patch src/gauge_render.c add green blood sugar text on left side of human graphic ("BG 98 mg/dL" at x=124,y=168) | result: ok
 - 2026-02-23T05:39:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:43:40Z | cmd: patch src/gauge_render.c move blood sugar text to centered-below-human location and increase size ~50% using DrawTextUi125 | result: ok
+- 2026-02-23T05:44:20Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
