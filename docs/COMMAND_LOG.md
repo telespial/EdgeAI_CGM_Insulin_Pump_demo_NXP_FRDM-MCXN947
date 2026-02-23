@@ -108,3 +108,8 @@ Format:
 - 2026-02-23T02:07:20Z | cmd: update docs/PROJECT_STATE.md for top-edge Richard Haberkern text | result: ok
 - 2026-02-23T02:07:25Z | cmd: git status --short --branch | result: 3 modified files
 - 2026-02-23T02:07:37Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit && git push origin main | result: ok (efa73f1)
+- 2026-02-23T02:08:08Z | cmd: patch gauge_render.c to move battery label+graphic to lower-right under terminal (BATT_X=408, BATT_Y=298)
+- 2026-02-23T02:08:41Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+- 2026-02-23T02:08:41Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver probe #1)
+- 2026-02-23T02:08:41Z | cmd: update docs/PROJECT_STATE.md for battery lower-right-under-terminal move | result: ok
+- 2026-02-23T02:08:46Z | cmd: git status --short --branch | result: 3 modified files

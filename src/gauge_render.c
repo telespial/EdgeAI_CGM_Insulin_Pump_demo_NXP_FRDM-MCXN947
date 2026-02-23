@@ -186,8 +186,8 @@ enum
     MID_BOT_CX = 76,
     MID_BOT_CY = 234,
     MID_R = 42,
-    BATT_X = 28,
-    BATT_Y = 136,
+    BATT_X = 408,
+    BATT_Y = 298,
     BATT_W = 66,
     BATT_H = 21,
     SCOPE_X = 328,
@@ -1739,7 +1739,7 @@ static void DrawBatteryIndicatorFrame(const gauge_style_preset_t *style)
     par_lcd_s035_fill_rect(BATT_X, BATT_Y, BATT_X + BATT_W, BATT_Y + BATT_H, RGB565(8, 10, 12));
     par_lcd_s035_fill_rect(BATT_X + BATT_W + 1, BATT_Y + 9, BATT_X + BATT_W + 5, BATT_Y + 17, style->palette.text_primary);
     par_lcd_s035_fill_rect(BATT_X + 1, BATT_Y + 1, BATT_X + BATT_W - 1, BATT_Y + BATT_H - 1, RGB565(72, 76, 84));
-    DrawTextUi(BATT_X - 26, BATT_Y + 8, 1, "BATT", style->palette.text_secondary);
+    DrawTextUi(BATT_X + 18, BATT_Y - 8, 1, "BATT", style->palette.text_secondary);
 }
 
 static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8_t soc)
