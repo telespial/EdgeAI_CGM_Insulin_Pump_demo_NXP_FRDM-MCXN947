@@ -431,3 +431,5 @@ Format:
 2026-02-23T05:56:25Z | cmd: replace README.md with detailed project documentation (architecture, runtime semantics, safety note, build/flash, key files) | result: ok
 2026-02-23T05:56:25Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:56:25Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:56:25Z | cmd: git add src/gauge_render.c README.md docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Add transport-aware insulin recommendation and document system in help/README' && git push origin main | result: partial (commit ok: 78feea0; initial push failed DNS lookup)
+2026-02-23T05:56:25Z | cmd: git push origin main | result: ok (78feea0 published)
