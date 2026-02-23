@@ -1198,7 +1198,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t cx = MAIN_CX + 2;
     int32_t cy = MAIN_CY - 22;
     int32_t r = MAIN_R - 6;
-    int32_t tach_r = (r * 8) / 10; /* 80% of ball-circle diameter -> 80% radius. */
+    int32_t tach_r = (r * 88) / 100; /* +10% from previous 80% sizing => 88% radius. */
     int32_t ring_x0 = cx - r - 8;
     int32_t ring_y0 = cy - r - 8;
     int32_t ring_x1 = cx + r + 8;
@@ -1270,8 +1270,8 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     {
         float deg = 135.0f + (float)(i * 5);
         float rad = deg * 0.01745329252f;
-        int32_t x0 = cx + (int32_t)lroundf(cosf(rad) * (float)(tach_r - 10));
-        int32_t y0 = cy + (int32_t)lroundf(sinf(rad) * (float)(tach_r - 10));
+        int32_t x0 = cx + (int32_t)lroundf(cosf(rad) * (float)(tach_r - 8));
+        int32_t y0 = cy + (int32_t)lroundf(sinf(rad) * (float)(tach_r - 8));
         int32_t x1 = cx + (int32_t)lroundf(cosf(rad) * (float)tach_r);
         int32_t y1 = cy + (int32_t)lroundf(sinf(rad) * (float)tach_r);
         uint16_t on_color;
@@ -1294,7 +1294,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
             off_color = RGB565(72, 20, 20);
         }
         draw_color = (i < lit_segments) ? on_color : off_color;
-        DrawLine(x0, y0, x1, y1, 4, draw_color);
+        DrawLine(x0, y0, x1, y1, 3, draw_color);
     }
 
     /* ~14x14 filled circle (line-filled) for the rolling marker (2x larger). */

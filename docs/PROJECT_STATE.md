@@ -922,3 +922,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Refined center tach arc appearance:
+  - increased arc diameter by 10% over prior setting (radius factor `0.80 -> 0.88` of ball-circle radius)
+  - sharpened bars by reducing line thickness (`4 -> 3`) and tightening radial span (`-10 -> -8`)
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
