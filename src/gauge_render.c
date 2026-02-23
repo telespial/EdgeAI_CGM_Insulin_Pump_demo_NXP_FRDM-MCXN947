@@ -149,6 +149,8 @@ static float gActivityScoreFilt = 0.0f;
 static uint8_t gActivityPct = 0u;
 static uint8_t gActivityStage = 0u;
 static float gActivityBaroRateHpaS = 0.0f;
+static uint8_t gTransportMode = 0u;
+static uint8_t gTransportConfidencePct = 0u;
 
 enum
 {
@@ -157,6 +159,16 @@ enum
     ACTIVITY_MODERATE = 2,
     ACTIVITY_ACTIVE = 3,
     ACTIVITY_HEAVY = 4,
+};
+
+enum
+{
+    TRANSPORT_ON_FOOT = 0,
+    TRANSPORT_SKATE = 1,
+    TRANSPORT_SCOOTER = 2,
+    TRANSPORT_BIKE = 3,
+    TRANSPORT_CAR = 4,
+    TRANSPORT_AIR = 5,
 };
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
@@ -293,6 +305,25 @@ static uint16_t ActivityColor(const gauge_style_preset_t *style, uint8_t stage)
     return style->palette.accent_green;
 }
 
+static const char *TransportModeText(uint8_t mode)
+{
+    switch (mode)
+    {
+        case TRANSPORT_SKATE:
+            return "SKATE";
+        case TRANSPORT_SCOOTER:
+            return "SCOOT";
+        case TRANSPORT_BIKE:
+            return "BIKE";
+        case TRANSPORT_CAR:
+            return "CAR";
+        case TRANSPORT_AIR:
+            return "AIR";
+        default:
+            return "FOOT";
+    }
+}
+
 static void UpdateActivityModel(void)
 {
     uint32_t now_ds = UiNowDs();
@@ -304,6 +335,9 @@ static void UpdateActivityModel(void)
     float baro_rate_hpa_s = 0.0f;
     float baro_norm;
     float score;
+    float effort_scale = 1.0f;
+    uint8_t transport_detected = TRANSPORT_ON_FOOT;
+    uint8_t transport_conf = 65u;
 
     if (!gActivityModelPrimed)
     {
@@ -359,11 +393,67 @@ static void UpdateActivityModel(void)
     gActivityBaroRateHpaS = baro_rate_hpa_s;
     baro_norm = ClampF32(fabsf(baro_rate_hpa_s) / 0.10f, 0.0f, 1.0f);
 
+    /* Automatic transport-mode estimate (no user setting required). */
+    if ((fabsf(baro_rate_hpa_s) > 0.18f) && (gyro_mag_dps < 35.0f) && (accel_dyn_mg < 180.0f))
+    {
+        transport_detected = TRANSPORT_AIR;
+        transport_conf = 84u;
+    }
+    else if ((accel_dyn_mg < 95.0f) && (gyro_mag_dps < 28.0f) && (baro_norm < 0.40f))
+    {
+        transport_detected = TRANSPORT_CAR;
+        transport_conf = 75u;
+    }
+    else if ((accel_dyn_mg > 220.0f) && (gyro_mag_dps > 90.0f))
+    {
+        transport_detected = TRANSPORT_BIKE;
+        transport_conf = 76u;
+    }
+    else if ((accel_dyn_mg > 170.0f) && (gyro_mag_dps > 60.0f))
+    {
+        transport_detected = TRANSPORT_SCOOTER;
+        transport_conf = 68u;
+    }
+    else if ((accel_dyn_mg > 125.0f) && (gyro_mag_dps > 45.0f))
+    {
+        transport_detected = TRANSPORT_SKATE;
+        transport_conf = 62u;
+    }
+    else
+    {
+        transport_detected = TRANSPORT_ON_FOOT;
+        transport_conf = 72u;
+    }
+
+    switch (transport_detected)
+    {
+        case TRANSPORT_AIR:
+            effort_scale = 0.42f;
+            break;
+        case TRANSPORT_CAR:
+            effort_scale = 0.55f;
+            break;
+        case TRANSPORT_BIKE:
+            effort_scale = 0.84f;
+            break;
+        case TRANSPORT_SCOOTER:
+            effort_scale = 0.78f;
+            break;
+        case TRANSPORT_SKATE:
+            effort_scale = 0.74f;
+            break;
+        default:
+            effort_scale = 1.00f;
+            break;
+    }
+
     score = (0.52f * accel_norm) + (0.33f * gyro_norm) + (0.15f * baro_norm);
-    score = ClampF32(score, 0.0f, 1.0f);
+    score = ClampF32(score * effort_scale, 0.0f, 1.0f);
     gActivityScoreFilt = (gActivityScoreFilt * 0.78f) + (score * 0.22f);
     gActivityPct = (uint8_t)(gActivityScoreFilt * 100.0f + 0.5f);
     gActivityStage = ActivityStageFromPct(gActivityPct);
+    gTransportMode = transport_detected;
+    gTransportConfidencePct = transport_conf;
 
     gActivityPrevDs = now_ds;
     gActivityPrevBaroDhpa = gBaroDhpa;
@@ -2025,6 +2115,7 @@ static void BuildAnomalyReason(const power_sample_t *sample, char *out, size_t o
 {
     const char *baro_state = "FLAT";
     const char *motion_state = ActivityStageText(gActivityStage);
+    const char *transport_state = TransportModeText(gTransportMode);
     (void)sample;
 
     if (gBaroValid)
@@ -2038,7 +2129,7 @@ static void BuildAnomalyReason(const power_sample_t *sample, char *out, size_t o
             baro_state = "UP";
         }
     }
-    snprintf(out, out_len, "%s %s %s", ActivityCodeText(gActivityStage), motion_state, baro_state);
+    snprintf(out, out_len, "%s %s %s %s", ActivityCodeText(gActivityStage), motion_state, transport_state, baro_state);
 }
 
 
@@ -2177,6 +2268,7 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     const char *sys_text = ai_enabled ? ActivityCodeText(gActivityStage) : "OFF";
     const char *anom_text = AnomModeText(gAnomMode, gAnomTraining);
     uint16_t anom_color = AnomLevelColor(gAnomOverall);
+    const char *transport_text = TransportModeText(gTransportMode);
     (void)sample;
 
     if (gActivityStage >= ACTIVITY_HEAVY)
@@ -2241,7 +2333,10 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     FormatDewAltCompact(line, sizeof(line));
     DrawTerminalLine(TERM_Y + 122, line, RGB565(176, 218, 238));
 
-    snprintf(line, sizeof(line), "ACT %3u%% %s %s", (unsigned int)gActivityPct, ActivityCodeText(gActivityStage), anom_text);
+    snprintf(line, sizeof(line), "TRN %s %2u ACT %3u %s", transport_text,
+             (unsigned int)gTransportConfidencePct,
+             (unsigned int)gActivityPct,
+             anom_text);
     DrawTerminalLine(TERM_Y + 138, line, (gActivityStage >= ACTIVITY_ACTIVE) ? ActivityColor(style, gActivityStage) : anom_color);
 
     if (gHelpVisible)

@@ -964,3 +964,19 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Implemented automatic transport-mode distinction to separate human effort from vehicle motion:
+  - added auto classifier outputs: `FOOT`, `SKATE`, `SCOOT`, `BIKE`, `CAR`, `AIR`
+  - classifier uses fused accel dynamics, gyro magnitude, and barometric pressure-rate trend
+  - added transport confidence output (`gTransportConfidencePct`)
+- Change: Human activity scoring is now transport-aware:
+  - vehicle-like modes (`CAR`, `AIR`) downscale effort contribution to avoid vibration-driven false high activity
+  - active personal mobility modes (`BIKE`, `SCOOT`, `SKATE`) apply lighter downscaling to preserve real rider effort
+- Change: Terminal now shows auto transport context and confidence inline with activity (`TRN ... ACT ...`).
+- Operation mode:
+  - fully automatic by default; no user setting required for this behavior.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

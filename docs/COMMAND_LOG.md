@@ -414,3 +414,8 @@ Format:
 2026-02-23T05:38:39Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:38:39Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:38:39Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Add barometric scope trace and fix center ball trail artifacts' && git push origin main | result: ok (71d16c5)
+2026-02-23T05:44:53Z | cmd: rg/sed inspect activity model + terminal render paths in src/gauge_render.c for auto transport integration points | result: ok
+2026-02-23T05:44:53Z | cmd: apply_patch src/gauge_render.c add automatic transport classifier (FOOT/SKATE/SCOOTER/BIKE/CAR/AIR), transport confidence, and transport-aware effort scaling within UpdateActivityModel() | result: ok
+2026-02-23T05:44:53Z | cmd: apply_patch src/gauge_render.c expose transport mode in anomaly detail and terminal row (TRN + confidence + ACT) while retaining automatic operation (no setting required) | result: ok
+2026-02-23T05:44:53Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:44:53Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
