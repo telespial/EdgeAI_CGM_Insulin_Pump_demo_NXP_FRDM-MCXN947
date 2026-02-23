@@ -636,3 +636,4 @@ Format:
 2026-02-23T19:34:20Z | cmd: git add ... && git commit -m 'Promote R3 golden/failsafe baseline and sync project docs' && git push origin main | result: ok (067e438)
 2026-02-23T19:34:20Z | cmd: git tag -f GOLDEN-2026-02-23-R3 067e438 && git tag -f FAILSAFE-2026-02-23-R3 067e438 && git push origin GOLDEN-2026-02-23-R3 FAILSAFE-2026-02-23-R3 | result: ok
 2026-02-23T19:34:20Z | cmd: append docs/PROJECT_STATE.md with commit/tag publication entry | result: ok
+2026-02-23T19:34:44Z | cmd: git add docs/COMMAND_LOG.md docs/PROJECT_STATE.md && git commit -m 'Record R3 published commit and restore tags in project state/log' && git push origin main | result: ok (170bfa6)
