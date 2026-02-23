@@ -394,3 +394,5 @@ Format:
 2026-02-23T05:23:14Z | cmd: apply_patch src/gauge_render.c increase tach diameter by 10% and sharpen bars (reduce thickness from 4 to 3, tighten radial span) | result: ok
 2026-02-23T05:23:14Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:23:26Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Increase tach diameter 10 percent and sharpen bars' && git push origin main | result: ok (7c535a3)
+2026-02-23T05:24:33Z | cmd: apply_patch src/gauge_render.c increase tach diameter additional 10% (radius factor 88->97) | result: ok
+2026-02-23T05:24:33Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)

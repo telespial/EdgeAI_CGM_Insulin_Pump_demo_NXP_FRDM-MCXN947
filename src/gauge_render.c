@@ -1198,7 +1198,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t cx = MAIN_CX + 2;
     int32_t cy = MAIN_CY - 22;
     int32_t r = MAIN_R - 6;
-    int32_t tach_r = (r * 88) / 100; /* +10% from previous 80% sizing => 88% radius. */
+    int32_t tach_r = (r * 97) / 100; /* +10% from previous 88% sizing => ~97% radius. */
     int32_t ring_x0 = cx - r - 8;
     int32_t ring_y0 = cy - r - 8;
     int32_t ring_x1 = cx + r + 8;
