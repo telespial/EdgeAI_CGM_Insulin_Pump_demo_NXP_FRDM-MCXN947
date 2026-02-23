@@ -2055,7 +2055,7 @@ static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_
     (void)profile;
 
     DrawSpaceboxBackground();
-    DrawTextUi(2, 12, 1, "(c)RICHARD HABERKERN", style->palette.text_secondary);
+    DrawTextUi(2, 0, 1, "(c)RICHARD HABERKERN", style->palette.text_secondary);
 
     DrawLeftBargraphFrame(style);
     DrawLine(0, BAR_Y0, 26, BAR_Y0, 1, style->palette.text_primary);
