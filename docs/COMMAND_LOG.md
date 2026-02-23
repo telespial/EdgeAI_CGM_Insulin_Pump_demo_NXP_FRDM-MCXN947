@@ -208,3 +208,4 @@ Format:
 - 2026-02-23T03:11:48Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Re-reference orientation pointer for screen-facing posture" && git push origin main | result: ok (commit 9fa1e68 pushed)
 - 2026-02-23T03:12:55Z | cmd: patch src/gauge_render.c add +180deg orientation phase offset after atan2(-Y,Z) and wrap to [0,360) | result: ok
 - 2026-02-23T03:12:55Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T03:13:30Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Add 180-degree phase correction for orientation pointer" && git push origin main | result: ok (commit 39f3b76 pushed)
