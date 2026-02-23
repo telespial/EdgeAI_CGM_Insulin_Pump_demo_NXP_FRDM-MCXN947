@@ -473,3 +473,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed bottom-circle accel-ball clipping/flicker in center area.
+  - removed legacy center-region background blit (`BlitPumpBgRegion(172, 226, 322, 267)`) that overlapped the lower arc of the orientation circle.
+  - kept pump-text region-only background restore active for text artifact cleanup.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

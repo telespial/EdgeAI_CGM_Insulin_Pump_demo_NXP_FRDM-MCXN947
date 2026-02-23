@@ -237,3 +237,8 @@ Format:
 - 2026-02-23T03:39:26Z | cmd: patch src/gauge_render.c replace thickened pseudo-scaling with true scale=2 DrawTextUi for PUMP/RATE/FILL and remove DrawTextUi150 helper | result: ok
 - 2026-02-23T03:39:26Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:39:56Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Use true scaled pump text rendering for readability" && git push origin main | result: ok (commit b9cb531 pushed)
+- 2026-02-23T03:41:13Z | cmd: patch src/gauge_render.c restore pump text background region each frame (BlitPumpBgRegion 30,228..240,300) to eliminate flashing character artifacts | result: ok
+- 2026-02-23T03:41:13Z | cmd: patch src/gauge_render.c keep PUMP/RATE/FILL on true scale=2 DrawTextUi path (readability) | result: ok
+- 2026-02-23T03:41:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T03:42:13Z | cmd: patch src/gauge_render.c remove legacy center-area blit that clipped bottom of accel-ball path; keep only pump-text-region blit | result: ok
+- 2026-02-23T03:42:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

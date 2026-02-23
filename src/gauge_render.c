@@ -947,6 +947,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     DrawTextUi(22, 90, 1, line, sev);
 
     /* Pump area (bottom-left icon). */
+    BlitPumpBgRegion(30, 228, 240, 300);
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
     DrawTextUi(34, 232, 2, line, pump_color);
     snprintf(line, sizeof(line), "RATE:%3u mL/h", (unsigned int)(sample->power_mW / 10u));
@@ -954,8 +955,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
     DrawTextUi(34, 264, 2, line, pump_color);
 
-    /* Human status text removed per latest UI direction. */
-    BlitPumpBgRegion(172, 226, 322, 267);
+    /* Human status text is no longer drawn here; keep center area untouched. */
 }
 
 static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
