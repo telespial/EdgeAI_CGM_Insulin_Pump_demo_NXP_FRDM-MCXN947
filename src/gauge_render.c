@@ -690,15 +690,20 @@ static void DrawTextUiCrisp(int32_t x, int32_t y, int32_t scale, const char *tex
 
 static void DrawTextUi150(int32_t x, int32_t y, const char *text, uint16_t fg)
 {
-    /* Approximate ~1.8x by thickening 1x glyphs in X/Y while keeping crisp edges. */
+    /* Approximate ~2.25x by thickening 1x glyphs in X/Y while keeping crisp edges. */
     edgeai_text5x7_draw_scaled(x + 1, y + 1, 1, text, RGB565(0, 0, 0));
     edgeai_text5x7_draw_scaled(x + 2, y + 1, 1, text, RGB565(0, 0, 0));
+    edgeai_text5x7_draw_scaled(x + 3, y + 1, 1, text, RGB565(0, 0, 0));
     edgeai_text5x7_draw_scaled(x + 1, y + 2, 1, text, RGB565(0, 0, 0));
+    edgeai_text5x7_draw_scaled(x + 2, y + 2, 1, text, RGB565(0, 0, 0));
     edgeai_text5x7_draw_scaled(x, y, 1, text, fg);
     edgeai_text5x7_draw_scaled(x + 1, y, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x + 2, y, 1, text, fg);
     edgeai_text5x7_draw_scaled(x, y + 1, 1, text, fg);
     edgeai_text5x7_draw_scaled(x + 1, y + 1, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x + 2, y + 1, 1, text, fg);
     edgeai_text5x7_draw_scaled(x, y + 2, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x + 1, y + 2, 1, text, fg);
 }
 
 static void BlitPumpBgRegion(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
