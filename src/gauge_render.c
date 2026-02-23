@@ -972,7 +972,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 {
     int32_t cx = MAIN_CX;
     int32_t cy = MAIN_CY;
-    int32_t r = 42;
+    int32_t r = MAIN_R - 6;
     float angle_deg = 0.0f;
     float angle_rad;
     int32_t tip_x;
@@ -981,6 +981,10 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t hy1;
     int32_t hx2;
     int32_t hy2;
+    int32_t bx1;
+    int32_t by1;
+    int32_t bx2;
+    int32_t by2;
     uint16_t ring_color = RGB565(94, 200, 244);
     uint16_t ptr_color = style->palette.text_primary;
     uint16_t i;
@@ -1005,26 +1009,31 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     for (i = 0u; i < 12u; i++)
     {
         float tick_rad = ((float)i * 30.0f) * (3.14159265f / 180.0f);
-        int32_t x0 = cx + (int32_t)(cosf(tick_rad) * (float)(r - 4));
-        int32_t y0 = cy - (int32_t)(sinf(tick_rad) * (float)(r - 4));
+        int32_t x0 = cx + (int32_t)(cosf(tick_rad) * (float)(r - 8));
+        int32_t y0 = cy - (int32_t)(sinf(tick_rad) * (float)(r - 8));
         int32_t x1 = cx + (int32_t)(cosf(tick_rad) * (float)r);
         int32_t y1 = cy - (int32_t)(sinf(tick_rad) * (float)r);
         DrawLine(x0, y0, x1, y1, 1, ring_color);
     }
 
     angle_rad = angle_deg * (3.14159265f / 180.0f);
-    tip_x = cx + (int32_t)(cosf(angle_rad) * (float)(r - 8));
-    tip_y = cy - (int32_t)(sinf(angle_rad) * (float)(r - 8));
-    DrawLine(cx, cy, tip_x, tip_y, 2, ptr_color);
+    tip_x = cx + (int32_t)(cosf(angle_rad) * (float)r);
+    tip_y = cy - (int32_t)(sinf(angle_rad) * (float)r);
 
-    /* Arrow head. */
-    hx1 = tip_x + (int32_t)(cosf(angle_rad + 2.6f) * 7.0f);
-    hy1 = tip_y - (int32_t)(sinf(angle_rad + 2.6f) * 7.0f);
-    hx2 = tip_x + (int32_t)(cosf(angle_rad - 2.6f) * 7.0f);
-    hy2 = tip_y - (int32_t)(sinf(angle_rad - 2.6f) * 7.0f);
+    /* Head-only pointer marker (no center needle). */
+    hx1 = tip_x + (int32_t)(cosf(angle_rad + 2.55f) * 12.0f);
+    hy1 = tip_y - (int32_t)(sinf(angle_rad + 2.55f) * 12.0f);
+    hx2 = tip_x + (int32_t)(cosf(angle_rad - 2.55f) * 12.0f);
+    hy2 = tip_y - (int32_t)(sinf(angle_rad - 2.55f) * 12.0f);
+    bx1 = tip_x + (int32_t)(cosf(angle_rad + 3.14159265f) * 5.0f);
+    by1 = tip_y - (int32_t)(sinf(angle_rad + 3.14159265f) * 5.0f);
+    bx2 = tip_x + (int32_t)(cosf(angle_rad + 3.14159265f) * 9.0f);
+    by2 = tip_y - (int32_t)(sinf(angle_rad + 3.14159265f) * 9.0f);
     DrawLine(tip_x, tip_y, hx1, hy1, 2, ptr_color);
     DrawLine(tip_x, tip_y, hx2, hy2, 2, ptr_color);
-    par_lcd_s035_draw_filled_circle(cx, cy, 2, ptr_color);
+    DrawLine(hx1, hy1, bx2, by2, 2, ptr_color);
+    DrawLine(hx2, hy2, bx2, by2, 2, ptr_color);
+    DrawLine(bx1, by1, bx2, by2, 2, ptr_color);
 }
 
 static void DrawRecordConfirmOverlay(void)

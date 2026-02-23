@@ -306,3 +306,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Refined orientation gauge visuals to match target style:
+  - enlarged gauge diameter to align with the center dial graphic (`r = MAIN_R - 6`)
+  - replaced needle-style pointer with a head-only arrow marker that points to tick marks
+  - kept 360-degree rotation and upside-down red-state behavior
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
