@@ -227,3 +227,4 @@ Format:
 - 2026-02-23T03:32:17Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Make pump overlay text yellow and 50 percent larger" && git push origin main | result: ok (commit 8c4f7d1 pushed)
 - 2026-02-23T03:34:45Z | cmd: move pump overlay text block down 20px in src/gauge_render.c (PUMP/RATE/FILL y: 218/236/254 -> 238/256/274) | result: ok
 - 2026-02-23T03:34:45Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T03:35:12Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Move pump overlay text block down toward bottom-left strip" && git push origin main | result: ok (commit 65a790a pushed)
