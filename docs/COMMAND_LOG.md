@@ -448,3 +448,4 @@ Format:
 2026-02-23T14:38:14Z | cmd: read root docs /docs/START_HERE.md /docs/PROJECT_STATE.md /docs/OPS_RUNBOOK.md and inspect DrawSettingsPopup() in src/gauge_render.c | result: ok
 2026-02-23T14:38:14Z | cmd: apply_patch src/gauge_render.c change AI settings button labels from 'AI: MCU'/'AI: NPU' to 'MCU'/'NPU' (row label remains AI) | result: ok
 2026-02-23T14:38:14Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T14:38:54Z | cmd: git status --short && git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Format AI settings row as AI: MCU NPU' && git push origin main | result: ok (06c945d)
