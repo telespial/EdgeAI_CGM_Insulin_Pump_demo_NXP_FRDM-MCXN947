@@ -296,3 +296,5 @@ Format:
 - 2026-02-23T04:46:57Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T04:54:12Z | cmd: patch src/gauge_render.c expand RPM random range to 0.1..49.0 (includes 21 and 49) and replace I row with speed-tracked value-only current in 0-95mA | result: ok
 - 2026-02-23T04:54:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:00:12Z | cmd: patch src/gauge_render.c move mA row right by 4 chars (x 22->46) and increase size ~50% via DrawTextUi125 | result: ok
+- 2026-02-23T05:00:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
