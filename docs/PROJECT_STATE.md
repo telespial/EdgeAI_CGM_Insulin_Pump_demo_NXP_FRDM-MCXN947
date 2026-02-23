@@ -687,3 +687,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Repositioned `ANOM` and `WEAR` rows.
+  - both rows moved left by one character width (`x: 22 -> 10`).
+  - both rows moved down by 1.5 scale-2 rows (`+21 px`):
+    - `ANOM y: 102 -> 123`
+    - `WEAR y: 116 -> 137`
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
