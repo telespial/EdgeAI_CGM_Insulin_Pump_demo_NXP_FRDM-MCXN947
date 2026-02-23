@@ -941,6 +941,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     bool drop_risk = (sample->anomaly_score_pct >= 80u) || (gAnomOverall >= 3u);
     int16_t gx = gGyroValid ? gGyroXdps : 0;
     int16_t gy = gGyroValid ? gGyroYdps : 0;
+    int16_t gz = gGyroValid ? gGyroZdps : 0;
     (void)ai_enabled;
 
     /* Motor area (top-left icon). */
@@ -961,7 +962,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Human status area below figure, above elapsed-time row. */
     BlitPumpBgRegion(172, 226, 322, 267);
-    snprintf(line, sizeof(line), "GYRO X:%4d Y:%4d", (int)gx, (int)gy);
+    snprintf(line, sizeof(line), "GYRO X:%3d Y:%3d Z:%3d", (int)gx, (int)gy, (int)gz);
     DrawTextUi125(176, 228, line, gGyroValid ? okay : warn);
     DrawTextUi125(176, 242, inverted ? "POSE: INVERTED" : "POSE: NORMAL", inverted ? warn : okay);
     DrawTextUi125(176, 256, drop_risk ? "DROP: POSSIBLE" : "DROP: NONE", drop_risk ? fault : okay);
