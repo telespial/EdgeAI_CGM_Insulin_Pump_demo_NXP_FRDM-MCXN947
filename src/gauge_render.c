@@ -1736,12 +1736,18 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
 
 static void DrawBatteryIndicatorFrame(const gauge_style_preset_t *style)
 {
-    int32_t nub_h = 10;
-    int32_t nub_y0 = (BATT_Y + (BATT_H / 2)) - (nub_h / 2);
+    int32_t nub_h = 9;
     int32_t text_x = BATT_X - edgeai_text5x7_width(1, "BATT") - 2;
     int32_t text_y = BATT_Y + ((BATT_H - 7) / 2);
+    int32_t nub_y0 = text_y - 1;
+    int32_t nub_x0 = BATT_X + BATT_W + 1;
+    int32_t nub_x1 = BATT_X + BATT_W + 7;
     par_lcd_s035_fill_rect(BATT_X, BATT_Y, BATT_X + BATT_W, BATT_Y + BATT_H, RGB565(8, 10, 12));
-    par_lcd_s035_fill_rect(BATT_X + BATT_W + 1, nub_y0, BATT_X + BATT_W + 5, nub_y0 + nub_h, style->palette.text_primary);
+    /* Right-side + terminal in a white box aligned with BATT text. */
+    par_lcd_s035_fill_rect(nub_x0, nub_y0, nub_x1, nub_y0 + nub_h, RGB565(245, 245, 245));
+    par_lcd_s035_fill_rect(nub_x0 + 1, nub_y0 + 1, nub_x1 - 1, nub_y0 + nub_h - 1, RGB565(20, 22, 26));
+    DrawLine(nub_x0 + 3, nub_y0 + 2, nub_x0 + 3, nub_y0 + nub_h - 2, 1, RGB565(245, 245, 245));
+    DrawLine(nub_x0 + 1, nub_y0 + (nub_h / 2), nub_x1 - 1, nub_y0 + (nub_h / 2), 1, RGB565(245, 245, 245));
     par_lcd_s035_fill_rect(BATT_X + 1, BATT_Y + 1, BATT_X + BATT_W - 1, BATT_Y + BATT_H - 1, RGB565(72, 76, 84));
     DrawTextUi(text_x, text_y, 1, "BATT", style->palette.text_secondary);
 }
