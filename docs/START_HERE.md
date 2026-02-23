@@ -8,3 +8,7 @@ Read these in order:
 3. docs/HARDWARE_SETUP.md (if present)
 
 Then use the scripts in `scripts/`.
+
+Current docs baseline:
+- Settings row format: `AI: MCU NPU`.
+- Latest runtime/flash history: `docs/PROJECT_STATE.md` and `docs/COMMAND_LOG.md`.

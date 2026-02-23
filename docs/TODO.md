@@ -2,6 +2,11 @@
 
 Last updated: 2026-02-23
 
+## Documentation Housekeeping
+- [x] Sync README/STATUS with current baseline.
+- [x] Sync `docs/START_HERE.md`, `docs/OPS_RUNBOOK.md`, and `docs/HARDWARE_SETUP.md`.
+- [x] Record documentation sync in project state and command log.
+
 ## Priority 0 (LCD First Slice)
 - [x] Create first-pass LCD layout with same background image.
 - [x] Keep `NXP EDGEAI` and elapsed-time positions stable.

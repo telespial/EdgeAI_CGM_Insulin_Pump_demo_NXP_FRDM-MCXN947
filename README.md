@@ -10,6 +10,12 @@ This project renders a full infusion-pump cockpit UI on the LCD, streams live se
 - glucose trend simulation
 - insulin dose recommendation (demo logic)
 
+## Documentation Sync (2026-02-23)
+
+- Core docs were synchronized to the current medical-demo baseline.
+- Settings UI documentation now reflects `AI: MCU/NPU` row format.
+- Build/flash flow remains project-local and unchanged.
+
 ## Safety Notice
 
 This repository is a development/demo system only. It is **not** a certified medical device and must not be used for real therapy decisions.

@@ -12,3 +12,6 @@ Last updated: 2026-02-23
 
 ## Probe Selection
 - Prefer probe index `#1`.
+
+## Verified Probe
+- Last validated LinkServer probe: `#1` (`UYLKOJI11H2B3`)

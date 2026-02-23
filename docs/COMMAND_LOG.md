@@ -454,3 +454,12 @@ Format:
 2026-02-23T14:41:37Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T14:41:37Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer runner, target MCXN947:FRDM-MCXN947, probe #1 UYLKOJI11H2B3)
 2026-02-23T14:43:21Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer runner, target MCXN947:FRDM-MCXN947, probe #1 UYLKOJI11H2B3)
+2026-02-23T14:49:19Z | cmd: scan docs set via rg/sed (README.md STATUS.md docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md docs/PROJECT_STATE.md) for documentation sync | result: ok
+2026-02-23T14:49:19Z | cmd: apply_patch README.md add Documentation Sync section | result: ok
+2026-02-23T14:49:19Z | cmd: apply_patch STATUS.md add documentation sync status line | result: ok
+2026-02-23T14:49:19Z | cmd: apply_patch docs/START_HERE.md add current docs baseline notes | result: ok
+2026-02-23T14:49:19Z | cmd: apply_patch docs/OPS_RUNBOOK.md add documentation hygiene section | result: ok
+2026-02-23T14:49:19Z | cmd: apply_patch docs/HARDWARE_SETUP.md add verified probe line | result: ok
+2026-02-23T14:49:19Z | cmd: apply_patch docs/TODO.md add documentation housekeeping checklist | result: ok
+2026-02-23T14:49:19Z | cmd: apply_patch docs/PROJECT_STATE.md append docs synchronization update | result: ok
+2026-02-23T14:49:19Z | cmd: git status --short | result: ok

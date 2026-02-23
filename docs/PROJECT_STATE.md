@@ -1035,6 +1035,13 @@ Last updated: 2026-02-23
 - Result: ok
 
 ## Update 2026-02-23
+- Change: Synchronized all project docs to current medical-demo baseline.
+  - updated `README.md` and `STATUS.md`
+  - updated `docs/START_HERE.md`, `docs/OPS_RUNBOOK.md`, `docs/HARDWARE_SETUP.md`, and `docs/TODO.md`
+  - aligned docs with settings UI wording `AI: MCU/NPU`
+- Result: ok
+
+## Update 2026-02-23
 - Change: Flashed current medical demo firmware image to FRDM-MCXN947.
 - Verification:
   - `./tools/flash_frdmmcxn947.sh` PASS

@@ -29,3 +29,9 @@ Last updated: 2026-02-23
 ## Probe Check
 
 `/usr/local/LinkServer/LinkServer probe '#1' dapinfo`
+
+## Documentation Hygiene
+
+- After any code/config/build/flash action, update:
+  - `docs/PROJECT_STATE.md`
+  - `docs/COMMAND_LOG.md`
