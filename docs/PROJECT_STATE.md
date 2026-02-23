@@ -863,3 +863,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Restored lower-left temperature `C/F` text in blue box and increased text size ~20% without changing fill-driven bargraph behavior:
+  - left bargraph remains wired to `FILL%` level and low-fill red threshold
+  - bottom-left label text switched back to `T xx.xC xxx.xF`
+  - added `DrawTextUi120()` helper for ~20% larger temp label rendering
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

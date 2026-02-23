@@ -725,6 +725,14 @@ static void DrawTextUiCrisp(int32_t x, int32_t y, int32_t scale, const char *tex
     edgeai_text5x7_draw_scaled(x, y, scale, text, fg);
 }
 
+static void DrawTextUi120(int32_t x, int32_t y, const char *text, uint16_t fg)
+{
+    /* Approximate +20% perceived size for scale-1 text using a light expansion pass. */
+    edgeai_text5x7_draw_scaled(x + 1, y + 1, 1, text, RGB565(0, 0, 0));
+    edgeai_text5x7_draw_scaled(x, y, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x + 1, y, 1, text, fg);
+}
+
 static __attribute__((unused)) void DrawTextUi125(int32_t x, int32_t y, const char *text, uint16_t fg)
 {
     /* Approximate ~1.56x by expanding two pixels in X and Y. */
@@ -2271,12 +2279,12 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
         DrawLine(inner_x0, y, inner_x1, y, 1, RGB565(70, 120, 86));
     }
 
-    label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, "FILL ---%") + edgeai_text5x7_width(label_scale, " ");
+    label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, "T --.-C --.-F") + edgeai_text5x7_width(label_scale, "  ");
     par_lcd_s035_fill_rect(BAR_X0, label_y - 2, label_x1, label_y + 11, TRACE_AX_COLOR);
-    DrawTextUi(BAR_X0 + 2, label_y, label_scale, "FILL ---%", RGB565(4, 18, 26));
+    DrawTextUi120(BAR_X0 + 2, label_y, "T --.-C --.-F", RGB565(4, 18, 26));
 }
 
-static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t fill_pct)
+static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t fill_pct, int16_t temp_c10)
 {
     int32_t i;
     int32_t level = ClampI32(((int32_t)fill_pct * BAR_SEGMENTS) / 100, 0, BAR_SEGMENTS);
@@ -2355,10 +2363,21 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t f
         par_lcd_s035_fill_rect(inner_x0, seg_top, inner_x1, seg_bot, color);
     }
 
-    snprintf(line, sizeof(line), "FILL %3u%%", (unsigned int)fill_pct);
-    label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, line) + edgeai_text5x7_width(label_scale, " ");
+    {
+        int16_t temp_f10 = TempC10ToF10(temp_c10);
+        int16_t c_abs = (temp_c10 < 0) ? (int16_t)-temp_c10 : temp_c10;
+        int16_t f_abs = (temp_f10 < 0) ? (int16_t)-temp_f10 : temp_f10;
+        snprintf(line,
+                 sizeof(line),
+                 "T %2d.%1dC %3d.%1dF",
+                 (int)(c_abs / 10),
+                 (int)(c_abs % 10),
+                 (int)(f_abs / 10),
+                 (int)(f_abs % 10));
+    }
+    label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, line) + edgeai_text5x7_width(label_scale, "  ");
     par_lcd_s035_fill_rect(BAR_X0, label_y - 2, label_x1, label_y + 11, TRACE_AX_COLOR);
-    DrawTextUi(BAR_X0 + 2, label_y, label_scale, line, low_fill ? style->palette.accent_red : RGB565(4, 18, 26));
+    DrawTextUi120(BAR_X0 + 2, label_y, line, low_fill ? style->palette.accent_red : RGB565(4, 18, 26));
 
     gPrevBarLevel = (uint8_t)level;
     gPrevFillPct = fill_pct;
@@ -2763,7 +2782,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
 
     DrawTerminalDynamic(style, sample, cpu_pct, ai_enabled);
     DrawMedicalOverlayData(style, sample, ai_enabled);
-    DrawLeftBargraphDynamic(style, gUiReservoirPct);
+    DrawLeftBargraphDynamic(style, gUiReservoirPct, DisplayTempC10(sample));
     DrawGlucoseIndicator();
     DrawAiSideButtons();
     if (gSettingsVisible)
