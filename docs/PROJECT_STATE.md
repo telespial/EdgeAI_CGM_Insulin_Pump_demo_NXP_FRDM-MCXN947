@@ -565,3 +565,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS after helper annotation fix.
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`).
 - Result: ok
+
+## Update 2026-02-23
+- Change: Improved `RPM` headline readability and horizontal placement.
+  - moved right by two character cells at scale-2 (`x: 22 -> 46`, +24 px).
+  - changed renderer from crisp single-pass to UI shadow style at scale-2 (`DrawTextUi`) for clearer contrast on the motor background.
+  - added motor-region background restore (`BlitPumpBgRegion(20,12,220,102)`) before dynamic motor text draw to avoid stale glyph remnants after repositioning.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

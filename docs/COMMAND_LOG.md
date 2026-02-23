@@ -276,3 +276,7 @@ Format:
 - 2026-02-23T04:13:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: fail (compile error: DrawTextUi125 now unused under -Werror)
 - 2026-02-23T04:14:09Z | cmd: patch src/gauge_render.c mark DrawTextUi125 helper as __attribute__((unused)) after RPM renderer switch | result: ok
 - 2026-02-23T04:15:30Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:20:18Z | cmd: rg text/font usage across src (+ include path probe) | result: partial-fail (no include dir); src scan ok
+- 2026-02-23T04:20:44Z | cmd: inspect current RPM render path and text helpers in src/gauge_render.c | result: ok
+- 2026-02-23T04:21:19Z | cmd: patch src/gauge_render.c move RPM right by 2 chars (x 22->46), switch to DrawTextUi(scale=2) for sharper readability, add motor background restore blit region to prevent ghosting after move | result: ok
+- 2026-02-23T04:22:02Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
