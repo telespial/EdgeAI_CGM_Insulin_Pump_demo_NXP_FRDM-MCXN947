@@ -913,3 +913,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated center RPM tach arc geometry in `DrawHumanOrientationPointer()`:
+  - vertically flipped arc orientation (open section moved opposite side)
+  - doubled bar thickness (radial span and line thickness increased 2x)
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

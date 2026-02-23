@@ -388,3 +388,5 @@ Format:
 2026-02-23T05:20:43Z | cmd: apply_patch src/gauge_render.c add 270-degree RPM tach arc (bottom 90 open), 120deg green + 90deg yellow + 60deg red zones, centered on ball circle and 80% diameter | result: ok
 2026-02-23T05:20:43Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:20:57Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Add 270-degree RPM tach arc around center ball' && git push origin main | result: ok (0d53e31)
+2026-02-23T05:21:59Z | cmd: apply_patch src/gauge_render.c flip tach arc vertically and double arc thickness (radial + line width) | result: ok
+2026-02-23T05:21:59Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)

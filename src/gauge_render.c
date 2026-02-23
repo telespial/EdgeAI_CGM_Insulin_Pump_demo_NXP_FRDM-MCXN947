@@ -1252,8 +1252,8 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     BlitPumpBgRegion(ring_x0, ring_y0, ring_x1, 219);
     BlitPumpBgRegion(ring_x0, 243, ring_x1, ring_y1);
 
-    /* 270-degree tach arc with bottom 90 degrees open.
-     * Sweep: 315 -> 225 degrees (CCW), 5-degree segments:
+    /* 270-degree tach arc (vertically flipped) with top 90 degrees open.
+     * Sweep: 135 -> 45 degrees (CCW), 5-degree segments:
      * - first 120 deg (24 seg) green
      * - next 90 deg (18 seg) yellow
      * - final 60 deg (12 seg) red */
@@ -1268,10 +1268,10 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     }
     for (i = 0; i < total_segments; i++)
     {
-        float deg = 315.0f + (float)(i * 5);
+        float deg = 135.0f + (float)(i * 5);
         float rad = deg * 0.01745329252f;
-        int32_t x0 = cx + (int32_t)lroundf(cosf(rad) * (float)(tach_r - 5));
-        int32_t y0 = cy + (int32_t)lroundf(sinf(rad) * (float)(tach_r - 5));
+        int32_t x0 = cx + (int32_t)lroundf(cosf(rad) * (float)(tach_r - 10));
+        int32_t y0 = cy + (int32_t)lroundf(sinf(rad) * (float)(tach_r - 10));
         int32_t x1 = cx + (int32_t)lroundf(cosf(rad) * (float)tach_r);
         int32_t y1 = cy + (int32_t)lroundf(sinf(rad) * (float)tach_r);
         uint16_t on_color;
@@ -1294,7 +1294,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
             off_color = RGB565(72, 20, 20);
         }
         draw_color = (i < lit_segments) ? on_color : off_color;
-        DrawLine(x0, y0, x1, y1, 2, draw_color);
+        DrawLine(x0, y0, x1, y1, 4, draw_color);
     }
 
     /* ~14x14 filled circle (line-filled) for the rolling marker (2x larger). */
