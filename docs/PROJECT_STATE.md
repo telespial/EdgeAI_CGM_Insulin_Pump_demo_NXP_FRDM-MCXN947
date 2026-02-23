@@ -245,3 +245,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Adjusted branding/time vertical layout:
+  - moved `NXP EDGEAI` down by ~50% text-height (`y: 286 -> 293`)
+  - moved elapsed-time row to maintain 5 px vertical padding from `NXP EDGEAI` (`RTC_TEXT_Y: 259 -> 274`)
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
