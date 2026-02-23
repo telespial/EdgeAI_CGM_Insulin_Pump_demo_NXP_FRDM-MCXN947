@@ -305,3 +305,5 @@ Format:
 - 2026-02-23T05:18:15Z | cmd: inspect current mA row position in src/gauge_render.c after user-reported incomplete revert | result: ok
 - 2026-02-23T05:18:41Z | cmd: patch src/gauge_render.c restore mA row position to prior center point (x 34->46, y 71->76) | result: ok
 - 2026-02-23T05:19:24Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:22:08Z | cmd: patch src/gauge_render.c move mA row left one character width and up ~2/3 text height (x 46->34, y 76->67) | result: ok
+- 2026-02-23T05:22:48Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

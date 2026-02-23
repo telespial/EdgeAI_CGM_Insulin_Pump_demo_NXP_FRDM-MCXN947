@@ -666,3 +666,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Adjusted motor `mA` row as requested.
+  - moved left by one character width (`x: 46 -> 34`, -12 px at scale-2).
+  - moved up by approximately two-thirds text height (`y: 76 -> 67`, -9 px).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
