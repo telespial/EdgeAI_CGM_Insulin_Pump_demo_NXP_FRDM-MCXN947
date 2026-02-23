@@ -114,7 +114,7 @@ Alternative wrapper scripts:
 
 - `src/gauge_render.c`
   LCD composition, overlays, activity/transport model, dose recommendation UI
-- `src/edgeai_package_transport_anomaly_demo.c`
+- `src/main.c` and runtime app module in `src/`
   sensor polling, runtime orchestration, record/replay glue
 - `src/ext_flash_recorder.c`
   external NOR flash record/replay persistence

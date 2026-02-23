@@ -3,14 +3,66 @@
 Last updated: 2026-02-23
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-23`
-- Failsafe: `FAILSAFE-2026-02-23`
+- Golden: `GOLDEN-2026-02-23-R2`
+- Failsafe: `FAILSAFE-2026-02-23-R2`
 - Status: active
 
 ## Current Status
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
 - Git repository initialized locally.
+
+## Update 2026-02-23
+- Change: Completed full documentation cleanup to remove legacy naming tied to earlier non-medical wording.
+  - updated `README.md`, `docs/TODO.md`, `docs/PROJECT_STATE.md`, and SDK overlay readme text for medical-demo wording consistency
+  - normalized prior command-log wording in `docs/COMMAND_LOG.md` where legacy naming appeared
+- Change: Promoted current baseline as restore points:
+  - Golden: `GOLDEN-2026-02-23-R2`
+  - Failsafe: `FAILSAFE-2026-02-23-R2`
+- Verification:
+  - Documentation consistency scan across markdown files: PASS (no legacy legacy wording remains)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Shifted all settings rows with buttons left by ~3 character widths (18 px), keeping non-button rows unchanged.
+  - Updated X-start constants in `src/gauge_render.h` for:
+    - `MODE`, `RUN`, `SENS`, `AI`, `OPEN LIMITS`, `CLEAR FLASH`, and `LOG HZ` controls.
+- Change: Added recorder memory usage indicator to the `FLASH` row.
+  - Added `ExtFlashRecorder_GetUsageInfo(...)` API in `src/ext_flash_recorder.h/.c`.
+  - Settings popup now renders `% USED` text next to a narrower `CLEAR FLASH` button in `src/gauge_render.c`.
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - Build output: `mcuxsdk_ws/build/<generated_firmware>.bin`
+  - Flash target: `MCXN947:FRDM-MCXN947` on probe `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Shifted only the `LOOSE / NORM / STRICT` settings row right to avoid covering the `SENS` label.
+  - Updated `GAUGE_RENDER_SET_TUNE_X0` in `src/gauge_render.h` from `96` to `180`.
+  - No other settings-row geometry constants were changed.
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - Build output: `mcuxsdk_ws/build/<generated_firmware>.bin`
+  - Flash target: `MCXN947:FRDM-MCXN947` on probe `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Removed colon from AI settings row label text:
+  - `AI:` -> `AI` in `src/gauge_render.c` so settings now reads `AI MCU NPU`.
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - Build output: `mcuxsdk_ws/build/<generated_firmware>.bin`
+  - Flash target: `MCXN947:FRDM-MCXN947` on probe `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Fixed settings-row layout so `AI: MCU NPU` renders cleanly without label overlap:
+  - moved AI row button start x-coordinate to align with other settings rows (`GAUGE_RENDER_SET_AI_X0: 144 -> 184` in `src/gauge_render.h`).
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - Build output: `mcuxsdk_ws/build/<generated_firmware>.bin`
+  - Flash target: `MCXN947:FRDM-MCXN947` on probe `#1` (`UYLKOJI11H2B3`)
+- Result: ok
 
 ## Hardware Setup
 - Board: FRDM-MCXN947
@@ -20,7 +72,7 @@ Last updated: 2026-02-23
 ## Build/Flash Config
 - Build Command: ./tools/build_frdmmcxn947.sh debug
 - Flash Command: /usr/local/LinkServer/LinkServer flash --probe '#1' MCXN947:FRDM-MCXN947 load --addr 0x0 {BIN_PATH}
-- Binary: mcuxsdk_ws/build/edgeai_package_transport_anomaly_demo_cm33_core0.bin
+- Binary: mcuxsdk_ws/build/<generated_firmware>.bin
 - Status File: STATUS.md
 
 ## Update 2026-02-22
@@ -86,7 +138,7 @@ Last updated: 2026-02-23
 - Verification:
   - Build PASS:
     - `./tools/build_frdmmcxn947.sh debug`
-    - output binary: `mcuxsdk_ws/build/edgeai_package_transport_anomaly_demo_cm33_core0.bin`
+    - output binary: `mcuxsdk_ws/build/<generated_firmware>.bin`
   - Flash PASS:
     - `./tools/flash_frdmmcxn947.sh`
     - runner: `linkserver`, probe `#1`, target `MCXN947:FRDM-MCXN947`
@@ -95,10 +147,10 @@ Last updated: 2026-02-23
 - Result: ok
 
 ## Update 2026-02-22
-- Change: Restored package-demo visual baseline for LCD rendering behavior in medical firmware:
-  - same `NXP EDGEAI` placement/color/size as package demo
-  - same elapsed-time placement/color/size as package demo
-  - right-third timeline buttons (`PLAY/STOP`, `REC`, `LIVE`), graph, and terminal kept in package-demo style/flow
+- Change: Restored reference visual baseline for LCD rendering behavior in medical firmware:
+  - same `NXP EDGEAI` placement/color/size as reference baseline
+  - same elapsed-time placement/color/size as reference baseline
+  - right-third timeline buttons (`PLAY/STOP`, `REC`, `LIVE`), graph, and terminal kept in reference style/flow
 - Change: Removed center motion widgets per direction:
   - removed gyro sphere/ring widget rendering path
   - removed accel wire-box and accel ball rendering path
@@ -112,7 +164,7 @@ Last updated: 2026-02-23
 - Result: ok
 
 ## Update 2026-02-22
-- Change: Applied requested medical UI refinements on top of package-style baseline:
+- Change: Applied requested medical UI refinements on top of reference-style baseline:
   - magnetometer stream disabled in render path and `MAG` removed from terminal output
   - left temperature bargraph reduced significantly while staying on far-left edge
   - motor overlay labels shifted down by two text rows
@@ -1025,6 +1077,16 @@ Last updated: 2026-02-23
   - `./tools/flash_frdmmcxn947.sh` PASS
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Shifted all settings row labels left by 3 character widths for improved separation from row buttons.
+  - updated `DrawSettingsPopup()` label anchor (`label_col_right`) from `172` to `154`
+  - this applies uniformly to all settings labels while leaving row option content unchanged
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - build: PASS
+  - flash: PASS (`MCXN947:FRDM-MCXN947`, probe `#1` `UYLKOJI11H2B3`)
 - Result: ok
 
 ## Update 2026-02-23

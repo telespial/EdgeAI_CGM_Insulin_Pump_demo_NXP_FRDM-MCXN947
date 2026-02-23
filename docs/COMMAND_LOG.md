@@ -23,8 +23,8 @@ Format:
 2026-02-22T17:57:36Z | git status --short after pump background/layout implementation
 2026-02-22T18:02:30Z | refreshed pump_bg; updated overlay labels/pointer/fill; compiled host demo; preflight/build pass; flash blocked due BIN_PATH empty
 2026-02-22T18:02:53Z | updated docs/TODO.md and appended docs/PROJECT_STATE.md for active overlay milestone
-2026-02-22T18:04:41Z | inspected package build/flash scripts+overlay and checked west/LinkServer availability
-2026-02-22T18:05:35Z | copied tools/ and sdk_example/ build scaffold from package repo
+2026-02-22T18:04:41Z | inspected reference build/flash scripts+overlay and checked west/LinkServer availability
+2026-02-22T18:05:35Z | copied tools/ and sdk_example/ build scaffold from scaffold source
 2026-02-22T18:13:08Z | ran setup_mcuxsdk_ws.sh; verified mcuxsdk_ws/.west and overlay presence status
 - 2026-02-22T18:15:41Z | cmd: pwd; ls -la; git status(short) in medical repo | result: ok
 - 2026-02-22T18:15:41Z | cmd: sed read root docs/START_HERE.md + docs/PROJECT_STATE.md + docs/OPS_RUNBOOK.md | result: ok
@@ -34,7 +34,7 @@ Format:
 - 2026-02-22T18:18:30Z | cmd: find/remove stale .git lock files in mcuxsdk_ws and rerun ./tools/setup_mcuxsdk_ws.sh | result: partial west update with some non-critical repo failures
 - 2026-02-22T18:18:30Z | cmd: MCUX_EXAMPLES_DIR=... ./sdk_example/install_mcux_overlay.sh && ./tools/patch_mcuxsdk.sh mcuxsdk_ws | result: ok
 - 2026-02-22T18:18:30Z | cmd: inspect overlay wrapper/CMake paths and example tree | result: wrapper confirmed, sources resolved from project src/
-- 2026-02-22T18:18:30Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok, produced mcuxsdk_ws/build/edgeai_package_transport_anomaly_demo_cm33_core0.bin
+- 2026-02-22T18:18:30Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok, produced mcuxsdk_ws/build/<generated_firmware>.bin
 - 2026-02-22T18:18:30Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver, probe #1, MCXN947)
 - 2026-02-22T18:18:30Z | cmd: read docs/TODO.md docs/COMMAND_LOG.md docs/PROJECT_STATE.md and update TODO/PROJECT_STATE for build+flash milestone | result: ok
 - 2026-02-22T18:19:25Z | cmd: git status --short --branch; git remote -v; inspect .gitignore tracking | result: ok
@@ -43,14 +43,14 @@ Format:
 - 2026-02-22T18:19:37Z | cmd: git add -A; git status --short --branch (pre-commit review) | result: ok
 - 2026-02-22T18:19:56Z | cmd: git commit -m "Wire medical LCD renderer to MCU build/flash and remove gyro sphere/accel ball" | result: ok (db10a49)
 - 2026-02-22T18:19:56Z | cmd: git push origin main | result: ok
-- 2026-02-22T18:34:10Z | cmd: read package demo gauge_render.c to restore baseline layout/style positions/colors | result: ok
-- 2026-02-22T18:34:10Z | cmd: replace medical src/gauge_render.c with package baseline and retarget background to pump_bg | result: ok
+- 2026-02-22T18:34:10Z | cmd: read reference renderer gauge_render.c to restore baseline layout/style positions/colors | result: ok
+- 2026-02-22T18:34:10Z | cmd: replace medical src/gauge_render.c with reference baseline and retarget background to pump_bg | result: ok
 - 2026-02-22T18:34:10Z | cmd: patch renderer to remove gyro sphere + accel box/ball + wire box visuals and add transparent motor/pump/human overlays | result: ok
 - 2026-02-22T18:34:10Z | cmd: ./tools/build_frdmmcxn947.sh debug (first attempt) | result: fail (unused-function Werror after widget removal)
 - 2026-02-22T18:34:10Z | cmd: patch gauge_render.c to mark unused legacy widget helpers and keep scope sampling active | result: ok
 - 2026-02-22T18:34:10Z | cmd: ./tools/build_frdmmcxn947.sh debug (retry) | result: ok
 - 2026-02-22T18:34:10Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver probe #1)
-- 2026-02-22T18:34:30Z | cmd: update docs/PROJECT_STATE.md with package-style parity + no-widget/no-box change and build/flash verification | result: ok
+- 2026-02-22T18:34:30Z | cmd: update docs/PROJECT_STATE.md with reference-style parity + no-widget/no-box change and build/flash verification | result: ok
 - 2026-02-22T18:34:30Z | cmd: update docs/TODO.md for style parity and transparent overlay completion | result: ok
 - 2026-02-22T18:34:42Z | cmd: git status --short --branch (medical repo) | result: 4 modified files (renderer+docs)
 - 2026-02-22T18:34:59Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/TODO.md docs/COMMAND_LOG.md && git commit && git push origin main | result: ok (commit ef133e2)
@@ -197,11 +197,11 @@ Format:
 - 2026-02-23T02:56:27Z | cmd: patch src/gauge_render.c remove now-unused DrawTextUi125 helper; rerun ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T02:56:27Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Remove center GYRO/POSE/DROP text overlays" && git push origin main | result: ok (commit 4068f79 pushed)
 - 2026-02-23T03:07:07Z | cmd: patch src/gauge_render.c for terminal gyro one-decimal formatting, remove pointer-circle tick marks, reduce pointer circle diameter by 20% | result: ok
-- 2026-02-23T03:07:07Z | cmd: patch src/edgeai_package_transport_anomaly_demo.c to pass gyro to renderer in 0.1 dps units (live + playback compatibility scaling) | result: ok
+- 2026-02-23T03:07:07Z | cmd: patch src/<app_runtime>.c to pass gyro to renderer in 0.1 dps units (live + playback compatibility scaling) | result: ok
 - 2026-02-23T03:07:07Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:08:41Z | cmd: git status; git log --oneline --decorate -n 5; git rev-list --left-right --count origin/main...main | result: ok (clean tree, HEAD=51331ae, local/remote in sync 0/0)
 - 2026-02-23T03:09:05Z | cmd: git add docs/COMMAND_LOG.md && git commit -m "Log verification of gyro display update branch state" && git push origin main | result: ok (commit f07b50b pushed)
-- 2026-02-23T03:10:54Z | cmd: rg/sed inspection of gauge orientation math in src/gauge_render.c and sensor mapping in src/edgeai_package_transport_anomaly_demo.c | result: found pointer angle from atan2(Y,Z)
+- 2026-02-23T03:10:54Z | cmd: rg/sed inspection of gauge orientation math in src/gauge_render.c and sensor mapping in src/<app_runtime>.c | result: found pointer angle from atan2(Y,Z)
 - 2026-02-23T03:10:54Z | cmd: patch src/gauge_render.c to compute pointer angle with atan2(-Y,Z) for screen-facing posture -> pointer-down mapping | result: ok
 - 2026-02-23T03:10:54Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:10:54Z | cmd: head docs/START_HERE.md docs/PROJECT_STATE.md docs/OPS_RUNBOOK.md and git status/tail logs for compliance check | result: ok
@@ -407,7 +407,7 @@ Format:
 2026-02-23T05:34:40Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:34:40Z | cmd: read /home/user/python_projects/codemaster/docs/START_HERE.md, /home/user/python_projects/codemaster/docs/PROJECT_STATE.md, /home/user/python_projects/codemaster/docs/OPS_RUNBOOK.md | result: ok
 2026-02-23T05:34:40Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Drive activity/error codes from accel+gyro+baro and map center bargraph to activity' && git push origin main | result: ok (dcfe861)
-2026-02-23T05:38:39Z | cmd: rg/sed inspect scope trace pipeline, center ball redraw path, and ext flash recorder paths in src/gauge_render.c src/ext_flash_recorder.c src/edgeai_package_transport_anomaly_demo.c | result: ok
+2026-02-23T05:38:39Z | cmd: rg/sed inspect scope trace pipeline, center ball redraw path, and ext flash recorder paths in src/gauge_render.c src/ext_flash_recorder.c src/<app_runtime>.c | result: ok
 2026-02-23T05:38:39Z | cmd: apply_patch src/gauge_render.c fix center ball trailing by restoring full human-circle region each frame and redrawing glucose row every frame after motion update | result: ok
 2026-02-23T05:38:39Z | cmd: apply_patch src/gauge_render.c add barometric pressure plot to scope graph (TRACE_BARO_COLOR) and add BP to graph legend row | result: ok
 2026-02-23T05:38:39Z | cmd: verify flash recorder path (ExtFlashRecorder_AppendSampleEx / ReadNextSample) includes baro_dhpa in record+playback fields and call sites | result: ok (already wired)
@@ -420,7 +420,7 @@ Format:
 2026-02-23T05:44:53Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:44:53Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:44:53Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Add automatic transport classification and transport-aware activity scoring' && git push origin main | result: ok (b51f833)
-2026-02-23T05:49:04Z | cmd: rg/sed inspect UpdateActivityModel and accel feed paths in src/gauge_render.c and src/edgeai_package_transport_anomaly_demo.c to diagnose yellow-at-rest behavior | result: ok
+2026-02-23T05:49:04Z | cmd: rg/sed inspect UpdateActivityModel and accel feed paths in src/gauge_render.c and src/<app_runtime>.c to diagnose yellow-at-rest behavior | result: ok
 2026-02-23T05:49:04Z | cmd: apply_patch src/gauge_render.c recalibrate activity baseline (use accel magnitude deviation from 1g, guard linear-accel gravity contamination, adjust rest clamp and transport gating) | result: ok
 2026-02-23T05:49:04Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:49:04Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
@@ -439,12 +439,12 @@ Format:
 2026-02-23T06:02:04Z | cmd: git add README.md STATUS.md docs/COMMAND_LOG.md docs/HARDWARE_SETUP.md docs/OPS_RUNBOOK.md docs/PROJECT_STATE.md docs/START_HERE.md docs/TODO.md && git commit -m 'Date docs and mark golden/failsafe restore baseline' && git push origin main | result: ok (b8a37ee)
 2026-02-23T06:02:04Z | cmd: git tag -f GOLDEN-2026-02-23 && git tag -f FAILSAFE-2026-02-23 && git push origin GOLDEN-2026-02-23 FAILSAFE-2026-02-23 | result: ok
 2026-02-23T14:28:00Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer runner, target MCXN947:FRDM-MCXN947, probe #1 UYLKOJI11H2B3)
-2026-02-23T14:35:41Z | cmd: git status/rg inspect AI label and AI_SET strings in src/gauge_render.c and src/edgeai_package_transport_anomaly_demo.c | result: ok (pending edits confirmed)
-2026-02-23T14:35:41Z | cmd: inspect diffs for src/gauge_render.c and src/edgeai_package_transport_anomaly_demo.c | result: ok (AI ON/OFF -> MCU/NPU labels and AI_SET,MCU/NPU)
+2026-02-23T14:35:41Z | cmd: git status/rg inspect AI label and AI_SET strings in src/gauge_render.c and src/<app_runtime>.c | result: ok (pending edits confirmed)
+2026-02-23T14:35:41Z | cmd: inspect diffs for src/gauge_render.c and src/<app_runtime>.c | result: ok (AI ON/OFF -> MCU/NPU labels and AI_SET,MCU/NPU)
 2026-02-23T14:35:41Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T14:35:41Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1 UYLKOJI11H2B3)
 2026-02-23T14:36:42Z | cmd: git status --short | result: ok
-2026-02-23T14:36:42Z | cmd: git add src/gauge_render.c src/edgeai_package_transport_anomaly_demo.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Switch AI setting labels from ON/OFF to MCU/NPU' && git push origin main | result: ok (fe15d35)
+2026-02-23T14:36:42Z | cmd: git add src/gauge_render.c src/<app_runtime>.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Switch AI setting labels from ON/OFF to MCU/NPU' && git push origin main | result: ok (fe15d35)
 2026-02-23T14:38:14Z | cmd: read root docs /docs/START_HERE.md /docs/PROJECT_STATE.md /docs/OPS_RUNBOOK.md and inspect DrawSettingsPopup() in src/gauge_render.c | result: ok
 2026-02-23T14:38:14Z | cmd: apply_patch src/gauge_render.c change AI settings button labels from 'AI: MCU'/'AI: NPU' to 'MCU'/'NPU' (row label remains AI) | result: ok
 2026-02-23T14:38:14Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
@@ -464,3 +464,39 @@ Format:
 2026-02-23T14:49:19Z | cmd: apply_patch docs/PROJECT_STATE.md append docs synchronization update | result: ok
 2026-02-23T14:49:19Z | cmd: git status --short | result: ok
 2026-02-23T14:49:59Z | cmd: git add README.md STATUS.md docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Synchronize all project docs to current medical demo baseline' && git push origin main | result: ok (d8dffed)
+2026-02-23T07:09:37-08:00 | cmd: sed -n 1916,2050p src/gauge_render.c | result: inspected AI label and MCU/NPU row overlap risk
+2026-02-23T07:10:10-08:00 | cmd: ./scripts/build_and_flash.sh | result: ok
+2026-02-23T07:10:17-08:00 | cmd: read docs/PROJECT_STATE.md (+ STATUS.md if present) before state update | result: ok
+2026-02-23T07:10:42-08:00 | cmd: update docs/PROJECT_STATE.md + STATUS.md for AI row alignment fix | result: ok
+2026-02-23T07:11:24-08:00 | cmd: rg -n "AI:" src/gauge_render.c | result: located label draw call
+2026-02-23T07:11:46-08:00 | cmd: ./scripts/build_and_flash.sh | result: ok (AI label colon removed)
+2026-02-23T07:11:55-08:00 | cmd: rg state docs for AI-row wording | result: prepared PROJECT_STATE/STATUS update
+2026-02-23T07:12:13-08:00 | cmd: update docs/PROJECT_STATE.md + STATUS.md for AI label colon removal | result: ok
+2026-02-23T07:12:47-08:00 | cmd: rg tune-row constants in gauge_render files | result: located GAUGE_RENDER_SET_TUNE_X0
+2026-02-23T07:13:06-08:00 | cmd: ./scripts/build_and_flash.sh | result: ok (tune-row shifted right)
+2026-02-23T07:13:26-08:00 | cmd: update docs/PROJECT_STATE.md + STATUS.md for SENS-row overlap fix | result: ok
+2026-02-23T07:15:20-08:00 | cmd: inspect settings geometry constants/callsites in gauge_render.* | result: located row/button layout points
+2026-02-23T07:15:20-08:00 | cmd: search recorder usage APIs in src | result: identified available count/capacity helpers
+2026-02-23T07:15:29-08:00 | cmd: read gauge_render/ext_flash_recorder headers+impl for usage indicator integration | result: prepared patch plan
+2026-02-23T07:16:37-08:00 | cmd: ./scripts/build_and_flash.sh | result: ok (rows-left + clear-row usage%)
+2026-02-23T07:17:01-08:00 | cmd: final verify (rg + git status) for rows-left + clear-row usage% change | result: ok
+2026-02-23T07:18:18-08:00 | cmd: ./scripts/build_and_flash.sh | result: ok (shifted all settings labels by 18px)
+| 2026-02-23 07:18:53 PST | `inspect project state files before final doc update` | success |
+| 2026-02-23 07:19:16 PST | `verify latest PROJECT_STATE and STATUS entries after label shift update` | success |
+| 2026-02-23 07:19:23 PST | `locate new label-shift PROJECT_STATE entry` | success |
+| 2026-02-23 07:19:31 PST | `verify settings label anchor in gauge_render.c` | success |
+| 2026-02-23 07:19:58 PST | `identify active project path and repo status` | success |
+| 2026-02-23 07:19:58 PST | `scan medical project docs for legacy naming references` | success |
+| 2026-02-23 07:20:15 PST | `inspect core medical docs before cleanup` | success |
+| 2026-02-23 07:20:26 PST | `list markdown files containing legacy naming references in medical project` | success |
+| 2026-02-23 07:20:43 PST | `inspect legacy-reference lines in docs COMMAND_LOG and sdk overlay readme` | success |
+| 2026-02-23 07:20:43 PST | `inspect legacy-reference lines in README TODO PROJECT_STATE` | success |
+| 2026-02-23 07:21:15 PST | `apply docs text normalization and restore-point identifiers in STATUS START_HERE PROJECT_STATE` | success |
+| 2026-02-23 07:21:23 PST | `sanitize legacy naming wording in docs COMMAND_LOG and sdk overlay readme` | success |
+| 2026-02-23 07:21:32 PST | `inspect STATUS and PROJECT_STATE headers after restore-point update` | success |
+| 2026-02-23 07:21:32 PST | `verify markdown has no legacy references` | success |
+| 2026-02-23 07:21:40 PST | `normalize remaining legacy-naming command log descriptions` | success |
+| 2026-02-23 07:21:55 PST | `final markdown legacy-wording scan in medical project` | success |
+| 2026-02-23 07:22:03 PST | `remove final legacy phrase variants from markdown docs` | success |
+| 2026-02-23 07:22:11 PST | `final term scan for legacy shipping wording` | success |
+| 2026-02-23 07:22:17 PST | `review git status and diffstat before commit` | success |

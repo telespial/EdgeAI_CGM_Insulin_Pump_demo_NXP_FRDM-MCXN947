@@ -1,3 +1,3 @@
-# edgeai_package_transport_anomaly_demo
+# edgeai_medical_device_demo
 
-MCUX SDK example wrapper for the Package Transport Anomaly project.
+MCUX SDK example wrapper for the medical device demo project.

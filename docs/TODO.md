@@ -21,7 +21,7 @@ Last updated: 2026-02-23
 - [x] Remove legacy gyro sphere and accel box/ball visuals from LCD path.
 - [x] Add motor on-region active labels (`RPM`, `current`, `load`, `anomaly` bar).
 - [x] Add pump on-region active labels (`rate`, `fill`, `state`) and fill-level visualization.
-- [x] Match package demo style/placement for `NXP EDGEAI`, elapsed time, and right-third controls/graph/terminal.
+- [x] Match baseline style/placement for `NXP EDGEAI`, elapsed time, and right-third controls/graph/terminal.
 - [x] Remove overlay panel boxes/borders; keep medical labels transparent over icon regions only.
 - [ ] Tune overlay coordinates/contrast on real LCD hardware for final readability.
 
