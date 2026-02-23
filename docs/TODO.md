@@ -25,7 +25,8 @@ Last updated: 2026-02-23
    - implemented in `src/cgm_preprocess.c/.h` and integrated in `src/gauge_render.c`
 8. [x] Implement conservative lag/kinetics handling: optional low-gain lag correction only and no aggressive look-forward behavior by default.
    - implemented in `src/cgm_preprocess.c/.h` (low-gain lag state with SQI-adaptive gating and bounded correction)
-9. [ ] Implement SQI/fault gating as a first-class runtime control: block/de-rate prediction and alert outputs when SQI is low, hold-last-value/guarded fallback on dropouts.
+9. [x] Implement SQI/fault gating as a first-class runtime control: block/de-rate prediction and alert outputs when SQI is low, hold-last-value/guarded fallback on dropouts.
+   - implemented in `src/cgm_preprocess.c/.h` and integrated in `src/gauge_render.c` (runtime sensor flags, prediction block/de-rate, and dropout hold-last guard)
 10. [ ] Implement trend/prediction/alerts behavior: short-horizon prediction (15m/30m), predictive hypo/hyper checks gated by SQI, debounce and hysteresis to prevent alert chatter.
 11. [ ] Align LCD/terminal semantics with CGM contract: show SQI/confidence and sensor flags on-screen, clearly mark simulated fields until live sensor path is active.
 12. [ ] Define validation protocol and pass/fail thresholds for lag estimation, trend accuracy by range, alert false-positive/chatter rate, and replay robustness under dropout/noise/motion artifacts.

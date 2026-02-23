@@ -1570,3 +1570,20 @@ Last updated: 2026-02-23
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 9 by adding SQI/fault gating as a runtime control path.
+  - `src/cgm_preprocess.h/.c` updates:
+    - added runtime `sensor_flags` output and bit taxonomy constants
+    - added flag derivation for saturation, dropout, implausible ROC, temp out-of-range, calibration stale, and drift warning
+    - added `prediction_blocked` and `hold_last` outputs to gate downstream logic when SQI/fault state is poor
+  - `src/gauge_render.c` integration:
+    - consumes preprocessing `sensor_flags`, `prediction_blocked`, and `hold_last`
+    - applies dropout hold-last guard for glucose/trend presentation path
+    - blocks/de-rates dose recommendation updates when prediction path is gated
+    - exposes flags in terminal line (`Fxx`) with SQI for runtime visibility
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok

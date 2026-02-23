@@ -223,6 +223,9 @@ void CgmPreprocess_Push(cgm_preprocess_t *st,
     float lag_gain;
     float lag_comp_mgdl;
     float glucose_kinetics_mgdl;
+    uint16_t sensor_flags = 0u;
+    bool prediction_blocked;
+    bool hold_last;
 
     if ((st == NULL) || (sample == NULL) || (out == NULL))
     {
@@ -238,6 +241,19 @@ void CgmPreprocess_Push(cgm_preprocess_t *st,
     if (sample->ref_mv > 50.0f)
     {
         x_ref_na = x_lin_na * (st->cfg.ref_nominal_mv / sample->ref_mv);
+    }
+
+    if ((sample->adc_counts <= 50u) || (sample->adc_counts >= 4045u))
+    {
+        sensor_flags |= CGM_FLAG_SATURATION;
+    }
+    if ((sample->temp_c < 10.0f) || (sample->temp_c > 45.0f))
+    {
+        sensor_flags |= CGM_FLAG_TEMP_OUT_OF_RANGE;
+    }
+    if (sample->ref_mv < 100.0f)
+    {
+        sensor_flags |= CGM_FLAG_DROPOUT;
     }
     else
     {
@@ -402,6 +418,10 @@ void CgmPreprocess_Push(cgm_preprocess_t *st,
     }
 
     trend_raw_mgdl_min = (glucose_kinetics_mgdl - st->prev_kinetic_mgdl) * st->cfg.sample_rate_hz * 60.0f;
+    if (fabsf(trend_raw_mgdl_min) > 3.5f)
+    {
+        sensor_flags |= CGM_FLAG_IMPLAUSIBLE_ROC;
+    }
     trend_mgdl_min = (1.0f - trend_alpha) * st->prev_trend_mgdl_min + trend_alpha * trend_raw_mgdl_min;
 
     st->prev_glucose_mgdl = glucose_kinetics_mgdl;
@@ -423,4 +443,18 @@ void CgmPreprocess_Push(cgm_preprocess_t *st,
     out->sensitivity_change = sensitivity_change;
     out->lag_comp_mgdl = lag_comp_mgdl;
     out->lag_gain_applied = lag_gain;
+    if (calibration_stale)
+    {
+        sensor_flags |= CGM_FLAG_CAL_STALE;
+    }
+    if (drift_warn)
+    {
+        sensor_flags |= CGM_FLAG_DRIFT_WARN;
+    }
+    out->sensor_flags = sensor_flags;
+    prediction_blocked = ((out->sqi_pct < 40u) ||
+                          ((sensor_flags & (CGM_FLAG_SATURATION | CGM_FLAG_DROPOUT | CGM_FLAG_TEMP_OUT_OF_RANGE)) != 0u));
+    hold_last = ((sensor_flags & CGM_FLAG_DROPOUT) != 0u);
+    out->prediction_blocked = prediction_blocked;
+    out->hold_last = hold_last;
 }

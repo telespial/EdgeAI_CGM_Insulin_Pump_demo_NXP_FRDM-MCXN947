@@ -164,6 +164,9 @@ static uint32_t gUiGlucosePrevTrendDs = 0u;
 static float gUiGlucoseTrendMgDlPerMin = 0.0f;
 static uint32_t gUiDoseRecommendedUhMilli = 4000u;
 static uint8_t gUiCgmSqiPct = 100u;
+static uint16_t gUiCgmSensorFlags = 0u;
+static bool gUiCgmPredictionBlocked = false;
+static bool gUiCgmHoldLast = false;
 
 enum
 {
@@ -1389,18 +1392,24 @@ static void DrawGlucoseIndicator(void)
         CgmPreprocess_Push(&gCgmPreprocess, &raw, &out);
         if (out.output_ready)
         {
-            int32_t g = (int32_t)(out.glucose_filtered_mgdl + 0.5f);
-            if (g < 40)
-            {
-                g = 40;
-            }
-            if (g > 400)
-            {
-                g = 400;
-            }
-            gUiGlucoseMgdl = (uint16_t)g;
-            gUiGlucoseTrendMgDlPerMin = out.trend_mgdl_min;
             gUiCgmSqiPct = out.sqi_pct;
+            gUiCgmSensorFlags = out.sensor_flags;
+            gUiCgmPredictionBlocked = out.prediction_blocked;
+            gUiCgmHoldLast = out.hold_last;
+            if (!gUiCgmHoldLast)
+            {
+                int32_t g = (int32_t)(out.glucose_filtered_mgdl + 0.5f);
+                if (g < 40)
+                {
+                    g = 40;
+                }
+                if (g > 400)
+                {
+                    g = 400;
+                }
+                gUiGlucoseMgdl = (uint16_t)g;
+                gUiGlucoseTrendMgDlPerMin = out.trend_mgdl_min;
+            }
         }
         gCgmNextRawSampleDs += 10u; /* 1 Hz synthetic raw sample cadence. */
     }
@@ -1522,6 +1531,17 @@ static void UpdateDoseRecommendation(uint32_t now_ds)
     }
 
     rec_u_h = basal_u_h * activity_factor * glucose_factor * trend_factor * iob_factor;
+    if (gUiCgmPredictionBlocked)
+    {
+        if (gUiCgmHoldLast)
+        {
+            rec_u_h = (float)gUiDoseRecommendedUhMilli / 1000.0f;
+        }
+        else
+        {
+            rec_u_h *= 0.85f;
+        }
+    }
     if (rec_u_h < 0.025f)
     {
         rec_u_h = 0.025f;
@@ -2631,7 +2651,7 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
         int32_t trend10 = (int32_t)(gUiGlucoseTrendMgDlPerMin * 10.0f);
         int32_t trend_abs10 = (trend10 < 0) ? -trend10 : trend10;
         uint32_t iob10 = (uint32_t)((gUiInsulinIobU * 10.0f) + 0.5f);
-        snprintf(line, sizeof(line), "DOS %u.%03uU IOB %1u.%01u dBG %c%u.%01u SQI %u",
+        snprintf(line, sizeof(line), "DOS %u.%03uU IOB %1u.%01u dBG %c%u.%01u SQI %u F%02X",
                  (unsigned int)(gUiDoseRecommendedUhMilli / 1000u),
                  (unsigned int)(gUiDoseRecommendedUhMilli % 1000u),
                  (unsigned int)(iob10 / 10u),
@@ -2639,7 +2659,8 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
                  (trend10 < 0) ? '-' : '+',
                  (unsigned int)(trend_abs10 / 10),
                  (unsigned int)(trend_abs10 % 10),
-                 (unsigned int)gUiCgmSqiPct);
+                 (unsigned int)gUiCgmSqiPct,
+                 (unsigned int)(gUiCgmSensorFlags & 0xFFu));
         DrawTerminalLine(TERM_Y + 154, line, RGB565(164, 222, 244));
     }
 }

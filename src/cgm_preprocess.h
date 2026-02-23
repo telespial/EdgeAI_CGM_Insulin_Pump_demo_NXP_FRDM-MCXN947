@@ -27,7 +27,20 @@ typedef struct
     bool sensitivity_change;
     float lag_comp_mgdl;
     float lag_gain_applied;
+    uint16_t sensor_flags;
+    bool prediction_blocked;
+    bool hold_last;
 } cgm_preprocess_output_t;
+
+enum
+{
+    CGM_FLAG_SATURATION = (1u << 0),
+    CGM_FLAG_DROPOUT = (1u << 1),
+    CGM_FLAG_IMPLAUSIBLE_ROC = (1u << 2),
+    CGM_FLAG_TEMP_OUT_OF_RANGE = (1u << 3),
+    CGM_FLAG_CAL_STALE = (1u << 4),
+    CGM_FLAG_DRIFT_WARN = (1u << 5),
+};
 
 typedef struct
 {
