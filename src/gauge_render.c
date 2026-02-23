@@ -1736,8 +1736,8 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
 
 static void DrawBatteryIndicatorFrame(const gauge_style_preset_t *style)
 {
-    int32_t nub_h = 8;
-    int32_t nub_y0 = BATT_Y + ((BATT_H - nub_h) / 2);
+    int32_t nub_h = 10;
+    int32_t nub_y0 = (BATT_Y + (BATT_H / 2)) - (nub_h / 2);
     int32_t text_x = BATT_X - edgeai_text5x7_width(1, "BATT") - 2;
     int32_t text_y = BATT_Y + ((BATT_H - 7) / 2);
     par_lcd_s035_fill_rect(BATT_X, BATT_Y, BATT_X + BATT_W, BATT_Y + BATT_H, RGB565(8, 10, 12));
@@ -1753,6 +1753,8 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
     int32_t inner_w = BATT_W - 6;
     int32_t inner_h = BATT_H - 6;
     int32_t fill = (soc * inner_w) / 100;
+    int32_t text_x_lbl = BATT_X - edgeai_text5x7_width(1, "BATT") - 2;
+    int32_t text_y_lbl = BATT_Y + ((BATT_H - 7) / 2);
     char line[8];
     int32_t text_x;
     uint16_t fill_color = style->palette.accent_green;
@@ -1775,6 +1777,7 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
     snprintf(line, sizeof(line), "%3u%%", soc);
     text_x = BATT_X + ((BATT_W - edgeai_text5x7_width(1, line)) / 2);
     DrawTextUi(text_x, BATT_Y + 9, 1, line, style->palette.text_primary);
+    DrawTextUi(text_x_lbl, text_y_lbl, 1, "BATT", style->palette.text_secondary);
 }
 
 static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)

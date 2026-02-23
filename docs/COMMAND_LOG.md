@@ -124,3 +124,8 @@ Format:
 - 2026-02-23T02:12:34Z | cmd: update docs/PROJECT_STATE.md for battery terminal vertical-center and BATT label left-center alignment | result: ok
 - 2026-02-23T02:12:40Z | cmd: git status --short --branch | result: 3 modified files
 - 2026-02-23T02:12:51Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit && git push origin main | result: ok (3cd5e60)
+- 2026-02-23T02:13:42Z | cmd: patch battery widget: center right-side '+' terminal and redraw BATT label in dynamic path
+- 2026-02-23T02:14:07Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+- 2026-02-23T02:14:07Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver probe #1)
+- 2026-02-23T02:14:20Z | cmd: update docs/PROJECT_STATE.md for battery readability correction
+- 2026-02-23T02:14:27Z | cmd: git status --short --branch | result: 3 modified files

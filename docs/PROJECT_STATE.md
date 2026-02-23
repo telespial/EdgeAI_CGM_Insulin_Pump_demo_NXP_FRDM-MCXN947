@@ -203,3 +203,12 @@ Last updated: 2026-02-22
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-22
+- Change: Corrected battery icon readability:
+  - positive terminal centered vertically on right side of battery body
+  - `BATT` text rendered persistently at left-center of battery graphic
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
