@@ -692,3 +692,6 @@ Format:
 2026-02-23T22:14:47Z | cmd: cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin | result: ok
 2026-02-23T22:14:47Z | cmd: apply_patch update README.md STATUS.md docs/START_HERE.md docs/OPS_RUNBOOK.md docs/TODO.md and docs/PROJECT_STATE.md to golden R5 / failsafe R3 baseline | result: ok
 2026-02-23T22:14:47Z | cmd: tail docs/PROJECT_STATE.md and append project-state update for golden R5 promotion | result: ok
+2026-02-23T22:15:24Z | cmd: git status --short and git check-ignore on failsafe R5 artifact | result: ok (artifact ignored by pattern; added with -f)
+2026-02-23T22:15:24Z | cmd: git add docs/readme/status baseline updates + git add -f failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin && git commit && git push origin main | result: ok (5fbf0bd)
+2026-02-23T22:15:24Z | cmd: git tag -f GOLDEN-2026-02-23-R5 5fbf0bd && git push origin GOLDEN-2026-02-23-R5 --force | result: ok
