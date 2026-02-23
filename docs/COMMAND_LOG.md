@@ -179,3 +179,4 @@ Format:
 - 2026-02-23T02:43:03Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Refine orientation gauge to head-only pointer and larger dial" && git push origin main | result: ok (commit 7adcabf pushed)
 - 2026-02-23T02:46:30Z | cmd: patch src/gauge_render.c to move alert/warning box up 15px (ALERT_Y0/Y1) and clamp all 7 scope trace Y positions inside graph interior for visibility | result: ok
 - 2026-02-23T02:46:30Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T02:46:30Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Fix scope trace visibility and move alert box up" && git push origin main | result: ok (commit 9ebe555 pushed)
