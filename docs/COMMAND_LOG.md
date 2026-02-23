@@ -266,3 +266,8 @@ Format:
 - 2026-02-23T03:58:38Z | cmd: patch src/gauge_render.c change motor headline label MTR RPM -> RPM and increase line size by ~25% via stronger DrawTextUi125 pass | result: ok
 - 2026-02-23T03:58:38Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:59:08Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Rename motor headline to RPM and enlarge it" && git push origin main | result: ok (commit cc4e365 pushed)
+- 2026-02-23T03:59:57Z | cmd: patch src/gauge_render.c move RPM headline up one text row (y 42->34) | result: ok
+- 2026-02-23T03:59:57Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:08:10Z | cmd: inspect src/gauge_render.c RPM headline draw position and review current docs log/state tails | result: ok
+- 2026-02-23T04:08:45Z | cmd: patch src/gauge_render.c move RPM headline up one text row (y 34->26) | result: ok
+- 2026-02-23T04:09:22Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

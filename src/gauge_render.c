@@ -950,7 +950,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Motor area (top-left icon). */
     snprintf(line, sizeof(line), "RPM:%4u", (unsigned int)sample->voltage_mV);
-    DrawTextUi125(22, 42, line, okay);
+    DrawTextUi125(22, 26, line, okay);
     snprintf(line, sizeof(line), "I:%4umA AN:%3u%%", (unsigned int)sample->current_mA, (unsigned int)sample->anomaly_score_pct);
     DrawTextUi(22, 76, 1, line, sev);
     snprintf(line, sizeof(line), "WR:%3u%%", (unsigned int)sample->connector_wear_pct);
