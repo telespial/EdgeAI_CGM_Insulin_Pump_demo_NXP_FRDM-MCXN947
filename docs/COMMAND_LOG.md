@@ -321,3 +321,5 @@ Format:
 - 2026-02-23T05:48:50Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T05:52:50Z | cmd: patch src/gauge_render.c decrease glucose text size (scale 3->2) and recenter using scale-2 width | result: ok
 - 2026-02-23T05:53:30Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:57:35Z | cmd: patch src/gauge_render.c move glucose draw out of DrawHumanOrientationPointer into late-frame DrawGlucoseIndicator() call after DrawMedicalOverlayData() to prevent pump background clipping | result: ok
+- 2026-02-23T05:58:15Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

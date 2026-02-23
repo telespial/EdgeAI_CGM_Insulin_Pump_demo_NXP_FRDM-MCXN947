@@ -745,3 +745,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed glucose text clipping caused by pump text background redraw.
+  - extracted glucose overlay into dedicated `DrawGlucoseIndicator()` helper.
+  - moved glucose rendering to late-frame order (after `DrawMedicalOverlayData`) so pump background restore cannot overdraw it.
+  - preserved glucose content/style/position while changing z-order only.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

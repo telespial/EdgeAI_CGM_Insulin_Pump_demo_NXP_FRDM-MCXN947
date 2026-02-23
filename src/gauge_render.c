@@ -966,6 +966,15 @@ static __attribute__((unused)) void DrawCenterAccelBall(void)
     /* Removed per project direction: no accel box/ball visual. */
 }
 
+static void DrawGlucoseIndicator(void)
+{
+    /* Center-segment glucose indicator. Draw late in frame to avoid clipping. */
+    const char *bg_text = "98 mg/dL";
+    int32_t bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
+    int32_t bg_y = MAIN_CY + 40;
+    DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
+}
+
 static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
 {
     char line[40];
@@ -1099,13 +1108,6 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     DrawLine(ball_x - 2, ball_y + 6, ball_x + 2, ball_y + 6, 1, ball_color);
     DrawLine(ball_x - 5, ball_y - 2, ball_x - 5, ball_y + 2, 1, RGB565(220, 255, 230));
 
-    /* Center-segment blood sugar indicator (green, doubled size from previous). */
-    {
-        const char *bg_text = "98 mg/dL";
-        int32_t bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
-        int32_t bg_y = MAIN_CY + 40;
-        DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
-    }
 }
 
 static void DrawRecordConfirmOverlay(void)
@@ -2649,6 +2651,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
 
     DrawTerminalDynamic(style, sample, cpu_pct, ai_enabled);
     DrawMedicalOverlayData(style, sample, ai_enabled);
+    DrawGlucoseIndicator();
     DrawAiSideButtons();
     if (gSettingsVisible)
     {
