@@ -657,3 +657,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Corrected rollback for motor current row placement.
+  - restored `mA` row from shifted position back to the prior center location (`x: 34 -> 46`, `y: 71 -> 76`).
+  - this matches the state before the temporary left/up alignment experiment.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

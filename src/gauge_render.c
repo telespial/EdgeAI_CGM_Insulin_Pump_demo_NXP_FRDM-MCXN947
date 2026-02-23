@@ -1014,7 +1014,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     DrawTextUi(22, 24, 2, line, okay);
     rpm_ma = (uint16_t)((((uint32_t)gUiRpmTenths * 95u) + 245u) / 490u); /* map 0.0..49.0 RPM to 0..95mA */
     snprintf(line, sizeof(line), "%2umA", (unsigned int)rpm_ma);
-    DrawTextUi(34, 71, 2, line, sev);
+    DrawTextUi(46, 76, 2, line, sev);
     snprintf(line, sizeof(line), "WR:%3u%%", (unsigned int)sample->connector_wear_pct);
     DrawTextUi(22, 90, 1, line, sev);
 
