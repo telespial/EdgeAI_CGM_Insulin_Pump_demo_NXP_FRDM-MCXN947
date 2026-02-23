@@ -191,3 +191,4 @@ Format:
 - 2026-02-23T02:51:37Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Move gyro orientation circle up by 2px" && git push origin main | result: ok (commit 54be763 pushed)
 - 2026-02-23T02:53:46Z | cmd: reorder draw calls in src/gauge_render.c so DrawHumanOrientationPointer() renders before alert and terminal layers | result: ok
 - 2026-02-23T02:53:46Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T02:53:46Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Render gyro pointer below alert and terminal layers" && git push origin main | result: ok (commit 87586e5 pushed)
