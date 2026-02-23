@@ -1919,7 +1919,7 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
     int32_t inner_y1 = BAR_Y1 - 2;
     int32_t seg_step = (inner_y1 - inner_y0 + 1) / BAR_SEGMENTS;
     int32_t y;
-    int32_t label_y = BAR_Y0 - 12;
+    int32_t label_y = PUMP_BG_HEIGHT - 10;
 
     for (y = label_y - 2; y <= BAR_Y1 + 1; y++)
     {
@@ -1959,7 +1959,7 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
     bool over_temp = (temp_c10 >= 700);
     char line[16];
     int32_t y;
-    int32_t label_y = BAR_Y0 - 12;
+    int32_t label_y = PUMP_BG_HEIGHT - 10;
 
     if (((uint8_t)level == gPrevBarLevel) && (temp_c10 == gPrevBarTempC10) && (over_temp == gPrevOverTemp))
     {
