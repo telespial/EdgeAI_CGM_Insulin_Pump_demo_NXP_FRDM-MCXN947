@@ -947,10 +947,10 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     DrawTextUi(22, 90, 1, line, sev);
 
     /* Pump area (bottom-left icon). */
-    BlitPumpBgRegion(30, 228, 240, 300);
+    BlitPumpBgRegion(30, 228, 198, 300);
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
     DrawTextUi(34, 232, 2, line, pump_color);
-    snprintf(line, sizeof(line), "RATE:%3u mL/h", (unsigned int)(sample->power_mW / 10u));
+    snprintf(line, sizeof(line), "RATE:%3u ML/H", (unsigned int)(sample->power_mW / 10u));
     DrawTextUi(34, 248, 2, line, pump_color);
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
     DrawTextUi(34, 264, 2, line, pump_color);
