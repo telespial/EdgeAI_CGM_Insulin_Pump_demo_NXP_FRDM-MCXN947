@@ -376,3 +376,5 @@ Format:
 2026-02-23T05:08:39Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:08:39Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:08:49Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Restore lower-left temp C/F text and enlarge it by 20 percent' && git push origin main | result: ok (6755108)
+2026-02-23T05:10:12Z | cmd: patch src/gauge_render.c reduce left-bargraph restore width (x+188->x+170) to prevent mg/dL line erase and add ANOM/WEAR spacing (WEAR y 139->143) | result: ok
+2026-02-23T05:10:12Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)

@@ -873,3 +873,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed intermittent `mg/dL` disappearance and added spacing between anomaly rows:
+  - narrowed left bargraph background-restore span from `BAR_X0 + 188` to `BAR_X0 + 170` so it no longer clips into the `mg/dL` text zone
+  - moved `WEAR` row down for added vertical padding under `ANOM` (`y: 139 -> 143`)
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

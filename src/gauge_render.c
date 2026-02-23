@@ -1157,7 +1157,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     snprintf(line, sizeof(line), "ANOM:%3u%%", (unsigned int)sample->anomaly_score_pct);
     DrawTextUi(10, 123, 2, line, sev);
     snprintf(line, sizeof(line), "WEAR:%3u%%", (unsigned int)sample->connector_wear_pct);
-    DrawTextUi(10, 139, 2, line, sev);
+    DrawTextUi(10, 143, 2, line, sev);
 
     /* Pump area (bottom-left icon). */
     /* Keep pump text clean but avoid the elapsed-time band in the center segment. */
@@ -2263,7 +2263,7 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
     {
         if ((y >= 0) && (y < PUMP_BG_HEIGHT))
         {
-            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 188, y,
+            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 170, y,
                                    (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + BAR_X0]);
         }
     }
@@ -2311,7 +2311,7 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t f
     {
         if ((y >= 0) && (y < PUMP_BG_HEIGHT))
         {
-            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 188, y,
+            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 170, y,
                                    (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + BAR_X0]);
         }
     }
