@@ -482,3 +482,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Finalized pump-line artifact cleanup and unit labeling:
+  - rate unit text normalized to explicit `ML/H` on the pump line.
+  - pump text redraw background region narrowed (`x1: 240 -> 198`) to avoid any overlap with the center orientation-ball area.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

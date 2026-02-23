@@ -243,3 +243,6 @@ Format:
 - 2026-02-23T03:42:13Z | cmd: patch src/gauge_render.c remove legacy center-area blit that clipped bottom of accel-ball path; keep only pump-text-region blit | result: ok
 - 2026-02-23T03:42:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:42:30Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Fix accel-ball clipping from legacy center redraw box" && git push origin main | result: ok (commit f2501a8 pushed)
+- 2026-02-23T03:45:18Z | cmd: patch src/gauge_render.c set rate unit to explicit ML/H and tighten pump text restore box x1 240->198 to avoid center-ball overlap | result: ok
+- 2026-02-23T03:45:18Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T03:45:18Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Fix pump text artifacts and center ball clipping overlap" && git push origin main | result: ok (commit f9f71b4 pushed)
