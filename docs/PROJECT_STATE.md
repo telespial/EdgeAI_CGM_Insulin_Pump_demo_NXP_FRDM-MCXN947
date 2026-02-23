@@ -316,3 +316,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Applied visibility/layout fixes:
+  - moved warning/alert box up by 15 pixels (`ALERT_Y0: 48 -> 33`, `ALERT_Y1: 86 -> 71`)
+  - clamped all seven scope traces (`AX/AY/AZ/GX/GY/GZ/T`) to the graph interior so no trace disappears on border lines
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

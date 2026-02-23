@@ -218,9 +218,9 @@ enum
     AI_HELP_X1 = GAUGE_RENDER_AI_HELP_X1,
     AI_HELP_Y1 = GAUGE_RENDER_AI_HELP_Y1,
     ALERT_X0 = 147,
-    ALERT_Y0 = 48,
+    ALERT_Y0 = 33,
     ALERT_X1 = 325,
-    ALERT_Y1 = 86,
+    ALERT_Y1 = 71,
     TIMELINE_X0 = SCOPE_X,
     TIMELINE_Y0 = 4,
     TIMELINE_X1 = SCOPE_X + SCOPE_W,
@@ -1907,6 +1907,8 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
     uint16_t gy_color = TRACE_GY_COLOR;
     uint16_t gz_color = TRACE_GZ_COLOR;
     uint16_t i;
+    int32_t y_min = py0 + 1;
+    int32_t y_max = y_bottom - 1;
     (void)ai_enabled;
 
     par_lcd_s035_fill_rect(px0, py0, px0 + pw, py0 + ph, RGB565(4, 6, 8));
@@ -1929,6 +1931,13 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
         int32_t y_gy = y_bottom - (int32_t)((gTraceGy[idx] * (uint32_t)(ph - 4)) / 255u);
         int32_t y_gz = y_bottom - (int32_t)((gTraceGz[idx] * (uint32_t)(ph - 4)) / 255u);
         int32_t y_tp = y_bottom - (int32_t)((gTraceTemp[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_ax = ClampI32(y_ax, y_min, y_max);
+        y_ay = ClampI32(y_ay, y_min, y_max);
+        y_az = ClampI32(y_az, y_min, y_max);
+        y_gx = ClampI32(y_gx, y_min, y_max);
+        y_gy = ClampI32(y_gy, y_min, y_max);
+        y_gz = ClampI32(y_gz, y_min, y_max);
+        y_tp = ClampI32(y_tp, y_min, y_max);
 
         if (i > 0u)
         {
