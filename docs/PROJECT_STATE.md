@@ -185,3 +185,12 @@ Last updated: 2026-02-22
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-22
+- Change: Shifted battery label/graphic by requested relative offset:
+  - left by 25% of battery graphic width
+  - up by 50% of battery graphic height
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

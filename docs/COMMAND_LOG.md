@@ -114,3 +114,8 @@ Format:
 - 2026-02-23T02:08:41Z | cmd: update docs/PROJECT_STATE.md for battery lower-right-under-terminal move | result: ok
 - 2026-02-23T02:08:46Z | cmd: git status --short --branch | result: 3 modified files
 - 2026-02-23T02:08:54Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit && git push origin main | result: ok (48c1c4a)
+- 2026-02-23T02:09:53Z | cmd: patch gauge_render.c to move battery left by 25% width and up by 50% height (BATT_X=391, BATT_Y=287)
+- 2026-02-23T02:10:18Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+- 2026-02-23T02:10:18Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (linkserver probe #1)
+- 2026-02-23T02:10:18Z | cmd: update docs/PROJECT_STATE.md for battery offset move (left 25% width, up 50% height) | result: ok
+- 2026-02-23T02:10:45Z | cmd: git status --short --branch | result: 3 modified files
