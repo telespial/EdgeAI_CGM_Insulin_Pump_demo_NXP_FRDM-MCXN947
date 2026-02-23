@@ -1587,3 +1587,11 @@ Last updated: 2026-02-23
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Ran additional runtime verification cycle on current CGM step-9 firmware.
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok

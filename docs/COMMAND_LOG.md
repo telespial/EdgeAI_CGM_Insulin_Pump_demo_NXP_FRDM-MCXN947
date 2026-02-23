@@ -685,3 +685,6 @@ Format:
 2026-02-23T22:08:38Z | cmd: append docs/PROJECT_STATE.md with step-9 implementation and verification entry | result: ok
 2026-02-23T22:08:47Z | cmd: append root docs/PROJECT_STATE.md with generic shared-state update pointer | result: ok
 2026-02-23T22:09:11Z | cmd: git status --short and git diff --stat/diff for step-9 sanity review | result: ok
+2026-02-23T22:11:23Z | cmd: ./scripts/build_and_flash.sh | result: ok (runtime verification pass after step-9, build+flash successful)
+2026-02-23T22:11:43Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for additional runtime verification | result: ok
+2026-02-23T22:11:55Z | cmd: cleaned malformed duplicate runtime entry in docs/PROJECT_STATE.md and kept verified build+flash record
