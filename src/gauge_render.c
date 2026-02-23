@@ -2550,6 +2550,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         DrawTextUi(lx, ly, 1, "GZ", TRACE_GZ_COLOR);
     }
     DrawLeftBargraphDynamic(style, DisplayTempC10(sample));
+    DrawHumanOrientationPointer(style);
     if (!(gSettingsVisible || gHelpVisible || gLimitsVisible))
     {
         DrawAiAlertOverlay(style, sample, ai_enabled);
@@ -2562,7 +2563,6 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     DrawBatteryIndicatorDynamic(style, 82u);
 
     DrawTerminalDynamic(style, sample, cpu_pct, ai_enabled);
-    DrawHumanOrientationPointer(style);
     DrawMedicalOverlayData(style, sample, ai_enabled);
     DrawAiSideButtons();
     if (gSettingsVisible)
