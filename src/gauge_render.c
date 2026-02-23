@@ -130,7 +130,13 @@ static uint16_t gUiRpmTenths = 0u;
 static uint32_t gUiRpmNextUpdateDs = 0u;
 static bool gUiRpmSchedulePrimed = false;
 static bool gUiMotorRunning = false;
-static uint16_t gUiDoseRateMlH = 0u;
+/* Dose rate is in milli-units per hour (mU/h). 1000 mU = 1 U. */
+static uint32_t gUiDoseRateUhMilli = 0u;
+/* 3.0 mL reservoir starts at 92% and drains from dose flow model. */
+static float gUiReservoirMl = 2.76f;
+static uint8_t gUiReservoirPct = 92u;
+static bool gUiReservoirPrimed = false;
+static uint32_t gUiReservoirLastDs = 0u;
 static uint8_t gUiGlucoseMgdl = 98u;
 static int8_t gUiGlucoseDir = 1;
 static uint32_t gUiGlucoseNextStepDs = 0u;
@@ -1018,6 +1024,13 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 {
     char line[40];
     uint16_t rpm_ma;
+    uint32_t now_ds;
+    uint32_t delta_ds;
+    float delta_h;
+    float dose_rate_ml_h_avg;
+    float dose_rate_ml_h_effective;
+    uint32_t dose_rate_mlh_x1000;
+    uint32_t fill_pct_u32;
     uint16_t okay = style->palette.text_primary;
     uint16_t warn = WARN_YELLOW;
     uint16_t sev = (sample->anomaly_score_pct >= 65u) ? ALERT_RED :
@@ -1028,36 +1041,68 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Motor area (top-left icon). */
     BlitPumpBgRegion(20, 18, 142, 102);
+    now_ds = UiNowDs();
+    if (!gUiRpmSchedulePrimed)
     {
-        uint32_t now_ds = UiNowDs();
-        if (!gUiRpmSchedulePrimed)
+        uint32_t r = NextUiRand();
+        gUiMotorRunning = false;
+        gUiRpmTenths = 0u;
+        gUiDoseRateUhMilli = 0u;
+        gUiRpmNextUpdateDs = now_ds + 100u + (r % 101u); /* stop for 10.0 .. 20.0 seconds */
+        gUiRpmSchedulePrimed = true;
+    }
+    else if ((int32_t)(now_ds - gUiRpmNextUpdateDs) >= 0)
+    {
+        uint32_t r = NextUiRand();
+        if (gUiMotorRunning)
         {
-            uint32_t r = NextUiRand();
             gUiMotorRunning = false;
             gUiRpmTenths = 0u;
-            gUiDoseRateMlH = 0u;
+            gUiDoseRateUhMilli = 0u;
             gUiRpmNextUpdateDs = now_ds + 100u + (r % 101u); /* stop for 10.0 .. 20.0 seconds */
-            gUiRpmSchedulePrimed = true;
         }
-        else if ((int32_t)(now_ds - gUiRpmNextUpdateDs) >= 0)
+        else
         {
-            uint32_t r = NextUiRand();
-            if (gUiMotorRunning)
-            {
-                gUiMotorRunning = false;
-                gUiRpmTenths = 0u;
-                gUiDoseRateMlH = 0u;
-                gUiRpmNextUpdateDs = now_ds + 100u + (r % 101u); /* stop for 10.0 .. 20.0 seconds */
-            }
-            else
-            {
-                gUiMotorRunning = true;
-                gUiRpmTenths = (uint16_t)(10u + (r % 481u)); /* 1.0 .. 49.0 */
-                gUiDoseRateMlH = (uint16_t)(1u + (NextUiRand() % 95u)); /* random dosing: 1 .. 95 mL/h */
-                gUiRpmNextUpdateDs = now_ds + 50u + (r % 51u); /* run for 5.0 .. 10.0 seconds */
-            }
+            uint32_t rate_step;
+            gUiMotorRunning = true;
+            gUiRpmTenths = (uint16_t)(10u + (r % 481u)); /* 1.0 .. 49.0 */
+            /* Random dosing in realistic insulin pump range centered near 4 U/h:
+             * 3.000 .. 5.000 U/h in 0.025 U/h increments (mU/h storage). */
+            rate_step = NextUiRand() % 81u; /* 0..80 -> 81 steps */
+            gUiDoseRateUhMilli = (3000u + (rate_step * 25u));
+            gUiRpmNextUpdateDs = now_ds + 50u + (r % 51u); /* run for 5.0 .. 10.0 seconds */
         }
     }
+
+    /* Reservoir drain model:
+     * - U100 insulin => mL/h = U/h / 100
+     * - motor shows pulsed movement (run/idle windows), so when running we apply
+     *   a 3x pulse-compensation factor to preserve the displayed average dose trend.
+     * - starts at 92% of a 3.0 mL cartridge and drains toward empty over ~3 days. */
+    if (!gUiReservoirPrimed)
+    {
+        gUiReservoirMl = 3.0f * 0.92f;
+        gUiReservoirPct = 92u;
+        gUiReservoirLastDs = now_ds;
+        gUiReservoirPrimed = true;
+    }
+    delta_ds = (now_ds >= gUiReservoirLastDs) ? (now_ds - gUiReservoirLastDs) : 0u;
+    gUiReservoirLastDs = now_ds;
+    delta_h = ((float)delta_ds) / 36000.0f;
+    dose_rate_ml_h_avg = ((float)gUiDoseRateUhMilli) / 100000.0f;
+    dose_rate_ml_h_effective = gUiMotorRunning ? (dose_rate_ml_h_avg * 3.0f) : 0.0f;
+    gUiReservoirMl -= (dose_rate_ml_h_effective * delta_h);
+    if (gUiReservoirMl < 0.0f)
+    {
+        gUiReservoirMl = 0.0f;
+    }
+    fill_pct_u32 = (uint32_t)((gUiReservoirMl * 100.0f / 3.0f) + 0.5f);
+    if (fill_pct_u32 > 100u)
+    {
+        fill_pct_u32 = 100u;
+    }
+    gUiReservoirPct = (uint8_t)fill_pct_u32;
+
     pumping = gUiMotorRunning;
     snprintf(line, sizeof(line), "RPM:%2u.%1u",
              (unsigned int)(gUiRpmTenths / 10u),
@@ -1077,9 +1122,12 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     BlitPumpBgRegion(30, 282, 169, 300);
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
     DrawTextUi(34, 246, 2, line, pump_color);
-    snprintf(line, sizeof(line), "RATE:%3u ML/H", (unsigned int)gUiDoseRateMlH);
+    dose_rate_mlh_x1000 = (gUiDoseRateUhMilli + 50u) / 100u; /* mL/h * 1000 (rounded) */
+    snprintf(line, sizeof(line), "RATE:%u.%03u ML/H",
+             (unsigned int)(dose_rate_mlh_x1000 / 1000u),
+             (unsigned int)(dose_rate_mlh_x1000 % 1000u));
     DrawTextUi(34, 262, 2, line, pump_color);
-    snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
+    snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)gUiReservoirPct);
     DrawTextUi(34, 278, 2, line, pump_color);
 
     /* Human status text is no longer drawn here; keep center area untouched. */

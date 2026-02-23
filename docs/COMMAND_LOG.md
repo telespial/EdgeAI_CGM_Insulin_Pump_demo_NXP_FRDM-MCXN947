@@ -339,3 +339,8 @@ Format:
 2026-02-23T04:51:22Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T04:51:22Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T04:51:40Z | cmd: git status --short --branch and rg verification of new pump/rpm scheduler symbols | result: ok
+2026-02-23T04:56:12Z | cmd: rg/sed inspect glucose+motor/pump code paths and draw order in src/gauge_render.c; git status check | result: ok
+2026-02-23T04:56:12Z | cmd: apply_patch src/gauge_render.c add 92% boot reservoir model, U100 flow conversion, 3-day drain calibration, and pump-rate display update; keep run/idle motor schedule wiring | result: ok
+2026-02-23T04:56:12Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T04:56:12Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T04:56:27Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Calibrate reservoir to 92% boot and 3-day U100 flow model' && git push origin main

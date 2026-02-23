@@ -794,3 +794,15 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Calibrated pump reservoir simulation to insulin dosing model in `src/gauge_render.c`:
+  - reservoir starts at `92%` of a `3.0 mL` cartridge on boot
+  - dose modeled in `U/h` (stored as milli-units per hour), converted with U100 rule (`100 U = 1 mL`)
+  - displayed flow now uses precise `mL/h` formatting (`RATE:x.xxx ML/H`)
+  - fill percentage now drains from computed dose flow instead of SOC placeholder
+  - motor/pump run-idle windows remain wired (`STOP 10..20s`, `RUN 5..10s`), with pulse-compensated drain to preserve realistic average dose trend toward ~3-day depletion
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
