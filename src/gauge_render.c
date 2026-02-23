@@ -2014,7 +2014,7 @@ static void DrawSettingsPopup(void)
         int32_t bx1 = bx0 + GAUGE_RENDER_SET_AI_W - 1;
         int32_t by1 = by0 + GAUGE_RENDER_SET_AI_H - 1;
         bool sel = (i == 0) ? !gPrevAiEnabled : gPrevAiEnabled;
-        const char *t = (i == 0) ? "AI: MCU" : "AI: NPU";
+        const char *t = (i == 0) ? "MCU" : "NPU";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
         DrawPillRect(bx0, by0, bx1, by1, f, edge);

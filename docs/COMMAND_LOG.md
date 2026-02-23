@@ -445,3 +445,6 @@ Format:
 2026-02-23T14:35:41Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1 UYLKOJI11H2B3)
 2026-02-23T14:36:42Z | cmd: git status --short | result: ok
 2026-02-23T14:36:42Z | cmd: git add src/gauge_render.c src/edgeai_package_transport_anomaly_demo.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Switch AI setting labels from ON/OFF to MCU/NPU' && git push origin main | result: ok (fe15d35)
+2026-02-23T14:38:14Z | cmd: read root docs /docs/START_HERE.md /docs/PROJECT_STATE.md /docs/OPS_RUNBOOK.md and inspect DrawSettingsPopup() in src/gauge_render.c | result: ok
+2026-02-23T14:38:14Z | cmd: apply_patch src/gauge_render.c change AI settings button labels from 'AI: MCU'/'AI: NPU' to 'MCU'/'NPU' (row label remains AI) | result: ok
+2026-02-23T14:38:14Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok

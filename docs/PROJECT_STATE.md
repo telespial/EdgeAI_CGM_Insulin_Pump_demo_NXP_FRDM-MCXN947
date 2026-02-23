@@ -1038,3 +1038,11 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Adjusted AI settings row format to match other settings style.
+  - kept row label as `AI`
+  - changed option button text to `MCU` (left) and `NPU` (right)
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+- Result: ok
