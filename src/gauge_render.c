@@ -1197,11 +1197,6 @@ static void DrawGlucoseIndicator(void)
         gUiGlucoseSchedPrimed = true;
     }
 
-    if (gPrevGlucoseMgdl == gUiGlucoseMgdl)
-    {
-        return;
-    }
-
     snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseMgdl);
     bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
     DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
@@ -1420,10 +1415,8 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
         ball_color = RGB565(255, 186, 104); /* light orange when upside down */
     }
 
-    /* Restore the human-circle area before redrawing gauge to prevent pointer trails,
-     * but do not overwrite the mg/dL row (written only on value changes). */
-    BlitPumpBgRegion(ring_x0, ring_y0, ring_x1, 219);
-    BlitPumpBgRegion(ring_x0, 243, ring_x1, ring_y1);
+    /* Restore the full human-circle area before redrawing gauge to prevent pointer trails. */
+    BlitPumpBgRegion(ring_x0, ring_y0, ring_x1, ring_y1);
 
     /* 270-degree tach arc (vertically flipped) with top 90 degrees open.
      * Sweep: 135 -> 45 degrees (CCW), 5-degree segments:
@@ -2331,6 +2324,7 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
     int32_t prev_gy = 0;
     int32_t prev_gz = 0;
     int32_t prev_tp = 0;
+    int32_t prev_bp = 0;
     uint16_t ax_color = TRACE_AX_COLOR;
     uint16_t ay_color = TRACE_AY_COLOR;
     uint16_t az_color = TRACE_AZ_COLOR;
@@ -2362,6 +2356,7 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
         int32_t y_gy = y_bottom - (int32_t)((gTraceGy[idx] * (uint32_t)(ph - 4)) / 255u);
         int32_t y_gz = y_bottom - (int32_t)((gTraceGz[idx] * (uint32_t)(ph - 4)) / 255u);
         int32_t y_tp = y_bottom - (int32_t)((gTraceTemp[idx] * (uint32_t)(ph - 4)) / 255u);
+        int32_t y_bp = y_bottom - (int32_t)((gTraceBaro[idx] * (uint32_t)(ph - 4)) / 255u);
         y_ax = ClampI32(y_ax, y_min, y_max);
         y_ay = ClampI32(y_ay, y_min, y_max);
         y_az = ClampI32(y_az, y_min, y_max);
@@ -2369,6 +2364,7 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
         y_gy = ClampI32(y_gy, y_min, y_max);
         y_gz = ClampI32(y_gz, y_min, y_max);
         y_tp = ClampI32(y_tp, y_min, y_max);
+        y_bp = ClampI32(y_bp, y_min, y_max);
 
         if (i > 0u)
         {
@@ -2380,6 +2376,7 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
             DrawLine(prev_x, prev_gy, x, y_gy, 1, gy_color);
             DrawLine(prev_x, prev_gz, x, y_gz, 1, gz_color);
             DrawLine(prev_x, prev_tp, x, y_tp, 1, tp_color);
+            DrawLine(prev_x, prev_bp, x, y_bp, 1, TRACE_BARO_COLOR);
         }
 
         prev_x = x;
@@ -2390,6 +2387,7 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
         prev_gy = y_gy;
         prev_gz = y_gz;
         prev_tp = y_tp;
+        prev_bp = y_bp;
     }
 
     if (gPlayheadValid)
@@ -2974,12 +2972,14 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         DrawTextUi(lx, ly, 1, "AZ", TRACE_AZ_COLOR);
         lx += edgeai_text5x7_width(1, "AZ ");
         DrawTextUi(lx, ly, 1, "T", t_color);
-        lx += edgeai_text5x7_width(1, "T  ");
+        lx += edgeai_text5x7_width(1, "T ");
         DrawTextUi(lx, ly, 1, "GX", TRACE_GX_COLOR);
         lx += edgeai_text5x7_width(1, "GX ");
         DrawTextUi(lx, ly, 1, "GY", TRACE_GY_COLOR);
         lx += edgeai_text5x7_width(1, "GY ");
         DrawTextUi(lx, ly, 1, "GZ", TRACE_GZ_COLOR);
+        lx += edgeai_text5x7_width(1, "GZ ");
+        DrawTextUi(lx, ly, 1, "BP", TRACE_BARO_COLOR);
     }
     DrawHumanOrientationPointer(style);
     if (!(gSettingsVisible || gHelpVisible || gLimitsVisible))

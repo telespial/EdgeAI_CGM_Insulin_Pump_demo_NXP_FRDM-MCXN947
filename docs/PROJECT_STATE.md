@@ -950,3 +950,17 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS (after one compile-fix iteration)
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added barometric pressure to the right-hand scope graph overlay:
+  - plotted `gTraceBaro` as an additional line in `TRACE_BARO_COLOR`
+  - added `BP` in the scope legend row
+- Change: Fixed blue orientation-ball trail artifact at the bottom of the center circle:
+  - full center-circle background region is now restored each frame before ball redraw
+  - glucose `mg/dL` text is redrawn each frame so the full restore does not blank it
+- Change: Flash recorder barometric logging/playback path verified:
+  - `ExtFlashRecorder_AppendSampleEx(... baro_dhpa ...)` and playback restore path were already wired and retained
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

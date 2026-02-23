@@ -407,3 +407,9 @@ Format:
 2026-02-23T05:34:40Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:34:40Z | cmd: read /home/user/python_projects/codemaster/docs/START_HERE.md, /home/user/python_projects/codemaster/docs/PROJECT_STATE.md, /home/user/python_projects/codemaster/docs/OPS_RUNBOOK.md | result: ok
 2026-02-23T05:34:40Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Drive activity/error codes from accel+gyro+baro and map center bargraph to activity' && git push origin main | result: ok (dcfe861)
+2026-02-23T05:38:39Z | cmd: rg/sed inspect scope trace pipeline, center ball redraw path, and ext flash recorder paths in src/gauge_render.c src/ext_flash_recorder.c src/edgeai_package_transport_anomaly_demo.c | result: ok
+2026-02-23T05:38:39Z | cmd: apply_patch src/gauge_render.c fix center ball trailing by restoring full human-circle region each frame and redrawing glucose row every frame after motion update | result: ok
+2026-02-23T05:38:39Z | cmd: apply_patch src/gauge_render.c add barometric pressure plot to scope graph (TRACE_BARO_COLOR) and add BP to graph legend row | result: ok
+2026-02-23T05:38:39Z | cmd: verify flash recorder path (ExtFlashRecorder_AppendSampleEx / ReadNextSample) includes baro_dhpa in record+playback fields and call sites | result: ok (already wired)
+2026-02-23T05:38:39Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:38:39Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
