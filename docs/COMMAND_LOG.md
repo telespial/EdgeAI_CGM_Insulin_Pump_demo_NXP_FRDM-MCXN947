@@ -362,3 +362,4 @@ Format:
 2026-02-23T05:04:05Z | cmd: apply_patch src/gauge_render.c add mg/dL redraw gate (only on value change) and prev-value cache reset hooks | result: ok
 2026-02-23T05:04:05Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:04:05Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:04:31Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Refresh mg/dL row only on glucose value change' && git push origin main | result: ok (6b0f57f)
