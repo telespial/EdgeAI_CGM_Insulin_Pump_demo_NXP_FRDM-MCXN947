@@ -287,3 +287,8 @@ Format:
 - 2026-02-23T04:31:44Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T04:34:18Z | cmd: patch src/gauge_render.c move RPM row left by two characters (x 46->22) | result: ok
 - 2026-02-23T04:34:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:38:31Z | cmd: inspect gauge_render.c for RPM draw source and frame timing hooks | result: ok
+- 2026-02-23T04:39:12Z | cmd: patch src/gauge_render.c add UI pseudo-random RPM generator (0.0 or 0.1..25.0) and display format RPM:x.y | result: ok
+- 2026-02-23T04:39:59Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:41:16Z | cmd: patch src/gauge_render.c change random RPM update timing to random interval 10-30 seconds using RTC decisecond scheduling (with frame fallback) | result: ok
+- 2026-02-23T04:41:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

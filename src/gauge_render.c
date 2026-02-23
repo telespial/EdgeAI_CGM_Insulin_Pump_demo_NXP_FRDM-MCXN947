@@ -125,6 +125,10 @@ static char gExtensionVersion[16] = "0.1.0";
 static float gUiBallXmgFilt = 0.0f;
 static float gUiBallYmgFilt = 0.0f;
 static bool gUiBallFiltPrimed = false;
+static uint32_t gUiRpmRand = 0x73A51C9Du;
+static uint16_t gUiRpmTenths = 0u;
+static uint32_t gUiRpmNextUpdateDs = 0u;
+static bool gUiRpmSchedulePrimed = false;
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 {
@@ -153,6 +157,30 @@ static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
         dst[i] = c;
     }
     dst[i] = '\0';
+}
+
+static uint32_t NextUiRand(void)
+{
+    uint32_t x = gUiRpmRand;
+    x ^= (x << 13);
+    x ^= (x >> 17);
+    x ^= (x << 5);
+    gUiRpmRand = x;
+    return x;
+}
+
+static uint32_t UiNowDs(void)
+{
+    if (gRtcValid)
+    {
+        return (uint32_t)gRtcHh * 36000u +
+               (uint32_t)gRtcMm * 600u +
+               (uint32_t)gRtcSs * 10u +
+               (uint32_t)gRtcDs;
+    }
+
+    /* Fallback when RTC is unavailable: approximate deciseconds from frame count. */
+    return gFrameCounter / 3u;
 }
 
 #define SCOPE_TRACE_POINTS 100u
@@ -950,7 +978,26 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Motor area (top-left icon). */
     BlitPumpBgRegion(20, 18, 142, 102);
-    snprintf(line, sizeof(line), "RPM:%4u", (unsigned int)sample->voltage_mV);
+    {
+        uint32_t now_ds = UiNowDs();
+        if ((!gUiRpmSchedulePrimed) || ((int32_t)(now_ds - gUiRpmNextUpdateDs) >= 0))
+        {
+            uint32_t r = NextUiRand();
+            if ((r % 5u) == 0u)
+            {
+                gUiRpmTenths = 0u;
+            }
+            else
+            {
+                gUiRpmTenths = (uint16_t)(1u + (r % 250u)); /* 0.1 .. 25.0 */
+            }
+            gUiRpmNextUpdateDs = now_ds + 100u + (r % 201u); /* 10.0 .. 30.0 seconds */
+            gUiRpmSchedulePrimed = true;
+        }
+    }
+    snprintf(line, sizeof(line), "RPM:%2u.%1u",
+             (unsigned int)(gUiRpmTenths / 10u),
+             (unsigned int)(gUiRpmTenths % 10u));
     DrawTextUi(22, 24, 2, line, okay);
     snprintf(line, sizeof(line), "I:%4umA AN:%3u%%", (unsigned int)sample->current_mA, (unsigned int)sample->anomaly_score_pct);
     DrawTextUi(22, 76, 1, line, sev);

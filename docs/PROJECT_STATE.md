@@ -601,3 +601,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added synthetic RPM demo behavior for motor headline.
+  - display now shows `RPM:x.y` where value is either `0.0` or random in `0.1..25.0`.
+  - update interval is now random `10.0..30.0` seconds (RTC decisecond scheduler; frame-count fallback if RTC is unavailable).
+  - implemented with lightweight xorshift PRNG state and decisecond next-update scheduling.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
