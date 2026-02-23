@@ -689,6 +689,24 @@ static void DrawTextUi125(int32_t x, int32_t y, const char *text, uint16_t fg)
     DrawTextUi(x, y + 1, 1, text, fg);
 }
 
+static void BlitPumpBgRegion(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+{
+    int32_t y;
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 >= PUMP_BG_WIDTH) x1 = PUMP_BG_WIDTH - 1;
+    if (y1 >= PUMP_BG_HEIGHT) y1 = PUMP_BG_HEIGHT - 1;
+    if ((x0 > x1) || (y0 > y1))
+    {
+        return;
+    }
+
+    for (y = y0; y <= y1; y++)
+    {
+        par_lcd_s035_blit_rect(x0, y, x1, y, (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + x0]);
+    }
+}
+
 static void DrawTerminalLine(int32_t y, const char *text, uint16_t color)
 {
     int32_t x0 = TERM_X + 4;
@@ -942,6 +960,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     DrawTextUi(34, 248, 1, line, okay);
 
     /* Human status area below figure, above elapsed-time row. */
+    BlitPumpBgRegion(172, 226, 322, 267);
     snprintf(line, sizeof(line), "GYRO X:%4d Y:%4d", (int)gx, (int)gy);
     DrawTextUi125(176, 228, line, gGyroValid ? okay : warn);
     DrawTextUi125(176, 242, inverted ? "POSE: INVERTED" : "POSE: NORMAL", inverted ? warn : okay);
