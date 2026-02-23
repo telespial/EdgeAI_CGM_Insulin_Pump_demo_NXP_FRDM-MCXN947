@@ -675,3 +675,5 @@ Format:
 2026-02-23T22:03:56Z | cmd: apply_patch src/cgm_preprocess.h/.c add conservative lag/kinetics config/state/output and logic | result: ok
 2026-02-23T22:03:56Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after step-8 implementation)
 2026-02-23T22:03:56Z | cmd: apply_patch docs/TODO.md docs/CGM_TRACEABILITY.md and append docs/PROJECT_STATE.md step-8 update | result: ok
+2026-02-23T22:04:11Z | cmd: git add src/cgm_preprocess.c src/cgm_preprocess.h docs/TODO.md docs/CGM_TRACEABILITY.md docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Implement CGM step 8 conservative lag and kinetics handling' && git push origin main | result: ok (77e21c8)
+2026-02-23T22:04:36Z | cmd: git status --short | result: ok (docs/COMMAND_LOG.md modified after logging step-8 push)
