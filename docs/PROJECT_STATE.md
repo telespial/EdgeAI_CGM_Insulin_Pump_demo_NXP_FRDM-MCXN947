@@ -854,3 +854,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed disappearing `mg/dL` row by removing pump-region background refresh overlap with glucose text band:
+  - adjusted pump blit region from `y=228..281` to `y=240..281` in `src/gauge_render.c`
+  - keeps `mg/dL` redraw-on-change optimization while preventing erase by later draw passes
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

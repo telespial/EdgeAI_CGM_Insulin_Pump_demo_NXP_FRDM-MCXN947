@@ -1153,7 +1153,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Pump area (bottom-left icon). */
     /* Keep pump text clean but avoid the elapsed-time band in the center segment. */
-    BlitPumpBgRegion(30, 228, 198, 281);
+    BlitPumpBgRegion(30, 240, 198, 281);
     BlitPumpBgRegion(30, 282, 169, 300);
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
     DrawTextUi(34, 246, 2, line, pump_color);
