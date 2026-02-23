@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "gauge_style.h"
+#include "cgm_preprocess.h"
 #include "ext_flash_recorder.h"
 #include "par_lcd_s035.h"
 #include "pump_bg.h"
@@ -138,11 +139,15 @@ static uint32_t gUiMotorPulseEndDs = 0u;
 static float gUiReservoirMl = 2.76f;
 static uint8_t gUiReservoirPct = 92u;
 static bool gUiReservoirPrimed = false;
-static uint8_t gUiGlucoseMgdl = 98u;
+static uint16_t gUiGlucoseMgdl = 98u;
 static int8_t gUiGlucoseDir = 1;
 static uint32_t gUiGlucoseNextStepDs = 0u;
 static bool gUiGlucoseSchedPrimed = false;
-static uint8_t gPrevGlucoseMgdl = 255u;
+static uint16_t gPrevGlucoseMgdl = 65535u;
+static cgm_preprocess_t gCgmPreprocess;
+static bool gCgmPreprocessInit = false;
+static uint32_t gCgmNextRawSampleDs = 0u;
+static float gUiGlucosePhysioMgdl = 98.0f;
 static bool gActivityModelPrimed = false;
 static uint32_t gActivityPrevDs = 0u;
 static int16_t gActivityPrevBaroDhpa = 10132;
@@ -154,10 +159,11 @@ static uint8_t gTransportMode = 0u;
 static uint8_t gTransportConfidencePct = 0u;
 static float gUiInsulinIobU = 0.0f;
 static uint32_t gUiDoseCtrlPrevDs = 0u;
-static uint8_t gUiGlucosePrevForTrend = 98u;
+static uint16_t gUiGlucosePrevForTrend = 98u;
 static uint32_t gUiGlucosePrevTrendDs = 0u;
 static float gUiGlucoseTrendMgDlPerMin = 0.0f;
 static uint32_t gUiDoseRecommendedUhMilli = 4000u;
+static uint8_t gUiCgmSqiPct = 100u;
 
 enum
 {
@@ -1308,20 +1314,25 @@ static __attribute__((unused)) void DrawCenterAccelBall(void)
 
 static void DrawGlucoseIndicator(void)
 {
-    /* Slowly changing glucose model: 96..106 mg/dL, step every 90..180 s. */
+    /* Step-5 preprocessing pipeline:
+     * - synthesize raw ADC-like stream from bounded physiologic glucose walk
+     * - run conversion/linearization/reference compensation
+     * - anti-alias + decimation + notch + impulse rejection
+     * - publish processed glucose for display/dose logic */
     uint32_t now_ds = UiNowDs();
     char bg_text[20];
     int32_t bg_x;
     int32_t bg_y = 224; /* moved up by two scale-2 row heights (2*14 px). */
+    cgm_preprocess_output_t out;
 
     if ((!gUiGlucoseSchedPrimed) || ((int32_t)(now_ds - gUiGlucoseNextStepDs) >= 0))
     {
         uint32_t r = NextUiRand();
-        if (gUiGlucoseMgdl <= 96u)
+        if (gUiGlucosePhysioMgdl <= 96.0f)
         {
             gUiGlucoseDir = 1;
         }
-        else if (gUiGlucoseMgdl >= 106u)
+        else if (gUiGlucosePhysioMgdl >= 106.0f)
         {
             gUiGlucoseDir = -1;
         }
@@ -1333,15 +1344,65 @@ static void DrawGlucoseIndicator(void)
 
         if (gUiGlucoseDir > 0)
         {
-            gUiGlucoseMgdl++;
+            gUiGlucosePhysioMgdl += 1.0f;
         }
         else
         {
-            gUiGlucoseMgdl--;
+            gUiGlucosePhysioMgdl -= 1.0f;
         }
 
         gUiGlucoseNextStepDs = now_ds + 900u + (r % 901u); /* 90..180 seconds per 1 mg/dL step. */
         gUiGlucoseSchedPrimed = true;
+    }
+
+    if (!gCgmPreprocessInit)
+    {
+        CgmPreprocess_InitDefault(&gCgmPreprocess);
+        gCgmNextRawSampleDs = now_ds;
+        gCgmPreprocessInit = true;
+    }
+
+    while ((int32_t)(now_ds - gCgmNextRawSampleDs) >= 0)
+    {
+        cgm_raw_sample_t raw;
+        uint32_t r = NextUiRand();
+        float noise_counts = ((float)(int32_t)(r % 41u) - 20.0f) * 0.25f;
+        float spur = 2.0f * sinf((float)(gCgmNextRawSampleDs % 600u) * 2.0f * 3.14159265f / 600.0f);
+        float current_na = (gUiGlucosePhysioMgdl - 40.0f) / 1.25f;
+        float ideal_counts = (current_na / 0.50f) - 8.0f;
+        bool impulse = ((r % 97u) == 0u);
+        float impulse_counts = impulse ? ((r & 1u) ? 18.0f : -18.0f) : 0.0f;
+        float adc_counts_f = ideal_counts + noise_counts + spur + impulse_counts;
+
+        if (adc_counts_f < 0.0f)
+        {
+            adc_counts_f = 0.0f;
+        }
+        if (adc_counts_f > 4095.0f)
+        {
+            adc_counts_f = 4095.0f;
+        }
+        raw.adc_counts = (uint16_t)(adc_counts_f + 0.5f);
+        raw.ref_mv = 1200.0f + ((float)(int32_t)((r >> 8) % 11u) - 5.0f);
+        raw.temp_c = (float)gBoardTempC10 / 10.0f;
+
+        CgmPreprocess_Push(&gCgmPreprocess, &raw, &out);
+        if (out.output_ready)
+        {
+            int32_t g = (int32_t)(out.glucose_filtered_mgdl + 0.5f);
+            if (g < 40)
+            {
+                g = 40;
+            }
+            if (g > 400)
+            {
+                g = 400;
+            }
+            gUiGlucoseMgdl = (uint16_t)g;
+            gUiGlucoseTrendMgDlPerMin = out.trend_mgdl_min;
+            gUiCgmSqiPct = out.sqi_pct;
+        }
+        gCgmNextRawSampleDs += 10u; /* 1 Hz synthetic raw sample cadence. */
     }
 
     snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseMgdl);
@@ -1389,22 +1450,8 @@ static void UpdateDoseRecommendation(uint32_t now_ds)
     }
     gUiDoseCtrlPrevDs = now_ds;
 
-    if ((gUiGlucosePrevTrendDs != 0u) && (gUiGlucosePrevForTrend != gUiGlucoseMgdl))
-    {
-        uint32_t dds = now_ds - gUiGlucosePrevTrendDs;
-        if (dds > 0u)
-        {
-            float dmin = (float)dds / 10.0f / 60.0f;
-            float dbg = (float)((int32_t)gUiGlucoseMgdl - (int32_t)gUiGlucosePrevForTrend);
-            if (dmin > 0.001f)
-            {
-                gUiGlucoseTrendMgDlPerMin = dbg / dmin;
-            }
-        }
-        gUiGlucosePrevForTrend = gUiGlucoseMgdl;
-        gUiGlucosePrevTrendDs = now_ds;
-    }
-    gUiGlucoseTrendMgDlPerMin = (gUiGlucoseTrendMgDlPerMin * 0.88f);
+    gUiGlucosePrevForTrend = gUiGlucoseMgdl;
+    gUiGlucosePrevTrendDs = now_ds;
 
     switch (gActivityStage)
     {
@@ -2584,14 +2631,15 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
         int32_t trend10 = (int32_t)(gUiGlucoseTrendMgDlPerMin * 10.0f);
         int32_t trend_abs10 = (trend10 < 0) ? -trend10 : trend10;
         uint32_t iob10 = (uint32_t)((gUiInsulinIobU * 10.0f) + 0.5f);
-        snprintf(line, sizeof(line), "DOS %u.%03uU IOB %1u.%01u dBG %c%u.%01u",
+        snprintf(line, sizeof(line), "DOS %u.%03uU IOB %1u.%01u dBG %c%u.%01u SQI %u",
                  (unsigned int)(gUiDoseRecommendedUhMilli / 1000u),
                  (unsigned int)(gUiDoseRecommendedUhMilli % 1000u),
                  (unsigned int)(iob10 / 10u),
                  (unsigned int)(iob10 % 10u),
                  (trend10 < 0) ? '-' : '+',
                  (unsigned int)(trend_abs10 / 10),
-                 (unsigned int)(trend_abs10 % 10));
+                 (unsigned int)(trend_abs10 % 10),
+                 (unsigned int)gUiCgmSqiPct);
         DrawTerminalLine(TERM_Y + 154, line, RGB565(164, 222, 244));
     }
 }

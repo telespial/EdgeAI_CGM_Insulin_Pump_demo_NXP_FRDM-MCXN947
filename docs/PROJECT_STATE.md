@@ -3,7 +3,7 @@
 Last updated: 2026-02-23
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-23-R3`
+- Golden: `GOLDEN-2026-02-23-R4`
 - Failsafe: `FAILSAFE-2026-02-23-R3`
 - Status: active
 
@@ -11,6 +11,75 @@ Last updated: 2026-02-23
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
 - Git repository initialized locally.
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 1 by adding stage-by-stage traceability against the dermal CGM review.
+  - new doc: `docs/CGM_TRACEABILITY.md`
+  - each review stage now tagged as `implemented`, `simulated`, or `missing` with code/doc evidence references
+  - TODO step 1 marked complete in `docs/TODO.md`
+- Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 2 by defining the runtime CGM tuple contract.
+  - new doc: `docs/CGM_RUNTIME_CONTRACT.md`
+  - defined canonical tuple fields:
+    - `glucose_mgdl`
+    - `trend_mgdl_min_x100` (fixed-point)
+    - `sqi_pct`
+    - `sensor_flags`
+    - `prediction_15m_mgdl`
+    - `prediction_30m_mgdl`
+  - included units/ranges/sentinel behavior, update cadence, stale rules, and initial sensor flag bit assignments
+  - TODO step 2 marked complete in `docs/TODO.md`
+- Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 3 by defining sensor-status taxonomy and trigger logic.
+  - new doc: `docs/CGM_SENSOR_FLAGS.md`
+  - documented set/clear logic, debounce windows, and precedence for:
+    - `CGM_FLAG_SATURATION`
+    - `CGM_FLAG_DROPOUT`
+    - `CGM_FLAG_IMPLAUSIBLE_ROC`
+    - `CGM_FLAG_TEMP_OUT_OF_RANGE`
+    - `CGM_FLAG_CAL_STALE`
+    - `CGM_FLAG_DRIFT_WARN`
+  - updated `docs/CGM_RUNTIME_CONTRACT.md` to reference detailed flag logic
+  - TODO step 3 marked complete in `docs/TODO.md`
+- Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 4 by publishing the 30-second cadence reference pipeline artifact.
+  - new doc: `docs/CGM_30S_PIPELINE_REFERENCE.md`
+  - includes:
+    - end-to-end block diagram
+    - equations-level pseudocode at 1 Hz internal / 30 s publish cadence
+    - candidate filter constants for anti-alias, fast LP, derivative smoothing, impulse reject, notch
+    - SQI feature set and threshold strategy
+    - drift random-walk and conservative lag correction model structure
+    - contract mapping to `cgm_tuple_t`
+  - TODO step 4 marked complete in `docs/TODO.md`
+- Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 5 by implementing raw-to-engineering preprocessing in firmware.
+  - added preprocessing module:
+    - `src/cgm_preprocess.h`
+    - `src/cgm_preprocess.c`
+  - preprocessing stages implemented:
+    - ADC-domain conversion with offset/gain and quadratic linearization
+    - reference-voltage compensation
+    - anti-alias low-pass filtering
+    - decimation
+    - impulse-noise rejection (median-3)
+    - configurable notch filtering
+  - integrated into renderer glucose path (`src/gauge_render.c`) using a synthetic raw stream adapter so UI/dose logic now consumes preprocessed glucose output
+  - updated SDK overlay sources to compile new module (`sdk_example/mcuxsdk_examples_overlay/demo_apps/edgeai_medical_device_demo/CMakeLists.txt`)
+  - updated traceability status for stage 1 in `docs/CGM_TRACEABILITY.md`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
 
 ## Update 2026-02-23
 - Change: Promoted current built/flashed runtime as the active golden/failsafe baseline and synchronized project docs.
@@ -1425,4 +1494,42 @@ Last updated: 2026-02-23
   - pushed tags:
     - `GOLDEN-2026-02-23-R3`
     - `FAILSAFE-2026-02-23-R3`
+- Result: ok
+
+## Update 2026-02-23
+- Change: Verification test run requested after step-5 preprocessing integration.
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 6 by implementing a dermal-tuned low-lag filtering/trend path with adaptive SQI gating.
+  - `src/cgm_preprocess.c`:
+    - added SQI estimation from preprocessing residual-noise EMA
+    - added SQI-adaptive glucose smoothing alpha (`filter_alpha_min..max`)
+    - added explicit trend derivative output (`mg/dL/min`) with adaptive trend smoothing
+  - `src/gauge_render.c`:
+    - switched runtime trend consumption to preprocessor trend output
+    - removed legacy trend-decay recompute path in dose loop
+    - exposed `SQI` in terminal status line with `DOS/IOB/dBG`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Promoted current step-6 firmware/docs state as active golden restore baseline `R4` only.
+  - staged artifact:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R4.bin`
+  - failsafe baseline intentionally remains:
+    - `FAILSAFE-2026-02-23-R3`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+  - updated active restore references in:
+    - `README.md`, `STATUS.md`
+    - `docs/START_HERE.md`, `docs/OPS_RUNBOOK.md`, `docs/HARDWARE_SETUP.md`, `docs/TODO.md`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
 - Result: ok

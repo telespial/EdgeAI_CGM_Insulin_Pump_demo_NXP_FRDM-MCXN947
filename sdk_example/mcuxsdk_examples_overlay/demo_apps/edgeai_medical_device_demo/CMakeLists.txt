@@ -16,6 +16,7 @@ mcux_add_source(
     BASE_PATH ${EDGEAI_ROOT}
     SOURCES src/gauge_style.c
             src/power_data_source.c
+            src/cgm_preprocess.c
             src/gauge_render.c
             src/fxls8974cf.c
             src/ext_flash_recorder.c

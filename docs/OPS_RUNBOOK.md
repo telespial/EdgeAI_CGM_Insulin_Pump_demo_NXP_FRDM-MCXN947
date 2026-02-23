@@ -29,11 +29,11 @@ Safe direct flash:
 ## Restore Points
 
 Current baseline:
-- Golden: `GOLDEN-2026-02-23-R3`
+- Golden: `GOLDEN-2026-02-23-R4`
 - Failsafe: `FAILSAFE-2026-02-23-R3`
 
 Artifacts:
-- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R4.bin`
 - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
 
 Restore command (direct):
