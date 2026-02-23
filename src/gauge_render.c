@@ -968,6 +968,65 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     DrawTextUi125(176, 256, drop_risk ? "DROP: POSSIBLE" : "DROP: NONE", drop_risk ? fault : okay);
 }
 
+static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
+{
+    int32_t cx = MAIN_CX;
+    int32_t cy = MAIN_CY;
+    int32_t r = 42;
+    float angle_deg = 0.0f;
+    float angle_rad;
+    int32_t tip_x;
+    int32_t tip_y;
+    int32_t hx1;
+    int32_t hy1;
+    int32_t hx2;
+    int32_t hy2;
+    uint16_t ring_color = RGB565(94, 200, 244);
+    uint16_t ptr_color = style->palette.text_primary;
+    uint16_t i;
+
+    if (gAccelValid)
+    {
+        angle_deg = atan2f((float)gAccelYmg, (float)gAccelZmg) * (180.0f / 3.14159265f);
+        if (angle_deg < 0.0f)
+        {
+            angle_deg += 360.0f;
+        }
+    }
+    if (gAccelValid && (gAccelZmg < -200))
+    {
+        ptr_color = style->palette.accent_red;
+    }
+
+    /* Restore the human-circle area before redrawing gauge to prevent pointer trails. */
+    BlitPumpBgRegion(cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8);
+
+    /* Draw a speedometer-style ring with 30-degree tick marks. */
+    for (i = 0u; i < 12u; i++)
+    {
+        float tick_rad = ((float)i * 30.0f) * (3.14159265f / 180.0f);
+        int32_t x0 = cx + (int32_t)(cosf(tick_rad) * (float)(r - 4));
+        int32_t y0 = cy - (int32_t)(sinf(tick_rad) * (float)(r - 4));
+        int32_t x1 = cx + (int32_t)(cosf(tick_rad) * (float)r);
+        int32_t y1 = cy - (int32_t)(sinf(tick_rad) * (float)r);
+        DrawLine(x0, y0, x1, y1, 1, ring_color);
+    }
+
+    angle_rad = angle_deg * (3.14159265f / 180.0f);
+    tip_x = cx + (int32_t)(cosf(angle_rad) * (float)(r - 8));
+    tip_y = cy - (int32_t)(sinf(angle_rad) * (float)(r - 8));
+    DrawLine(cx, cy, tip_x, tip_y, 2, ptr_color);
+
+    /* Arrow head. */
+    hx1 = tip_x + (int32_t)(cosf(angle_rad + 2.6f) * 7.0f);
+    hy1 = tip_y - (int32_t)(sinf(angle_rad + 2.6f) * 7.0f);
+    hx2 = tip_x + (int32_t)(cosf(angle_rad - 2.6f) * 7.0f);
+    hy2 = tip_y - (int32_t)(sinf(angle_rad - 2.6f) * 7.0f);
+    DrawLine(tip_x, tip_y, hx1, hy1, 2, ptr_color);
+    DrawLine(tip_x, tip_y, hx2, hy2, 2, ptr_color);
+    par_lcd_s035_draw_filled_circle(cx, cy, 2, ptr_color);
+}
+
 static void DrawRecordConfirmOverlay(void)
 {
     par_lcd_s035_fill_rect(REC_CONFIRM_X0 - 3, REC_CONFIRM_Y0 - 3, REC_CONFIRM_X1 + 3, REC_CONFIRM_Y1 + 3, RGB565(0, 0, 0));
@@ -2485,6 +2544,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     DrawBatteryIndicatorDynamic(style, 82u);
 
     DrawTerminalDynamic(style, sample, cpu_pct, ai_enabled);
+    DrawHumanOrientationPointer(style);
     DrawMedicalOverlayData(style, sample, ai_enabled);
     DrawAiSideButtons();
     if (gSettingsVisible)

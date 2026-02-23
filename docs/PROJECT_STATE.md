@@ -295,3 +295,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added a human-orientation pointer gauge around the center figure:
+  - speedometer-style circular tick ring
+  - rotating 360-degree arrow pointer driven by accelerometer orientation
+  - pointer color changes to red when upside-down is detected
+  - background restore added for the gauge region to prevent pointer trails
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
