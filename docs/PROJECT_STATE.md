@@ -1035,6 +1035,14 @@ Last updated: 2026-02-23
 - Result: ok
 
 ## Update 2026-02-23
+- Change: Flashed current medical demo firmware image to FRDM-MCXN947.
+- Verification:
+  - `./tools/flash_frdmmcxn947.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
 - Change: Replaced AI mode wording from ON/OFF to MCU/NPU across the runtime UI and settings popup.
   - top mode pill now shows `AI MCU` (left selection) or `AI NPU` (right selection)
   - settings popup AI buttons now read `AI: MCU` on the left and `AI: NPU` on the right

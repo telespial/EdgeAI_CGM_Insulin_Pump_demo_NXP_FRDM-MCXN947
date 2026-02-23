@@ -453,3 +453,4 @@ Format:
 2026-02-23T14:41:37Z | cmd: inspect settings label placement in DrawSettingsPopup and apply_patch src/gauge_render.c to change left AI row label from 'AI' to 'AI:' | result: ok
 2026-02-23T14:41:37Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T14:41:37Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer runner, target MCXN947:FRDM-MCXN947, probe #1 UYLKOJI11H2B3)
+2026-02-23T14:43:21Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer runner, target MCXN947:FRDM-MCXN947, probe #1 UYLKOJI11H2B3)
