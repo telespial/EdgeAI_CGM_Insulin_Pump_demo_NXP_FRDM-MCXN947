@@ -195,3 +195,4 @@ Format:
 - 2026-02-23T02:56:27Z | cmd: patch src/gauge_render.c remove center GYRO/POSE/DROP text draws and keep region clear only | result: ok
 - 2026-02-23T02:56:27Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: fail (unused DrawTextUi125 warning treated as error)
 - 2026-02-23T02:56:27Z | cmd: patch src/gauge_render.c remove now-unused DrawTextUi125 helper; rerun ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T02:56:27Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Remove center GYRO/POSE/DROP text overlays" && git push origin main | result: ok (commit 4068f79 pushed)
