@@ -818,3 +818,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Removed stray text below `ANOM` and updated left-side bargraph to reservoir fill behavior:
+  - deleted `WEAR` row under `ANOM`
+  - added explicit background restore band below `ANOM` to clear stale/random text artifacts
+  - rewired left bargraph from temperature-driven level to `FILL%` level (`gUiReservoirPct`)
+  - changed bargraph label to `FILL %` and made active bars red when fill is below `20%`
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

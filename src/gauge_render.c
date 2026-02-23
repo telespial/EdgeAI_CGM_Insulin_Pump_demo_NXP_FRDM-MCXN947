@@ -33,8 +33,7 @@ static uint16_t gTraceCount = 0u;
 static bool gTraceReady = false;
 static uint32_t gFrameCounter = 0u;
 static uint8_t gPrevBarLevel = 255u;
-static int16_t gPrevBarTempC10 = -32768;
-static bool gPrevOverTemp = false;
+static uint8_t gPrevFillPct = 255u;
 static bool gPrevAiEnabled = false;
 static uint8_t gPrevAiStatus = 255u;
 static uint8_t gPrevAiFaultFlags = 255u;
@@ -1138,10 +1137,10 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     rpm_ma = (uint16_t)((((uint32_t)gUiRpmTenths * 95u) + 245u) / 490u); /* map 0.0..49.0 RPM to 0..95mA */
     snprintf(line, sizeof(line), "%2umA", (unsigned int)rpm_ma);
     DrawTextUi(34, 67, 2, line, sev);
+    /* Clear band beneath ANOM so no stale/stray text remains. */
+    BlitPumpBgRegion(8, 118, 136, 156);
     snprintf(line, sizeof(line), "ANOM:%3u%%", (unsigned int)sample->anomaly_score_pct);
     DrawTextUi(10, 123, 2, line, sev);
-    snprintf(line, sizeof(line), "WEAR:%3u%%", (unsigned int)sample->connector_wear_pct);
-    DrawTextUi(10, 139, 2, line, sev);
 
     /* Pump area (bottom-left icon). */
     /* Keep pump text clean but avoid the elapsed-time band in the center segment. */
@@ -2263,30 +2262,30 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
         DrawLine(inner_x0, y, inner_x1, y, 1, RGB565(70, 120, 86));
     }
 
-    label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, "T --.-C --.-F") + edgeai_text5x7_width(label_scale, " ");
+    label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, "FILL ---%") + edgeai_text5x7_width(label_scale, " ");
     par_lcd_s035_fill_rect(BAR_X0, label_y - 2, label_x1, label_y + 11, TRACE_AX_COLOR);
-    DrawTextUi(BAR_X0 + 2, label_y, label_scale, "T --.-C --.-F", RGB565(4, 18, 26));
+    DrawTextUi(BAR_X0 + 2, label_y, label_scale, "FILL ---%", RGB565(4, 18, 26));
 }
 
-static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t temp_c10)
+static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t fill_pct)
 {
     int32_t i;
-    uint8_t temp_c = (uint8_t)ClampI32((int32_t)(temp_c10 / 10), 0, 100);
-    int32_t level = ClampI32(((int32_t)temp_c * BAR_SEGMENTS) / 100, 0, BAR_SEGMENTS);
+    int32_t level = ClampI32(((int32_t)fill_pct * BAR_SEGMENTS) / 100, 0, BAR_SEGMENTS);
     int32_t inner_x0 = BAR_X0 + 3;
     int32_t inner_x1 = BAR_X1 - 3;
     int32_t inner_y0 = BAR_Y0 + 3;
     int32_t inner_y1 = BAR_Y1 - 3;
     int32_t inner_h = (inner_y1 - inner_y0 + 1);
     int32_t seg_step = inner_h / BAR_SEGMENTS;
-    bool over_temp = (temp_c10 >= 700);
-    char line[24];
+    bool low_fill = (fill_pct < 20u);
+    bool warn_fill = (fill_pct < 40u);
+    char line[20];
     int32_t y;
     int32_t label_y = PUMP_BG_HEIGHT - 16;
     int32_t label_scale = 1;
     int32_t label_x1;
 
-    if (((uint8_t)level == gPrevBarLevel) && (temp_c10 == gPrevBarTempC10) && (over_temp == gPrevOverTemp))
+    if (((uint8_t)level == gPrevBarLevel) && (fill_pct == gPrevFillPct))
     {
         return;
     }
@@ -2326,46 +2325,34 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
 
         if (i < level)
         {
-            if (over_temp)
+            if (low_fill)
             {
                 color = style->palette.accent_red;
             }
-            else if (i < (BAR_SEGMENTS / 2))
+            else if (warn_fill)
             {
-                color = style->palette.accent_green;
+                color = RGB565(255, 180, 24);
             }
             else if (i < ((BAR_SEGMENTS * 4) / 5))
             {
-                color = RGB565(175, 150, 24);
+                color = style->palette.accent_green;
             }
             else
             {
-                color = style->palette.accent_red;
+                color = RGB565(48, 180, 80);
             }
         }
 
         par_lcd_s035_fill_rect(inner_x0, seg_top, inner_x1, seg_bot, color);
     }
 
-    {
-        int16_t temp_f10 = TempC10ToF10(temp_c10);
-        int16_t c_abs = (temp_c10 < 0) ? (int16_t)-temp_c10 : temp_c10;
-        int16_t f_abs = (temp_f10 < 0) ? (int16_t)-temp_f10 : temp_f10;
-        snprintf(line,
-                 sizeof(line),
-                 "T %2d.%1dC %3d.%1dF",
-                 (int)(c_abs / 10),
-                 (int)(c_abs % 10),
-                 (int)(f_abs / 10),
-                 (int)(f_abs % 10));
-    }
+    snprintf(line, sizeof(line), "FILL %3u%%", (unsigned int)fill_pct);
     label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, line) + edgeai_text5x7_width(label_scale, " ");
     par_lcd_s035_fill_rect(BAR_X0, label_y - 2, label_x1, label_y + 11, TRACE_AX_COLOR);
-    DrawTextUi(BAR_X0 + 2, label_y, label_scale, line, over_temp ? style->palette.accent_red : RGB565(4, 18, 26));
+    DrawTextUi(BAR_X0 + 2, label_y, label_scale, line, low_fill ? style->palette.accent_red : RGB565(4, 18, 26));
 
     gPrevBarLevel = (uint8_t)level;
-    gPrevBarTempC10 = temp_c10;
-    gPrevOverTemp = over_temp;
+    gPrevFillPct = fill_pct;
 }
 
 static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_profile_t profile)
@@ -2414,8 +2401,7 @@ bool GaugeRender_Init(void)
         gTraceReady = false;
         gFrameCounter = 0u;
         gPrevBarLevel = 255u;
-        gPrevBarTempC10 = -32768;
-        gPrevOverTemp = false;
+        gPrevFillPct = 255u;
         gPrevAnomaly = 0u;
         gPrevWear = 0u;
         gPrevAiEnabled = false;
@@ -2659,8 +2645,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gDynamicReady = false;
         gPrevSoc = 0u;
         gPrevBarLevel = 255u;
-        gPrevBarTempC10 = -32768;
-        gPrevOverTemp = false;
+        gPrevFillPct = 255u;
         gPrevAiEnabled = !ai_enabled;
         gAlertVisualValid = false;
     }
@@ -2671,8 +2656,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gStaticReady = true;
         gDynamicReady = false;
         gPrevBarLevel = 255u;
-        gPrevBarTempC10 = -32768;
-        gPrevOverTemp = false;
+        gPrevFillPct = 255u;
         gPrevAnomaly = 0u;
         gPrevWear = 0u;
         gPrevAiEnabled = false;
@@ -2753,7 +2737,6 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         lx += edgeai_text5x7_width(1, "GY ");
         DrawTextUi(lx, ly, 1, "GZ", TRACE_GZ_COLOR);
     }
-    DrawLeftBargraphDynamic(style, DisplayTempC10(sample));
     DrawHumanOrientationPointer(style);
     if (!(gSettingsVisible || gHelpVisible || gLimitsVisible))
     {
@@ -2768,6 +2751,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
 
     DrawTerminalDynamic(style, sample, cpu_pct, ai_enabled);
     DrawMedicalOverlayData(style, sample, ai_enabled);
+    DrawLeftBargraphDynamic(style, gUiReservoirPct);
     DrawGlucoseIndicator();
     DrawAiSideButtons();
     if (gSettingsVisible)

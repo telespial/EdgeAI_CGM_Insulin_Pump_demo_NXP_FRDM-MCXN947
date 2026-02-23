@@ -350,3 +350,8 @@ Format:
 2026-02-23T04:59:45Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T04:59:45Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:00:06Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Model insulin-pump motor as micro-dose pulses from U/h basal rate' && git push origin main | result: ok (39ec53b)
+2026-02-23T05:02:23Z | cmd: inspect gauge_render.c for ANOM/WEAR and left bargraph render paths via rg/sed | result: ok
+2026-02-23T05:02:23Z | cmd: apply_patch src/gauge_render.c remove WEAR text under ANOM and clear ANOM region each frame to eliminate stray text | result: ok
+2026-02-23T05:02:23Z | cmd: apply_patch src/gauge_render.c repurpose left bargraph to FILL%, add low-fill red behavior (<20%), update label text, and wire dynamic draw to reservoir fill state | result: ok
+2026-02-23T05:02:23Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:02:23Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
