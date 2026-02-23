@@ -1,5 +1,7 @@
 # TODO
 
+Last updated: 2026-02-23
+
 ## Priority 0 (LCD First Slice)
 - [x] Create first-pass LCD layout with same background image.
 - [x] Keep `NXP EDGEAI` and elapsed-time positions stable.

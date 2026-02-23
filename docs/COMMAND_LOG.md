@@ -433,3 +433,6 @@ Format:
 2026-02-23T05:56:25Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:56:25Z | cmd: git add src/gauge_render.c README.md docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Add transport-aware insulin recommendation and document system in help/README' && git push origin main | result: partial (commit ok: 78feea0; initial push failed DNS lookup)
 2026-02-23T05:56:25Z | cmd: git push origin main | result: ok (78feea0 published)
+2026-02-23T06:02:04Z | cmd: inspect docs headers and status files (docs/*.md, README.md, STATUS.md) for dating and restore-point updates | result: ok
+2026-02-23T06:02:04Z | cmd: apply_patch docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md README.md add Last updated date line | result: ok
+2026-02-23T06:02:04Z | cmd: apply_patch docs/PROJECT_STATE.md and STATUS.md set GOLDEN/FAILSAFE restore-point markers and active status | result: ok

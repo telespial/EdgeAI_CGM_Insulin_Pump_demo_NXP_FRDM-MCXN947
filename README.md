@@ -1,5 +1,7 @@
 # EdgeAI Medical Device Demo (NXP FRDM-MCXN947)
 
+Last updated: 2026-02-23
+
 Embedded medical-device style Edge AI demo for FRDM-MCXN947.
 
 This project renders a full infusion-pump cockpit UI on the LCD, streams live sensors, supports record/replay from external flash, and runs an on-device inference layer for:

@@ -1,5 +1,7 @@
 # Operations Runbook
 
+Last updated: 2026-02-23
+
 ## One-Time Bootstrap (Ubuntu User-Local)
 
 `./tools/bootstrap_ubuntu_user.sh`

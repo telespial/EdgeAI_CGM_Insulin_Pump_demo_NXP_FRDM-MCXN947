@@ -2,6 +2,11 @@
 
 Last updated: 2026-02-23
 
+## Restore Point
+- Golden: `GOLDEN-2026-02-23`
+- Failsafe: `FAILSAFE-2026-02-23`
+- Status: active
+
 ## Current Status
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
@@ -1003,4 +1008,13 @@ Last updated: 2026-02-23
 - Verification:
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Dated project documentation files and established current release as active restore baseline.
+  - added `Last updated: 2026-02-23` to core docs and README
+  - updated `STATUS.md` with explicit restore markers
+  - set restore-point identifiers in project state:
+    - `GOLDEN-2026-02-23`
+    - `FAILSAFE-2026-02-23`
 - Result: ok

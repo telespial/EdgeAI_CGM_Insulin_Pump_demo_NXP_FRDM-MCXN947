@@ -1,5 +1,7 @@
 # Hardware Setup
 
+Last updated: 2026-02-23
+
 ## Board
 - FRDM-MCXN947
 
