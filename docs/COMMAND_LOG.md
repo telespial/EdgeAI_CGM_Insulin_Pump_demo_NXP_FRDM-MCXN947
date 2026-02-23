@@ -449,3 +449,4 @@ Format:
 2026-02-23T14:38:14Z | cmd: apply_patch src/gauge_render.c change AI settings button labels from 'AI: MCU'/'AI: NPU' to 'MCU'/'NPU' (row label remains AI) | result: ok
 2026-02-23T14:38:14Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T14:38:54Z | cmd: git status --short && git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Format AI settings row as AI: MCU NPU' && git push origin main | result: ok (06c945d)
+2026-02-23T14:40:09Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer runner, target MCXN947:FRDM-MCXN947, probe #1 UYLKOJI11H2B3)
