@@ -381,3 +381,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Applied additional 180-degree phase correction to orientation pointer because hardware posture still rendered inverted.
+  - implementation: after `atan2(-Y, Z)`, add `+180deg` and wrap to `[0, 360)`.
+  - behavior target: screen-facing posture points down toward ground.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

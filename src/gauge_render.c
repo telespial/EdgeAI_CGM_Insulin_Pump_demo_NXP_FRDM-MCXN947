@@ -973,9 +973,14 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     {
         /* Invert Y so "screen facing user" posture maps to pointer-down. */
         angle_deg = atan2f((float)(-gAccelYmg), (float)gAccelZmg) * (180.0f / 3.14159265f);
+        angle_deg += 180.0f; /* Apply phase offset: current hardware frame is 180 deg inverted. */
         if (angle_deg < 0.0f)
         {
             angle_deg += 360.0f;
+        }
+        if (angle_deg >= 360.0f)
+        {
+            angle_deg -= 360.0f;
         }
     }
     if (gAccelValid && (gAccelZmg < -200))
