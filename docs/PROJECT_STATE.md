@@ -411,3 +411,15 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Tuned rolling-ball orientation behavior for requested kinematics:
+  - reduced damping and increased per-frame angle step limit so motion responds faster.
+  - changed ball radius from fixed-edge to tilt-proportional (`sqrt(X^2+Y^2)/|g|`), so:
+    - table-flat posture drives ball toward center,
+    - larger tilt drives ball outward toward the circle edge.
+  - preserved screen-facing posture direction mapping (ball moves toward bottom when held parallel to eyes).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

@@ -216,3 +216,5 @@ Format:
 - 2026-02-23T03:24:38Z | cmd: patch src/gauge_render.c remove left-segment gravity widget, keep pump text region unchanged, replace center orientation arrow with accel-driven rolling ball (green/orange upside-down) | result: ok
 - 2026-02-23T03:24:38Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:25:15Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Replace orientation arrow with accel rolling ball and remove left gravity widget" && git push origin main | result: ok (commit 82fef31 pushed)
+- 2026-02-23T03:27:39Z | cmd: patch src/gauge_render.c tune rolling-ball orientation response (faster filter, larger angle step cap, tilt-proportional radius so table centers ball) | result: ok
+- 2026-02-23T03:27:39Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
