@@ -891,3 +891,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Recalibrated dosing so `ML/H` tracks motor `RPM` and `mA` behavior while preserving insulin pump math:
+  - `RATE` now derived from instantaneous motor RPM (`ml/h = rpm * 0.002`), so idle motor shows `RATE:0.00 ML/H`
+  - `mA` remains proportional to RPM via existing mapping, so dose/rpm/current now move together
+  - basal target remains in `U/h` with `0.025 U/h` increments and uses U100 conversion (`100 U/mL`) for target volume pacing
+  - pulse interval is now computed from delivered pulse volume and target `U/h`, so long-term reservoir depletion remains aligned with basal dosing profile
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

@@ -1043,8 +1043,12 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     uint32_t rate_step;
     uint32_t pulse_interval_ds;
     uint32_t pulse_width_ds;
-    uint32_t dose_rate_mlh_x1000;
+    uint32_t dose_rate_mlh_x100;
     uint32_t fill_pct_u32;
+    float target_ml_h;
+    float running_ml_h;
+    float pulse_h;
+    float pulse_ml;
     uint16_t okay = style->palette.text_primary;
     uint16_t warn = WARN_YELLOW;
     uint16_t sev = (sample->anomaly_score_pct >= 65u) ? ALERT_RED :
@@ -1089,7 +1093,6 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
         if ((!gUiMotorRunning) && ((int32_t)(now_ds - gUiMotorPulseNextDs) >= 0))
         {
-            float dose_per_pulse_ml = 0.0002f; /* 0.02 U per pulse on U100 insulin. */
             float interval_ds_f;
 
             if (gUiDoseRateUhMilli < 25u)
@@ -1097,8 +1100,26 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
                 gUiDoseRateUhMilli = 25u;
             }
 
-            /* mL/h = U/h / 100. Here U/h = gUiDoseRateUhMilli / 1000. */
-            interval_ds_f = dose_per_pulse_ml * 3600000000.0f / (float)gUiDoseRateUhMilli;
+            pulse_width_ds = 8u + (NextUiRand() % 5u); /* 0.8 .. 1.2 s motor movement */
+            gUiRpmTenths = (uint16_t)(120u + (NextUiRand() % 141u)); /* 12.0 .. 26.0 RPM pulse */
+            gUiMotorRunning = true;
+            gUiMotorPulseEndDs = now_ds + pulse_width_ds;
+            /* Dosing tied to motor behavior:
+             * - running mL/h scales with RPM (20 RPM => 0.04 mL/h on U100 baseline profile)
+             * - pulse interval computed from target U/h (0.025 U/h increments) */
+            running_ml_h = ((float)gUiRpmTenths / 10.0f) * 0.002f;
+            pulse_h = ((float)pulse_width_ds) / 36000.0f;
+            pulse_ml = running_ml_h * pulse_h;
+            if (pulse_ml < 0.00001f)
+            {
+                pulse_ml = 0.00001f;
+            }
+            target_ml_h = ((float)gUiDoseRateUhMilli) / 100000.0f; /* U100: 100 U/mL */
+            if (target_ml_h < 0.00025f)
+            {
+                target_ml_h = 0.00025f;
+            }
+            interval_ds_f = (pulse_ml / target_ml_h) * 36000.0f;
             pulse_interval_ds = (uint32_t)(interval_ds_f + 0.5f);
             if (pulse_interval_ds < 30u)
             {
@@ -1108,14 +1129,9 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
             {
                 pulse_interval_ds = 36000u;
             }
-
-            pulse_width_ds = 8u + (NextUiRand() % 5u); /* 0.8 .. 1.2 s motor movement */
-            gUiRpmTenths = (uint16_t)(120u + (NextUiRand() % 141u)); /* 12.0 .. 26.0 RPM pulse */
-            gUiMotorRunning = true;
-            gUiMotorPulseEndDs = now_ds + pulse_width_ds;
             gUiMotorPulseNextDs = now_ds + pulse_interval_ds;
 
-            gUiReservoirMl -= dose_per_pulse_ml;
+            gUiReservoirMl -= pulse_ml;
             if (gUiReservoirMl < 0.0f)
             {
                 gUiReservoirMl = 0.0f;
@@ -1145,6 +1161,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     gUiReservoirPct = (uint8_t)fill_pct_u32;
 
     pumping = gUiMotorRunning;
+    running_ml_h = gUiMotorRunning ? (((float)gUiRpmTenths / 10.0f) * 0.002f) : 0.0f;
     snprintf(line, sizeof(line), "RPM:%2u.%1u",
              (unsigned int)(gUiRpmTenths / 10u),
              (unsigned int)(gUiRpmTenths % 10u));
@@ -1165,10 +1182,10 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     BlitPumpBgRegion(30, 282, 169, 300);
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
     DrawTextUi(34, 246, 2, line, pump_color);
-    dose_rate_mlh_x1000 = (gUiDoseRateUhMilli + 50u) / 100u; /* mL/h * 1000 (rounded) */
-    snprintf(line, sizeof(line), "RATE:%u.%03u ML/H",
-             (unsigned int)(dose_rate_mlh_x1000 / 1000u),
-             (unsigned int)(dose_rate_mlh_x1000 % 1000u));
+    dose_rate_mlh_x100 = (uint32_t)((running_ml_h * 100.0f) + 0.5f); /* mL/h * 100 */
+    snprintf(line, sizeof(line), "RATE:%u.%02u ML/H",
+             (unsigned int)(dose_rate_mlh_x100 / 100u),
+             (unsigned int)(dose_rate_mlh_x100 % 100u));
     DrawTextUi(34, 262, 2, line, pump_color);
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)gUiReservoirPct);
     DrawTextUi(34, 278, 2, line, pump_color);

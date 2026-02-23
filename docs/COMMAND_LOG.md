@@ -382,3 +382,5 @@ Format:
 2026-02-23T05:13:05Z | cmd: inspect center refresh path and patch DrawHumanOrientationPointer to exclude mg/dL band from BlitPumpBgRegion restores | result: ok
 2026-02-23T05:13:05Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:13:14Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Protect mg/dL row from center-area background refresh' && git push origin main | result: ok (d82d062)
+2026-02-23T05:15:55Z | cmd: apply_patch src/gauge_render.c tie dose flow to motor RPM (and mA via existing rpm->mA mapping), enforce RATE 0.00 ML/H when idle, and compute pulse interval from U/h target (0.025 U/h increments, U100 conversion) | result: ok
+2026-02-23T05:15:55Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
