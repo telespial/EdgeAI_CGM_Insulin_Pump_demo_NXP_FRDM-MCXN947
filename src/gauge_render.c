@@ -1018,7 +1018,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     snprintf(line, sizeof(line), "ANOM:%3u%%", (unsigned int)sample->anomaly_score_pct);
     DrawTextUi(10, 123, 2, line, sev);
     snprintf(line, sizeof(line), "WEAR:%3u%%", (unsigned int)sample->connector_wear_pct);
-    DrawTextUi(10, 137, 2, line, sev);
+    DrawTextUi(10, 139, 2, line, sev);
 
     /* Pump area (bottom-left icon). */
     /* Keep pump text clean but avoid the elapsed-time band in the center segment. */
