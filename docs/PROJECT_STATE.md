@@ -554,3 +554,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Refined motor `RPM` headline readability and placement.
+  - moved one more row up (`y: 26 -> 18`).
+  - switched render from thickened pseudo-scale helper to crisp native scale-2 draw for sharper edges and larger text (~30% increase vs prior 1.56x style).
+  - marked legacy `DrawTextUi125` helper as `__attribute__((unused))` to satisfy `-Werror` after migration.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` first attempt FAIL (`DrawTextUi125` unused warning treated as error).
+  - `./tools/build_frdmmcxn947.sh debug` PASS after helper annotation fix.
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`).
+- Result: ok

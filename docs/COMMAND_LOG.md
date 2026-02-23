@@ -271,3 +271,8 @@ Format:
 - 2026-02-23T04:08:10Z | cmd: inspect src/gauge_render.c RPM headline draw position and review current docs log/state tails | result: ok
 - 2026-02-23T04:08:45Z | cmd: patch src/gauge_render.c move RPM headline up one text row (y 34->26) | result: ok
 - 2026-02-23T04:09:22Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:12:35Z | cmd: inspect RPM text rendering path in src/gauge_render.c (DrawTextUi125 usage) | result: ok
+- 2026-02-23T04:13:01Z | cmd: patch src/gauge_render.c move RPM line up one row (y 26->18) and switch to DrawTextUiCrisp scale=2 for larger/sharper text | result: ok
+- 2026-02-23T04:13:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: fail (compile error: DrawTextUi125 now unused under -Werror)
+- 2026-02-23T04:14:09Z | cmd: patch src/gauge_render.c mark DrawTextUi125 helper as __attribute__((unused)) after RPM renderer switch | result: ok
+- 2026-02-23T04:15:30Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
