@@ -236,3 +236,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Refined battery placement and SOC text alignment:
+  - moved battery down 2 additional pixels (`BATT_Y: 289 -> 291`)
+  - centered `82%` SOC text vertically inside the battery body/fill region
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

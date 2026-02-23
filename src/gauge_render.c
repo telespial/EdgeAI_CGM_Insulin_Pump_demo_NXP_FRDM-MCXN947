@@ -187,7 +187,7 @@ enum
     MID_BOT_CY = 234,
     MID_R = 42,
     BATT_X = 391,
-    BATT_Y = 289,
+    BATT_Y = 291,
     BATT_W = 66,
     BATT_H = 21,
     SCOPE_X = 328,
@@ -1781,7 +1781,7 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
 
     snprintf(line, sizeof(line), "%3u%%", soc);
     text_x = BATT_X + ((BATT_W - edgeai_text5x7_width(1, line)) / 2);
-    DrawTextUi(text_x, BATT_Y + 9, 1, line, style->palette.text_primary);
+    DrawTextUi(text_x, inner_y0 + ((inner_h - 7) / 2), 1, line, style->palette.text_primary);
     DrawTextUi(text_x_lbl, text_y_lbl, 1, "BATT", style->palette.text_secondary);
 }
 

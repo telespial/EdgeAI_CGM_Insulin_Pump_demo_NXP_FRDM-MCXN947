@@ -150,3 +150,5 @@ Format:
 - 2026-02-23T02:24:55Z | cmd: patch src/gauge_render.c (BATT_Y 287 -> 289; move battery down ~10%) | result: ok
 - 2026-02-23T02:24:55Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T02:24:55Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Move battery widget down to avoid terminal clipping" && git push origin main | result: ok (commit e8993ac pushed)
+- 2026-02-23T02:26:30Z | cmd: adjust battery placement/text in src/gauge_render.c (BATT_Y 289->291, center SOC text vertically inside battery body) | result: ok
+- 2026-02-23T02:26:30Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
