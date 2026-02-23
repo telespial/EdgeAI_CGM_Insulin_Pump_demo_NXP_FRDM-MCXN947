@@ -198,7 +198,7 @@ enum
     TERM_Y = 124,
     TERM_W = 151,
     TERM_H = 176,
-    RTC_TEXT_Y = 274,
+    RTC_TEXT_Y = 284,
     BAR_X0 = 0,
     BAR_Y0 = 161,
     BAR_X1 = 24,
@@ -2082,7 +2082,7 @@ static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_
     rtc_x = ((PANEL_X0 + PANEL_X1) / 2) - (edgeai_text5x7_width(2, "--:--:--") / 2);
     DrawTextUi(rtc_x, RTC_TEXT_Y, 2, "--:--:--", RGB565(120, 164, 188));
     brand_x = ((PANEL_X0 + PANEL_X1) / 2) - (edgeai_text5x7_width(2, "NXP EDGEAI") / 2);
-    DrawTextUi(brand_x, 293, 2, "NXP EDGEAI", RGB565(255, 208, 52));
+    DrawTextUi(brand_x, 303, 2, "NXP EDGEAI", RGB565(255, 208, 52));
 
     DrawBatteryIndicatorFrame(style);
     DrawScopeFrame(style);

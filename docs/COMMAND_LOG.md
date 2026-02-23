@@ -156,3 +156,5 @@ Format:
 - 2026-02-23T02:28:13Z | cmd: patch src/gauge_render.c (RTC_TEXT_Y 259->274; move NXP EDGEAI Y to 293) for 50% lower brand and 5px padding from elapsed-time text | result: ok
 - 2026-02-23T02:28:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T02:28:13Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Reposition NXP EDGEAI and elapsed time with 5px spacing" && git push origin main | result: ok (commit 62c4f30 pushed)
+- 2026-02-23T02:29:28Z | cmd: patch src/gauge_render.c (RTC_TEXT_Y 274->284; NXP EDGEAI y 293->303) to move both labels down 10px | result: ok
+- 2026-02-23T02:29:28Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

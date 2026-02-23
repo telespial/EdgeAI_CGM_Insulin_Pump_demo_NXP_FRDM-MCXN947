@@ -254,3 +254,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Shifted both brand and elapsed-time text down by an additional 10 px:
+  - `NXP EDGEAI` y: `293 -> 303`
+  - elapsed-time y (`RTC_TEXT_Y`): `274 -> 284`
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
