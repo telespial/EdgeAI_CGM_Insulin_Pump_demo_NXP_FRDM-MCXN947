@@ -1919,13 +1919,14 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
     int32_t inner_y1 = BAR_Y1 - 2;
     int32_t seg_step = (inner_y1 - inner_y0 + 1) / BAR_SEGMENTS;
     int32_t y;
-    int32_t label_y = PUMP_BG_HEIGHT - 10;
+    int32_t label_y = PUMP_BG_HEIGHT - 16;
+    int32_t label_scale = 2;
 
     for (y = label_y - 2; y <= BAR_Y1 + 1; y++)
     {
         if ((y >= 0) && (y < PUMP_BG_HEIGHT))
         {
-            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 100, y,
+            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 188, y,
                                    (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + BAR_X0]);
         }
     }
@@ -1941,8 +1942,8 @@ static void DrawLeftBargraphFrame(const gauge_style_preset_t *style)
         DrawLine(inner_x0, y, inner_x1, y, 1, RGB565(70, 120, 86));
     }
 
-    par_lcd_s035_fill_rect(BAR_X0, label_y - 2, BAR_X0 + 96, label_y + 9, TRACE_AX_COLOR);
-    DrawTextUi(BAR_X0 + 2, label_y, 1, "TEMP: --.-C/--.-F", RGB565(4, 18, 26));
+    par_lcd_s035_fill_rect(BAR_X0, label_y - 2, BAR_X0 + 186, label_y + 15, TRACE_AX_COLOR);
+    DrawTextUi(BAR_X0 + 2, label_y, label_scale, "T --.-C --.-F", RGB565(4, 18, 26));
 }
 
 static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t temp_c10)
@@ -1957,9 +1958,10 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
     int32_t inner_h = (inner_y1 - inner_y0 + 1);
     int32_t seg_step = inner_h / BAR_SEGMENTS;
     bool over_temp = (temp_c10 >= 700);
-    char line[16];
+    char line[24];
     int32_t y;
-    int32_t label_y = PUMP_BG_HEIGHT - 10;
+    int32_t label_y = PUMP_BG_HEIGHT - 16;
+    int32_t label_scale = 2;
 
     if (((uint8_t)level == gPrevBarLevel) && (temp_c10 == gPrevBarTempC10) && (over_temp == gPrevOverTemp))
     {
@@ -1970,7 +1972,7 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
     {
         if ((y >= 0) && (y < PUMP_BG_HEIGHT))
         {
-            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 100, y,
+            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 188, y,
                                    (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + BAR_X0]);
         }
     }
@@ -2028,14 +2030,14 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, int16_t t
         int16_t f_abs = (temp_f10 < 0) ? (int16_t)-temp_f10 : temp_f10;
         snprintf(line,
                  sizeof(line),
-                 "T:%2d.%1dC/%3d.%1dF",
+                 "T %2d.%1dC %3d.%1dF",
                  (int)(c_abs / 10),
                  (int)(c_abs % 10),
                  (int)(f_abs / 10),
                  (int)(f_abs % 10));
     }
-    par_lcd_s035_fill_rect(BAR_X0, label_y - 2, BAR_X0 + 96, label_y + 9, TRACE_AX_COLOR);
-    DrawTextUi(BAR_X0 + 2, label_y, 1, line, over_temp ? style->palette.accent_red : RGB565(4, 18, 26));
+    par_lcd_s035_fill_rect(BAR_X0, label_y - 2, BAR_X0 + 186, label_y + 15, TRACE_AX_COLOR);
+    DrawTextUi(BAR_X0 + 2, label_y, label_scale, line, over_temp ? style->palette.accent_red : RGB565(4, 18, 26));
 
     gPrevBarLevel = (uint8_t)level;
     gPrevBarTempC10 = temp_c10;
