@@ -1088,7 +1088,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t r = MAIN_R - 6;
     int32_t ball_x = cx;
     int32_t ball_y = cy;
-    uint16_t ball_color = RGB565(156, 244, 178); /* light green */
+    uint16_t ball_color = RGB565(46, 102, 190); /* medium dark blue when right-side up */
     (void)style;
 
     if (gAccelValid)

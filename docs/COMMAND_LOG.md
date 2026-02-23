@@ -325,3 +325,5 @@ Format:
 - 2026-02-23T05:58:15Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T06:03:42Z | cmd: patch src/gauge_render.c implement slow glucose stepping model (96..106 mg/dL, 1 mg/dL per 90..180s step) with trend direction state and RTC/frame time scheduling; move glucose y to 252 (outside gyro refresh region) to prevent high-rate flashing | result: ok
 - 2026-02-23T06:04:22Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T06:08:20Z | cmd: patch src/gauge_render.c set right-side-up orientation ball color to medium dark blue (RGB565(46,102,190)); keep upside-down orange behavior unchanged | result: ok
+- 2026-02-23T06:09:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

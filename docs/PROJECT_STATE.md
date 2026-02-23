@@ -766,3 +766,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated orientation ball color for normal posture.
+  - right-side-up ball color changed from light green to medium dark blue (`RGB565(46,102,190)`).
+  - upside-down color threshold/path remains unchanged (light orange when `gAccelZmg < -200`).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
