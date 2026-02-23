@@ -1098,6 +1098,9 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     DrawLine(ball_x - 4, ball_y + 5, ball_x + 4, ball_y + 5, 1, ball_color);
     DrawLine(ball_x - 2, ball_y + 6, ball_x + 2, ball_y + 6, 1, ball_color);
     DrawLine(ball_x - 5, ball_y - 2, ball_x - 5, ball_y + 2, 1, RGB565(220, 255, 230));
+
+    /* Left-of-human normal blood sugar indicator (green). */
+    DrawTextUi(124, 168, 1, "BG 98 mg/dL", RGB565(124, 255, 124));
 }
 
 static void DrawRecordConfirmOverlay(void)

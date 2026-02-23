@@ -706,3 +706,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added left-of-human blood glucose indicator.
+  - new green text overlay: `BG 98 mg/dL`.
+  - placement: `x=124`, `y=168` (left side of center human graphic).
+  - rendering style: `DrawTextUi` scale 1 with green foreground (`RGB565(124,255,124)`).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

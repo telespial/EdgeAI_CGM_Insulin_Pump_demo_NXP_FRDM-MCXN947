@@ -313,3 +313,5 @@ Format:
 - 2026-02-23T05:31:10Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T05:34:08Z | cmd: patch src/gauge_render.c add small padding between ANOM and WEAR by moving WEAR y 137->139 | result: ok
 - 2026-02-23T05:34:48Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:38:20Z | cmd: patch src/gauge_render.c add green blood sugar text on left side of human graphic ("BG 98 mg/dL" at x=124,y=168) | result: ok
+- 2026-02-23T05:39:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
