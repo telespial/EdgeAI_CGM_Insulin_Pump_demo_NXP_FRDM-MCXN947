@@ -671,3 +671,4 @@ Format:
 2026-02-23T22:01:27Z | cmd: apply_patch src/gauge_render.c integrate updated preprocessing outputs | result: ok
 2026-02-23T22:01:27Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after step-7 implementation)
 2026-02-23T22:01:27Z | cmd: apply_patch docs/TODO.md docs/CGM_TRACEABILITY.md and append docs/PROJECT_STATE.md step-7 update | result: ok
+2026-02-23T22:01:47Z | cmd: git add src/cgm_preprocess.c src/cgm_preprocess.h docs/TODO.md docs/CGM_TRACEABILITY.md docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Implement CGM step 7 calibration and compensation path' && git push origin main | result: ok (782196e)
