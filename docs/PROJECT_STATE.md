@@ -464,3 +464,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed pump text readability issue by switching from thickened pseudo-scaling to true scaled font rendering.
+  - removed `DrawTextUi150()` helper.
+  - `PUMP` / `RATE` / `FILL` now render with `DrawTextUi(..., scale=2, ...)`, preserving yellow color and shadow.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

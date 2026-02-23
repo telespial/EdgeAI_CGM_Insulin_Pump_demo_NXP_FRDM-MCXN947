@@ -688,24 +688,6 @@ static void DrawTextUiCrisp(int32_t x, int32_t y, int32_t scale, const char *tex
     edgeai_text5x7_draw_scaled(x, y, scale, text, fg);
 }
 
-static void DrawTextUi150(int32_t x, int32_t y, const char *text, uint16_t fg)
-{
-    /* Approximate ~2.25x by thickening 1x glyphs in X/Y while keeping crisp edges. */
-    edgeai_text5x7_draw_scaled(x + 1, y + 1, 1, text, RGB565(0, 0, 0));
-    edgeai_text5x7_draw_scaled(x + 2, y + 1, 1, text, RGB565(0, 0, 0));
-    edgeai_text5x7_draw_scaled(x + 3, y + 1, 1, text, RGB565(0, 0, 0));
-    edgeai_text5x7_draw_scaled(x + 1, y + 2, 1, text, RGB565(0, 0, 0));
-    edgeai_text5x7_draw_scaled(x + 2, y + 2, 1, text, RGB565(0, 0, 0));
-    edgeai_text5x7_draw_scaled(x, y, 1, text, fg);
-    edgeai_text5x7_draw_scaled(x + 1, y, 1, text, fg);
-    edgeai_text5x7_draw_scaled(x + 2, y, 1, text, fg);
-    edgeai_text5x7_draw_scaled(x, y + 1, 1, text, fg);
-    edgeai_text5x7_draw_scaled(x + 1, y + 1, 1, text, fg);
-    edgeai_text5x7_draw_scaled(x + 2, y + 1, 1, text, fg);
-    edgeai_text5x7_draw_scaled(x, y + 2, 1, text, fg);
-    edgeai_text5x7_draw_scaled(x + 1, y + 2, 1, text, fg);
-}
-
 static void BlitPumpBgRegion(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     int32_t y;
@@ -966,11 +948,11 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Pump area (bottom-left icon). */
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
-    DrawTextUi150(34, 238, line, pump_color);
+    DrawTextUi(34, 232, 2, line, pump_color);
     snprintf(line, sizeof(line), "RATE:%3u mL/h", (unsigned int)(sample->power_mW / 10u));
-    DrawTextUi150(34, 256, line, pump_color);
+    DrawTextUi(34, 248, 2, line, pump_color);
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
-    DrawTextUi150(34, 274, line, pump_color);
+    DrawTextUi(34, 264, 2, line, pump_color);
 
     /* Human status text removed per latest UI direction. */
     BlitPumpBgRegion(172, 226, 322, 267);

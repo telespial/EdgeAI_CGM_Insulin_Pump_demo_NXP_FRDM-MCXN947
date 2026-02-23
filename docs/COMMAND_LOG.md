@@ -234,3 +234,5 @@ Format:
 - 2026-02-23T03:37:46Z | cmd: patch src/gauge_render.c increase pump text by additional ~25% (DrawTextUi150 from ~1.8x to ~2.25x thickened rendering) | result: ok
 - 2026-02-23T03:37:46Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:38:15Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Increase pump overlay text by additional 25 percent" && git push origin main | result: ok (commit e10b367 pushed)
+- 2026-02-23T03:39:26Z | cmd: patch src/gauge_render.c replace thickened pseudo-scaling with true scale=2 DrawTextUi for PUMP/RATE/FILL and remove DrawTextUi150 helper | result: ok
+- 2026-02-23T03:39:26Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
