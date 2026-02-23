@@ -327,3 +327,9 @@ Format:
 - 2026-02-23T06:04:22Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T06:08:20Z | cmd: patch src/gauge_render.c set right-side-up orientation ball color to medium dark blue (RGB565(46,102,190)); keep upside-down orange behavior unchanged | result: ok
 - 2026-02-23T06:09:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+2026-02-23T04:47:48Z | cmd: git status/rg/sed inspections to verify mg/dL row y-position update in src/gauge_render.c
+2026-02-23T04:47:48Z | cmd: read root and project runbook/state docs for workflow compliance
+2026-02-23T04:48:07Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok (mg/dL row moved up by two rows)
+2026-02-23T04:48:29Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T04:48:36Z | cmd: update docs/PROJECT_STATE.md for mg/dL row move + build/flash verification | result: ok
+2026-02-23T04:48:53Z | cmd: git status --short --branch && git remote -v | result: ok

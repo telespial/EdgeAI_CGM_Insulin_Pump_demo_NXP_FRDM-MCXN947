@@ -976,7 +976,7 @@ static void DrawGlucoseIndicator(void)
     uint32_t now_ds = UiNowDs();
     char bg_text[20];
     int32_t bg_x;
-    int32_t bg_y = 252; /* Below gyro-refresh area to avoid visible flashing. */
+    int32_t bg_y = 224; /* moved up by two scale-2 row heights (2*14 px). */
 
     if ((!gUiGlucoseSchedPrimed) || ((int32_t)(now_ds - gUiGlucoseNextStepDs) >= 0))
     {
