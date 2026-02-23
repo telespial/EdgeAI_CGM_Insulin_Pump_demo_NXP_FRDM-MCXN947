@@ -194,3 +194,12 @@ Last updated: 2026-02-22
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-22
+- Change: Refined battery widget alignment:
+  - moved positive terminal to vertical center of battery body
+  - moved `BATT` label to left-center of battery graphic
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
