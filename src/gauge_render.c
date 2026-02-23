@@ -915,6 +915,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     bool drop_risk = (sample->anomaly_score_pct >= 80u) || (gAnomOverall >= 3u);
     int16_t gx = gGyroValid ? gGyroXdps : 0;
     int16_t gy = gGyroValid ? gGyroYdps : 0;
+    (void)ai_enabled;
 
     /* Motor area (top-left icon). */
     snprintf(line, sizeof(line), "MTR RPM:%4u", (unsigned int)sample->voltage_mV);
@@ -932,12 +933,11 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
     DrawTextUi(34, 248, 1, line, okay);
 
-    /* Human center area. */
+    /* Human status area below figure, above elapsed-time row. */
     snprintf(line, sizeof(line), "GYR X:%4d Y:%4d", (int)gx, (int)gy);
-    DrawTextUi(186, 78, 1, line, gGyroValid ? okay : warn);
-    DrawTextUi(186, 92, 1, inverted ? "POSE: INVERTED" : "POSE: NORMAL", inverted ? warn : okay);
-    DrawTextUi(186, 106, 1, drop_risk ? "DROP: POSSIBLE" : "DROP: NONE", drop_risk ? fault : okay);
-    DrawTextUi(186, 120, 1, ai_enabled ? "AI: ACTIVE" : "AI: OFF", ai_enabled ? okay : warn);
+    DrawTextUi(176, 228, 1, line, gGyroValid ? okay : warn);
+    DrawTextUi(176, 242, 1, inverted ? "POSE: INVERTED" : "POSE: NORMAL", inverted ? warn : okay);
+    DrawTextUi(176, 256, 1, drop_risk ? "DROP: POSSIBLE" : "DROP: NONE", drop_risk ? fault : okay);
 }
 
 static void DrawRecordConfirmOverlay(void)

@@ -263,3 +263,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated human-center text overlays per request:
+  - removed `AI: ACTIVE/OFF` label from center region
+  - moved `GYR`, `POSE`, and `DROP` lines below the human figure into the band above elapsed time
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
