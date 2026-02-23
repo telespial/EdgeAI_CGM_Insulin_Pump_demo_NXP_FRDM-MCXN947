@@ -164,3 +164,4 @@ Format:
 - 2026-02-23T02:31:37Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Move human status text below figure and remove AI label" && git push origin main | result: ok (commit 8a80d34 pushed)
 - 2026-02-23T02:33:13Z | cmd: patch src/gauge_render.c to rename GYR->GYRO and apply ~25% larger human-status text rendering via offset overdraw helper DrawTextUi125 | result: ok
 - 2026-02-23T02:33:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T02:33:13Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Rename GYRO label and enlarge human-status text" && git push origin main | result: ok (commit 3f8ca6c pushed)
