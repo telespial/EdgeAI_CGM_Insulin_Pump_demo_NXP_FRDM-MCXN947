@@ -684,6 +684,16 @@ static void DrawTextUiCrisp(int32_t x, int32_t y, int32_t scale, const char *tex
     edgeai_text5x7_draw_scaled(x, y, scale, text, fg);
 }
 
+static void DrawTextUi125(int32_t x, int32_t y, const char *text, uint16_t fg)
+{
+    /* Approximate 1.25x by expanding one pixel in X and Y. */
+    edgeai_text5x7_draw_scaled(x + 1, y + 1, 1, text, RGB565(0, 0, 0));
+    edgeai_text5x7_draw_scaled(x + 2, y + 1, 1, text, RGB565(0, 0, 0));
+    edgeai_text5x7_draw_scaled(x, y, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x + 1, y, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x, y + 1, 1, text, fg);
+}
+
 static void BlitPumpBgRegion(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     int32_t y;
@@ -936,7 +946,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Motor area (top-left icon). */
     snprintf(line, sizeof(line), "MTR RPM:%4u", (unsigned int)sample->voltage_mV);
-    DrawTextUi(22, 62, 1, line, okay);
+    DrawTextUi125(22, 42, line, okay);
     snprintf(line, sizeof(line), "I:%4umA AN:%3u%%", (unsigned int)sample->current_mA, (unsigned int)sample->anomaly_score_pct);
     DrawTextUi(22, 76, 1, line, sev);
     snprintf(line, sizeof(line), "WR:%3u%%", (unsigned int)sample->connector_wear_pct);

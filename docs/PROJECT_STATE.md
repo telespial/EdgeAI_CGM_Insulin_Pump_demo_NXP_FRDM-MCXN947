@@ -528,3 +528,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Adjusted motor headline styling/position.
+  - moved `MTR RPM:...` line up by ~2.5 rows (`y: 62 -> 42`).
+  - increased `MTR` line text size by ~25% using `DrawTextUi125()` helper.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

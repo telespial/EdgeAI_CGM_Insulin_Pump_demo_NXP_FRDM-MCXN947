@@ -260,3 +260,5 @@ Format:
 - 2026-02-23T03:55:28Z | cmd: patch src/gauge_render.c split pump text background restore into two rects to avoid elapsed-time band overlap (30,228..198,281 and 30,282..169,300) | result: ok
 - 2026-02-23T03:55:28Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:55:57Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Avoid elapsed timer clipping from pump background restore" && git push origin main | result: ok (commit c6419a3 pushed)
+- 2026-02-23T03:57:12Z | cmd: patch src/gauge_render.c move MTR line up 2.5 rows (y 62->42) and render ~25% larger via DrawTextUi125 helper | result: ok
+- 2026-02-23T03:57:12Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
