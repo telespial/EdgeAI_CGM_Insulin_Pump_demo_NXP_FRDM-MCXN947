@@ -3919,7 +3919,7 @@ int main(void)
                         GaugeRender_SetSettingsVisible(false);
                         handled_setting = true;
                         redraw_ui = true;
-                        PRINTF("AI_SET,OFF\r\n");
+                        PRINTF("AI_SET,MCU\r\n");
                         SaveUiSettingsIfReady(ext_flash_ok,
                                               anom_mode,
                                               AnomalyEngine_GetTune(),
@@ -3940,7 +3940,7 @@ int main(void)
                         GaugeRender_SetSettingsVisible(false);
                         handled_setting = true;
                         redraw_ui = true;
-                        PRINTF("AI_SET,ON\r\n");
+                        PRINTF("AI_SET,NPU\r\n");
                         SaveUiSettingsIfReady(ext_flash_ok,
                                               anom_mode,
                                               AnomalyEngine_GetTune(),

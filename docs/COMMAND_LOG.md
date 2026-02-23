@@ -438,3 +438,8 @@ Format:
 2026-02-23T06:02:04Z | cmd: apply_patch docs/PROJECT_STATE.md and STATUS.md set GOLDEN/FAILSAFE restore-point markers and active status | result: ok
 2026-02-23T06:02:04Z | cmd: git add README.md STATUS.md docs/COMMAND_LOG.md docs/HARDWARE_SETUP.md docs/OPS_RUNBOOK.md docs/PROJECT_STATE.md docs/START_HERE.md docs/TODO.md && git commit -m 'Date docs and mark golden/failsafe restore baseline' && git push origin main | result: ok (b8a37ee)
 2026-02-23T06:02:04Z | cmd: git tag -f GOLDEN-2026-02-23 && git tag -f FAILSAFE-2026-02-23 && git push origin GOLDEN-2026-02-23 FAILSAFE-2026-02-23 | result: ok
+2026-02-23T14:28:00Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer runner, target MCXN947:FRDM-MCXN947, probe #1 UYLKOJI11H2B3)
+2026-02-23T14:35:41Z | cmd: git status/rg inspect AI label and AI_SET strings in src/gauge_render.c and src/edgeai_package_transport_anomaly_demo.c | result: ok (pending edits confirmed)
+2026-02-23T14:35:41Z | cmd: inspect diffs for src/gauge_render.c and src/edgeai_package_transport_anomaly_demo.c | result: ok (AI ON/OFF -> MCU/NPU labels and AI_SET,MCU/NPU)
+2026-02-23T14:35:41Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T14:35:41Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1 UYLKOJI11H2B3)
