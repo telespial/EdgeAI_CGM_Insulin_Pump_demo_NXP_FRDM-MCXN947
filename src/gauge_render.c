@@ -122,6 +122,11 @@ static uint8_t gLogRateHz = 10u;
 static char gModelName[48] = "UNKNOWN";
 static char gModelVersion[16] = "0.0.0";
 static char gExtensionVersion[16] = "0.1.0";
+static float gUiOrientYFilt = 0.0f;
+static float gUiOrientZFilt = 1000.0f;
+static bool gUiOrientFiltPrimed = false;
+static float gUiOrientAngleDeg = 180.0f;
+static bool gUiOrientAnglePrimed = false;
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 {
@@ -971,8 +976,25 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 
     if (gAccelValid)
     {
+        float raw_y = (float)(-gAccelYmg);
+        float raw_z = (float)gAccelZmg;
+        float delta;
+
+        if (!gUiOrientFiltPrimed)
+        {
+            gUiOrientYFilt = raw_y;
+            gUiOrientZFilt = raw_z;
+            gUiOrientFiltPrimed = true;
+        }
+        else
+        {
+            /* UI-only damping for visual stability; raw sensor streams remain unchanged. */
+            gUiOrientYFilt = (gUiOrientYFilt * 0.88f) + (raw_y * 0.12f);
+            gUiOrientZFilt = (gUiOrientZFilt * 0.88f) + (raw_z * 0.12f);
+        }
+
         /* Invert Y so "screen facing user" posture maps to pointer-down. */
-        angle_deg = atan2f((float)(-gAccelYmg), (float)gAccelZmg) * (180.0f / 3.14159265f);
+        angle_deg = atan2f(gUiOrientYFilt, gUiOrientZFilt) * (180.0f / 3.14159265f);
         angle_deg += 180.0f; /* Apply phase offset: current hardware frame is 180 deg inverted. */
         if (angle_deg < 0.0f)
         {
@@ -982,6 +1004,42 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
         {
             angle_deg -= 360.0f;
         }
+
+        if (!gUiOrientAnglePrimed)
+        {
+            gUiOrientAngleDeg = angle_deg;
+            gUiOrientAnglePrimed = true;
+        }
+        else
+        {
+            delta = angle_deg - gUiOrientAngleDeg;
+            while (delta > 180.0f)
+            {
+                delta -= 360.0f;
+            }
+            while (delta < -180.0f)
+            {
+                delta += 360.0f;
+            }
+            if (delta > 6.0f)
+            {
+                delta = 6.0f;
+            }
+            else if (delta < -6.0f)
+            {
+                delta = -6.0f;
+            }
+            gUiOrientAngleDeg += delta;
+            if (gUiOrientAngleDeg < 0.0f)
+            {
+                gUiOrientAngleDeg += 360.0f;
+            }
+            if (gUiOrientAngleDeg >= 360.0f)
+            {
+                gUiOrientAngleDeg -= 360.0f;
+            }
+        }
+        angle_deg = gUiOrientAngleDeg;
     }
     if (gAccelValid && (gAccelZmg < -200))
     {
@@ -1009,6 +1067,53 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     DrawLine(hx1, hy1, bx2, by2, 2, ptr_color);
     DrawLine(hx2, hy2, bx2, by2, 2, ptr_color);
     DrawLine(bx1, by1, bx2, by2, 2, ptr_color);
+}
+
+static void DrawGravityTableIndicator(const gauge_style_preset_t *style)
+{
+    int32_t cx = 106;
+    int32_t cy = 186;
+    int32_t r = 13;
+    int32_t dot_x = cx;
+    int32_t dot_y = cy;
+    int32_t tilt_x = 0;
+    int32_t tilt_y = 0;
+    bool table_flat = false;
+    uint16_t dot_color = WARN_YELLOW;
+    uint16_t ring_color = style->palette.text_primary;
+    uint16_t text_color = style->palette.text_secondary;
+    uint16_t i;
+
+    BlitPumpBgRegion(cx - r - 40, cy - r - 12, cx + r + 10, cy + r + 12);
+
+    for (i = 0u; i < 24u; i++)
+    {
+        float a0 = ((float)i * 2.0f * 3.14159265f) / 24.0f;
+        float a1 = ((float)(i + 1u) * 2.0f * 3.14159265f) / 24.0f;
+        int32_t x0 = cx + (int32_t)(cosf(a0) * (float)r);
+        int32_t y0 = cy + (int32_t)(sinf(a0) * (float)r);
+        int32_t x1 = cx + (int32_t)(cosf(a1) * (float)r);
+        int32_t y1 = cy + (int32_t)(sinf(a1) * (float)r);
+        DrawLine(x0, y0, x1, y1, 1, ring_color);
+    }
+
+    DrawLine(cx - r + 2, cy, cx + r - 2, cy, 1, RGB565(90, 170, 220));
+    DrawLine(cx, cy - r + 2, cx, cy + r - 2, 1, RGB565(90, 170, 220));
+
+    if (gAccelValid)
+    {
+        tilt_x = ClampI32(gAccelXmg / 80, -10, 10);
+        tilt_y = ClampI32(gAccelYmg / 80, -10, 10);
+        dot_x = cx + tilt_x;
+        dot_y = cy - tilt_y;
+        table_flat = ((gAccelXmg < 180) && (gAccelXmg > -180) &&
+                      (gAccelYmg < 180) && (gAccelYmg > -180) &&
+                      (gAccelZmg > 820));
+    }
+    dot_color = table_flat ? style->palette.accent_green : WARN_YELLOW;
+    par_lcd_s035_fill_rect(dot_x - 2, dot_y - 2, dot_x + 2, dot_y + 2, dot_color);
+    DrawTextUi(36, 182, 1, "GRAV", text_color);
+    DrawTextUi(36, 194, 1, table_flat ? "TABLE" : "TILT ", dot_color);
 }
 
 static void DrawRecordConfirmOverlay(void)
@@ -2465,6 +2570,8 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevThermalRisk = 65535u;
         gPrevDrift = 255u;
         gAlertVisualValid = false;
+        gUiOrientFiltPrimed = false;
+        gUiOrientAnglePrimed = false;
     }
 
     cpu_pct = (uint16_t)(20u + (sample->current_mA / 1400u) + (sample->temp_c / 2u));
@@ -2538,6 +2645,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     }
     DrawLeftBargraphDynamic(style, DisplayTempC10(sample));
     DrawHumanOrientationPointer(style);
+    DrawGravityTableIndicator(style);
     if (!(gSettingsVisible || gHelpVisible || gLimitsVisible))
     {
         DrawAiAlertOverlay(style, sample, ai_enabled);

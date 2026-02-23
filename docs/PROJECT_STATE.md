@@ -390,3 +390,13 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added a second gravity orientation access widget and stabilized the main human pointer for better visual behavior during movement.
+  - main center pointer: UI-only smoothing added (low-pass on accel-derived orientation plus per-frame angular delta clamp) to reduce rolling/jitter.
+  - new gravity indicator: compact `GRAV` mini-widget with circular marker and `TABLE/TILT` status, placed in left-middle region outside the human graphic.
+  - sensor integrity: raw accelerometer/gyro streams and model-facing data paths are unchanged; damping is display-only.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

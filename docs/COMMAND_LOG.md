@@ -209,3 +209,6 @@ Format:
 - 2026-02-23T03:12:55Z | cmd: patch src/gauge_render.c add +180deg orientation phase offset after atan2(-Y,Z) and wrap to [0,360) | result: ok
 - 2026-02-23T03:12:55Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:13:30Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Add 180-degree phase correction for orientation pointer" && git push origin main | result: ok (commit 39f3b76 pushed)
+- 2026-02-23T03:19:11Z | cmd: rg/sed inspect orientation pointer + dynamic render paths in src/gauge_render.c and sensor mapping references | result: ok
+- 2026-02-23T03:19:11Z | cmd: patch src/gauge_render.c add UI-only orientation damping (low-pass + per-frame delta clamp) and add compact GRAV/TABLE indicator widget outside human dial | result: ok
+- 2026-02-23T03:19:11Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
