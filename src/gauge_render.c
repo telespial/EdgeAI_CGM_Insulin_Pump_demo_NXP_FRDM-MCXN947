@@ -971,7 +971,8 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 
     if (gAccelValid)
     {
-        angle_deg = atan2f((float)gAccelYmg, (float)gAccelZmg) * (180.0f / 3.14159265f);
+        /* Invert Y so "screen facing user" posture maps to pointer-down. */
+        angle_deg = atan2f((float)(-gAccelYmg), (float)gAccelZmg) * (180.0f / 3.14159265f);
         if (angle_deg < 0.0f)
         {
             angle_deg += 360.0f;

@@ -201,3 +201,7 @@ Format:
 - 2026-02-23T03:07:07Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:08:41Z | cmd: git status; git log --oneline --decorate -n 5; git rev-list --left-right --count origin/main...main | result: ok (clean tree, HEAD=51331ae, local/remote in sync 0/0)
 - 2026-02-23T03:09:05Z | cmd: git add docs/COMMAND_LOG.md && git commit -m "Log verification of gyro display update branch state" && git push origin main | result: ok (commit f07b50b pushed)
+- 2026-02-23T03:10:54Z | cmd: rg/sed inspection of gauge orientation math in src/gauge_render.c and sensor mapping in src/edgeai_package_transport_anomaly_demo.c | result: found pointer angle from atan2(Y,Z)
+- 2026-02-23T03:10:54Z | cmd: patch src/gauge_render.c to compute pointer angle with atan2(-Y,Z) for screen-facing posture -> pointer-down mapping | result: ok
+- 2026-02-23T03:10:54Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T03:10:54Z | cmd: head docs/START_HERE.md docs/PROJECT_STATE.md docs/OPS_RUNBOOK.md and git status/tail logs for compliance check | result: ok

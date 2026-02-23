@@ -373,3 +373,11 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Re-referenced the human orientation pointer so it points down when the LCD is held facing the user (screen plane parallel to face), instead of using the prior vertical sign convention.
+  - implementation: pointer angle now uses `atan2(-Y, Z)` in `DrawHumanOrientationPointer()`.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
