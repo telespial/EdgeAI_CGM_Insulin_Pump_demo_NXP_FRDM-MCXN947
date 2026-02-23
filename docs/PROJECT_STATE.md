@@ -584,3 +584,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed `RPM` readability regression and top-center UI clipping.
+  - replaced `DrawTextUi125` with `DrawTextUi(..., scale=2)` for clearer `RPM` line rendering.
+  - narrowed motor background restore from `BlitPumpBgRegion(20,12,220,102)` to `BlitPumpBgRegion(20,18,142,102)` so redraw no longer intrudes into the `* AI ON ?` row and warning panel area.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

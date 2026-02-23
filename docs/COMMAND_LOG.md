@@ -282,3 +282,6 @@ Format:
 - 2026-02-23T04:22:02Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T04:27:05Z | cmd: patch src/gauge_render.c move RPM down by ~1/3 row (y 18->23) and reduce size ~20% (DrawTextUi scale=2 -> DrawTextUi125) | result: ok
 - 2026-02-23T04:27:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:30:22Z | cmd: inspect RPM draw path and motor background restore bounds in src/gauge_render.c | result: ok
+- 2026-02-23T04:31:03Z | cmd: patch src/gauge_render.c constrain motor redraw region (20,18..142,102) to avoid clipping AI row/warning box; switch RPM back to DrawTextUi scale=2 for readability | result: ok
+- 2026-02-23T04:31:44Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
