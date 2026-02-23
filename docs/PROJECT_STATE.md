@@ -1533,3 +1533,10 @@ Last updated: 2026-02-23
 - Verification:
   - `./scripts/build_and_flash.sh` PASS
 - Result: ok
+
+## Update 2026-02-23
+- Change: Published step-6 implementation and golden-only restore promotion.
+  - commit: `d7e2deb` on `main`
+  - pushed tag: `GOLDEN-2026-02-23-R4`
+  - failsafe tag intentionally unchanged: `FAILSAFE-2026-02-23-R3`
+- Result: ok

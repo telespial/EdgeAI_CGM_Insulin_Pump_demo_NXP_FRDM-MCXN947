@@ -664,3 +664,5 @@ Format:
 2026-02-23T21:55:30Z | cmd: rm accidental failsafe R4 artifact attempt | result: blocked by shell policy
 2026-02-23T21:55:30Z | cmd: apply_patch docs/TODO.md docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md README.md STATUS.md docs/PROJECT_STATE.md to golden R4 + failsafe R3 | result: ok
 2026-02-23T21:55:30Z | cmd: rg -n FAILSAFE-2026-02-23-R4|failsafe_2026-02-23-R4 <project> | result: ok (no matches)
+2026-02-23T21:55:59Z | cmd: git add ... && git commit -m 'Implement CGM step 6 and promote golden R4 (failsafe stays R3)' && git push origin main | result: ok (d7e2deb)
+2026-02-23T21:55:59Z | cmd: git tag -f GOLDEN-2026-02-23-R4 d7e2deb && git push origin GOLDEN-2026-02-23-R4 | result: ok
