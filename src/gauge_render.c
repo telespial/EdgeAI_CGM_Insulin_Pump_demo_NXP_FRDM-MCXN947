@@ -130,7 +130,6 @@ static bool gUiRpmSchedulePrimed = false;
 static bool gUiMotorRunning = false;
 /* Dose rate is in milli-units per hour (mU/h). 1000 mU = 1 U. */
 static uint32_t gUiDoseRateUhMilli = 4000u; /* 4.000 U/h startup target for 3-day 3mL profile. */
-static uint32_t gUiDoseRateNextUpdateDs = 0u;
 static uint32_t gUiMotorPulseNextDs = 0u;
 static uint32_t gUiMotorPulseEndDs = 0u;
 /* 3.0 mL reservoir starts at 92% and drains from dose flow model. */
@@ -151,6 +150,12 @@ static uint8_t gActivityStage = 0u;
 static float gActivityBaroRateHpaS = 0.0f;
 static uint8_t gTransportMode = 0u;
 static uint8_t gTransportConfidencePct = 0u;
+static float gUiInsulinIobU = 0.0f;
+static uint32_t gUiDoseCtrlPrevDs = 0u;
+static uint8_t gUiGlucosePrevForTrend = 98u;
+static uint32_t gUiGlucosePrevTrendDs = 0u;
+static float gUiGlucoseTrendMgDlPerMin = 0.0f;
+static uint32_t gUiDoseRecommendedUhMilli = 4000u;
 
 enum
 {
@@ -1322,12 +1327,157 @@ static void DrawGlucoseIndicator(void)
     gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 
+static void UpdateDoseRecommendation(uint32_t now_ds)
+{
+    float dt_h;
+    float decay;
+    float basal_u_h = 4.0f;
+    float activity_factor = 1.0f;
+    float trend_factor = 1.0f;
+    float glucose_factor = 1.0f;
+    float iob_factor = 1.0f;
+    float rec_u_h;
+
+    if (gUiDoseCtrlPrevDs == 0u)
+    {
+        gUiDoseCtrlPrevDs = now_ds;
+        gUiGlucosePrevForTrend = gUiGlucoseMgdl;
+        gUiGlucosePrevTrendDs = now_ds;
+    }
+
+    dt_h = (float)(now_ds - gUiDoseCtrlPrevDs) / 36000.0f;
+    if (dt_h < 0.0f)
+    {
+        dt_h = 0.0f;
+    }
+    if (dt_h > 0.0f)
+    {
+        /* Approximate rapid-acting insulin tail; ~4h horizon for demo safety behavior. */
+        decay = dt_h / 4.0f;
+        if (decay > 0.40f)
+        {
+            decay = 0.40f;
+        }
+        gUiInsulinIobU *= (1.0f - decay);
+    }
+    if (gUiInsulinIobU < 0.0f)
+    {
+        gUiInsulinIobU = 0.0f;
+    }
+    gUiDoseCtrlPrevDs = now_ds;
+
+    if ((gUiGlucosePrevTrendDs != 0u) && (gUiGlucosePrevForTrend != gUiGlucoseMgdl))
+    {
+        uint32_t dds = now_ds - gUiGlucosePrevTrendDs;
+        if (dds > 0u)
+        {
+            float dmin = (float)dds / 10.0f / 60.0f;
+            float dbg = (float)((int32_t)gUiGlucoseMgdl - (int32_t)gUiGlucosePrevForTrend);
+            if (dmin > 0.001f)
+            {
+                gUiGlucoseTrendMgDlPerMin = dbg / dmin;
+            }
+        }
+        gUiGlucosePrevForTrend = gUiGlucoseMgdl;
+        gUiGlucosePrevTrendDs = now_ds;
+    }
+    gUiGlucoseTrendMgDlPerMin = (gUiGlucoseTrendMgDlPerMin * 0.88f);
+
+    switch (gActivityStage)
+    {
+        case ACTIVITY_LIGHT:
+            activity_factor = 0.92f;
+            break;
+        case ACTIVITY_MODERATE:
+            activity_factor = 0.80f;
+            break;
+        case ACTIVITY_ACTIVE:
+            activity_factor = 0.65f;
+            break;
+        case ACTIVITY_HEAVY:
+            activity_factor = 0.50f;
+            break;
+        default:
+            activity_factor = 1.00f;
+            break;
+    }
+
+    /* Vehicle modes should not strongly reduce dose unless body effort is also high. */
+    if ((gTransportMode == TRANSPORT_CAR) || (gTransportMode == TRANSPORT_AIR))
+    {
+        activity_factor = 0.97f;
+    }
+
+    if (gUiGlucoseMgdl >= 120u)
+    {
+        glucose_factor = 1.22f;
+    }
+    else if (gUiGlucoseMgdl >= 110u)
+    {
+        glucose_factor = 1.10f;
+    }
+    else if (gUiGlucoseMgdl <= 80u)
+    {
+        glucose_factor = 0.60f;
+    }
+    else if (gUiGlucoseMgdl <= 90u)
+    {
+        glucose_factor = 0.78f;
+    }
+
+    if (gUiGlucoseTrendMgDlPerMin >= 0.20f)
+    {
+        trend_factor = 1.10f;
+    }
+    else if (gUiGlucoseTrendMgDlPerMin <= -0.30f)
+    {
+        trend_factor = 0.72f;
+    }
+    else if (gUiGlucoseTrendMgDlPerMin <= -0.15f)
+    {
+        trend_factor = 0.85f;
+    }
+
+    if (gUiInsulinIobU > 3.0f)
+    {
+        iob_factor = 0.65f;
+    }
+    else if (gUiInsulinIobU > 2.0f)
+    {
+        iob_factor = 0.78f;
+    }
+    else if (gUiInsulinIobU > 1.2f)
+    {
+        iob_factor = 0.90f;
+    }
+
+    rec_u_h = basal_u_h * activity_factor * glucose_factor * trend_factor * iob_factor;
+    if (rec_u_h < 0.025f)
+    {
+        rec_u_h = 0.025f;
+    }
+    if (rec_u_h > 6.000f)
+    {
+        rec_u_h = 6.000f;
+    }
+
+    gUiDoseRecommendedUhMilli = (uint32_t)(rec_u_h * 1000.0f + 0.5f);
+    gUiDoseRecommendedUhMilli = (gUiDoseRecommendedUhMilli / 25u) * 25u;
+    if (gUiDoseRecommendedUhMilli < 25u)
+    {
+        gUiDoseRecommendedUhMilli = 25u;
+    }
+    /* Smooth rate update to avoid abrupt swings. */
+    gUiDoseRateUhMilli = (uint32_t)(((uint64_t)gUiDoseRateUhMilli * 7u +
+                                     (uint64_t)gUiDoseRecommendedUhMilli * 3u) /
+                                    10u);
+}
+
 static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
 {
     char line[40];
     uint16_t rpm_ma;
     uint32_t now_ds;
-    uint32_t rate_step;
     uint32_t pulse_interval_ds;
     uint32_t pulse_width_ds;
     uint32_t dose_rate_mlh_x100;
@@ -1352,20 +1502,16 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
         gUiMotorRunning = false;
         gUiRpmTenths = 0u;
         gUiDoseRateUhMilli = 4000u; /* 4.000 U/h baseline (~0.040 mL/h). */
-        gUiDoseRateNextUpdateDs = now_ds + 12000u + (NextUiRand() % 12001u); /* retune every 20..40 min */
+        gUiDoseRecommendedUhMilli = gUiDoseRateUhMilli;
+        gUiDoseCtrlPrevDs = now_ds;
+        gUiGlucosePrevTrendDs = now_ds;
+        gUiGlucosePrevForTrend = gUiGlucoseMgdl;
+        gUiInsulinIobU = 0.0f;
         gUiMotorPulseNextDs = now_ds + 120u; /* first basal pulse in ~12s */
         gUiMotorPulseEndDs = now_ds;
         gUiRpmSchedulePrimed = true;
     }
-
-    /* Basal profile update (still in 0.025 U/h increments). Keep centered near
-     * 4 U/h so a 3 mL cartridge trends toward ~3-day runtime. */
-    if ((int32_t)(now_ds - gUiDoseRateNextUpdateDs) >= 0)
-    {
-        rate_step = NextUiRand() % 81u;          /* 0..80 */
-        gUiDoseRateUhMilli = 3000u + (rate_step * 25u); /* 3.000 .. 5.000 U/h */
-        gUiDoseRateNextUpdateDs = now_ds + 12000u + (NextUiRand() % 12001u); /* 20..40 min */
-    }
+    UpdateDoseRecommendation(now_ds);
 
     /* Motor behavior: brief micro-dosing pulses instead of long run windows.
      * Each pulse delivers a fixed micro-bolus volume, and pulse interval is
@@ -1423,6 +1569,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
             {
                 gUiReservoirMl = 0.0f;
             }
+            gUiInsulinIobU += pulse_ml * 100.0f; /* U100 conversion */
         }
     }
     else
@@ -2068,18 +2215,18 @@ static void DrawHelpPopup(void)
     {
         DrawTextUi(x0 + 12, y0 + 42, 1, "QUICK START", RGB565(210, 234, 255));
         DrawTextUi(x0 + 12, y0 + 56, 1, "STAR OPENS SETTINGS  HELP KEY OPENS NEXT PAGE", body);
-        DrawTextUi(x0 + 12, y0 + 70, 1, "MODE ADAPT LEARNS  MODE TRAINED USES STORED BASELINE", body);
-        DrawTextUi(x0 + 12, y0 + 84, 1, "RUN MODE TRAIN OR LIVE", body);
-        DrawTextUi(x0 + 12, y0 + 98, 1, "OPEN LIMITS TO SET G TEMP AND GYRO THRESHOLDS", body);
+        DrawTextUi(x0 + 12, y0 + 70, 1, "SYSTEM AUTO-CLASSIFIES TRANSPORT AND HUMAN EFFORT", body);
+        DrawTextUi(x0 + 12, y0 + 84, 1, "TRN ROW SHOWS MODE FOOT SKATE SCOOT BIKE CAR AIR", body);
+        DrawTextUi(x0 + 12, y0 + 98, 1, "ACT ARC SHOWS EFFORT LEVEL REST THROUGH HEAVY", body);
 
         DrawTextUi(x0 + 12, y0 + 118, 1, "MAIN SCREEN CONTROL", RGB565(210, 234, 255));
         DrawTextUi(x0 + 12, y0 + 132, 1, "TOP LEFT PLAY STOP", body);
         DrawTextUi(x0 + 12, y0 + 146, 1, "TOP RIGHT RECORD TRAINING DATA", body);
         DrawTextUi(x0 + 12, y0 + 160, 1, "RECORD AND STOP REQUIRE CONFIRM DIALOG", body);
 
-        DrawTextUi(x0 + 12, y0 + 180, 1, "ALERT MEANING", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 194, 1, "GREEN NORMAL  YELLOW WARNING  RED FAIL", body);
-        DrawTextUi(x0 + 12, y0 + 208, 1, "TRAINING OR RECORDING STATES OVERRIDE ALERT TEXT", body);
+        DrawTextUi(x0 + 12, y0 + 180, 1, "DOSE RECOMMENDATION", RGB565(210, 234, 255));
+        DrawTextUi(x0 + 12, y0 + 194, 1, "DOS USES ACTIVITY TRANSPORT BG TREND AND IOB", body);
+        DrawTextUi(x0 + 12, y0 + 208, 1, "DOS VALUE IS RECOMMENDED BASAL U PER HOUR", body);
 
         DrawTextUi(x0 + 12, y0 + 228, 1, "PERSISTENCE", RGB565(210, 234, 255));
         DrawTextUi(x0 + 12, y0 + 242, 1, "MODE, RUN, AI, SENS, LIMITS SAVE ON CHANGE", body);
@@ -2089,20 +2236,20 @@ static void DrawHelpPopup(void)
     else
     {
         DrawTextUi(x0 + 12, y0 + 42, 1, "DEEP DIVE", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 56, 1, "ADAPT MODE BASELINE UPDATES FROM LIVE SIGNALS", body);
-        DrawTextUi(x0 + 12, y0 + 70, 1, "TRAINED MODE FREEZES LEARNING USES STORED MODEL", body);
-        DrawTextUi(x0 + 12, y0 + 84, 1, "RUN TRAIN ENABLES RECORD AND PLAY WORKFLOW", body);
-        DrawTextUi(x0 + 12, y0 + 98, 1, "RUN LIVE USES REAL TIME SENSOR STREAM ONLY", body);
+        DrawTextUi(x0 + 12, y0 + 56, 1, "TRANSPORT MODE FROM ACCEL GYRO BARO RATE FUSION", body);
+        DrawTextUi(x0 + 12, y0 + 70, 1, "CAR AIR MODES REDUCE FALSE EFFORT FROM VIBRATION", body);
+        DrawTextUi(x0 + 12, y0 + 84, 1, "EFFORT OUTPUT FEEDS ACT ARC AND STATUS COLOR", body);
+        DrawTextUi(x0 + 12, y0 + 98, 1, "BG TREND IS MG DL PER MIN FROM SLOW GLUCOSE MODEL", body);
 
         DrawTextUi(x0 + 12, y0 + 118, 1, "THRESHOLDS", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 132, 1, "G WARN G FAIL SET PACKAGE SHOCK LEVELS", body);
-        DrawTextUi(x0 + 12, y0 + 146, 1, "TEMP LOW TEMP HIGH SET OPERATING WINDOW", body);
-        DrawTextUi(x0 + 12, y0 + 160, 1, "GYRO LIMIT SETS ROTATION RATE LIMIT", body);
+        DrawTextUi(x0 + 12, y0 + 132, 1, "IOB DECAYS OVER ABOUT FOUR HOURS FOR SAFETY", body);
+        DrawTextUi(x0 + 12, y0 + 146, 1, "LOW BG OR FALLING TREND REDUCES DOSE RECOMMEND", body);
+        DrawTextUi(x0 + 12, y0 + 160, 1, "HIGH BG OR RISING TREND INCREASES RECOMMEND", body);
 
         DrawTextUi(x0 + 12, y0 + 180, 1, "INTEGRATION NOTES", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 194, 1, "HOST FIRMWARE KEEPS PRIMARY CONTROL LOGIC", body);
-        DrawTextUi(x0 + 12, y0 + 208, 1, "AI LAYER ADDS WATCHDOG AND PREDICTIVE SIGNALS", body);
-        DrawTextUi(x0 + 12, y0 + 222, 1, "USE ALERT AND REASON OUTPUTS TO GATE ACTIONS", body);
+        DrawTextUi(x0 + 12, y0 + 194, 1, "THIS DEMO GENERATES A SAFE RECOMMENDATION SIGNAL", body);
+        DrawTextUi(x0 + 12, y0 + 208, 1, "PUMP RATE TRACKS MOTOR PULSES FOR VISUAL CONSISTENCY", body);
+        DrawTextUi(x0 + 12, y0 + 222, 1, "CLINICAL USE REQUIRES VERIFIED CGM AND SAFETY LOGIC", body);
 
         DrawTextUi(x0 + 12, y0 + 242, 1, "UI TIP", RGB565(210, 234, 255));
         DrawTextUi(x0 + 12, y0 + 256, 1, "TAP HELP KEY AGAIN TO RETURN TO PAGE 1", body);
@@ -2374,7 +2521,18 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     }
     else
     {
-        DrawTerminalLine(TERM_Y + 154, "              ", style->palette.text_secondary);
+        int32_t trend10 = (int32_t)(gUiGlucoseTrendMgDlPerMin * 10.0f);
+        int32_t trend_abs10 = (trend10 < 0) ? -trend10 : trend10;
+        uint32_t iob10 = (uint32_t)((gUiInsulinIobU * 10.0f) + 0.5f);
+        snprintf(line, sizeof(line), "DOS %u.%03uU IOB %1u.%01u dBG %c%u.%01u",
+                 (unsigned int)(gUiDoseRecommendedUhMilli / 1000u),
+                 (unsigned int)(gUiDoseRecommendedUhMilli % 1000u),
+                 (unsigned int)(iob10 / 10u),
+                 (unsigned int)(iob10 % 10u),
+                 (trend10 < 0) ? '-' : '+',
+                 (unsigned int)(trend_abs10 / 10),
+                 (unsigned int)(trend_abs10 % 10));
+        DrawTerminalLine(TERM_Y + 154, line, RGB565(164, 222, 244));
     }
 }
 

@@ -991,3 +991,16 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added demo insulin recommendation controller and wired it into runtime dosing behavior.
+  - recommendation uses fused inputs: transport-aware activity stage, glucose value, glucose trend (`dBG`), and insulin-on-board (`IOB`) with time decay
+  - recommendation is quantized to 0.025 U/h increments and smoothed before being applied to pulse scheduling
+  - terminal now shows recommendation telemetry when help popup is closed: `DOS`, `IOB`, and `dBG`
+- Change: Updated on-screen `?` help popup content (both pages) to document the new transport/activity and dose recommendation system behavior.
+- Change: Rewrote `README.md` with detailed project documentation:
+  - safety note, system architecture, runtime semantics, transport/activity model, dose recommendation model, record/replay details, controls, and build/flash instructions
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

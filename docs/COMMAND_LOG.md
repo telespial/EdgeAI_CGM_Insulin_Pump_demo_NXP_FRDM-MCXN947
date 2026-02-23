@@ -425,3 +425,9 @@ Format:
 2026-02-23T05:49:04Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:49:04Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:49:04Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Recalibrate activity baseline so rest stays in green zone' && git push origin main | result: ok (d9144d8)
+2026-02-23T05:56:25Z | cmd: rg/sed inspect dose, glucose, terminal, and help popup paths in src/gauge_render.c; inspect README.md baseline | result: ok
+2026-02-23T05:56:25Z | cmd: apply_patch src/gauge_render.c add demo insulin recommendation controller (transport-aware activity + glucose trend + IOB decay), wire recommendation into dose-rate target and terminal DOS/IOB/dBG line | result: ok
+2026-02-23T05:56:25Z | cmd: apply_patch src/gauge_render.c update on-screen help popup text (page 1/2) with transport/activity/IOB/dose-system explanation | result: ok
+2026-02-23T05:56:25Z | cmd: replace README.md with detailed project documentation (architecture, runtime semantics, safety note, build/flash, key files) | result: ok
+2026-02-23T05:56:25Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:56:25Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
