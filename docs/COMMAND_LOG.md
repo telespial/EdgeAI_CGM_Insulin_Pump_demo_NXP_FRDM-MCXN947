@@ -356,3 +356,9 @@ Format:
 2026-02-23T05:02:23Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:02:23Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:02:39Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Remove stray ANOM text and drive left bargraph from fill level' && git push origin main | result: ok (36b6887)
+2026-02-23T05:03:56Z | cmd: apply_patch src/gauge_render.c add mg/dL redraw gate (only on value change) and prev-value cache reset hooks | result: ok
+2026-02-23T05:03:56Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:03:56Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:04:05Z | cmd: apply_patch src/gauge_render.c add mg/dL redraw gate (only on value change) and prev-value cache reset hooks | result: ok
+2026-02-23T05:04:05Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:04:05Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)

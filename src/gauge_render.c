@@ -141,6 +141,7 @@ static uint8_t gUiGlucoseMgdl = 98u;
 static int8_t gUiGlucoseDir = 1;
 static uint32_t gUiGlucoseNextStepDs = 0u;
 static bool gUiGlucoseSchedPrimed = false;
+static uint8_t gPrevGlucoseMgdl = 255u;
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 {
@@ -1015,9 +1016,15 @@ static void DrawGlucoseIndicator(void)
         gUiGlucoseSchedPrimed = true;
     }
 
+    if (gPrevGlucoseMgdl == gUiGlucoseMgdl)
+    {
+        return;
+    }
+
     snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseMgdl);
     bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
     DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
+    gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 
 static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
@@ -2402,6 +2409,7 @@ bool GaugeRender_Init(void)
         gFrameCounter = 0u;
         gPrevBarLevel = 255u;
         gPrevFillPct = 255u;
+        gPrevGlucoseMgdl = 255u;
         gPrevAnomaly = 0u;
         gPrevWear = 0u;
         gPrevAiEnabled = false;
@@ -2646,6 +2654,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevSoc = 0u;
         gPrevBarLevel = 255u;
         gPrevFillPct = 255u;
+        gPrevGlucoseMgdl = 255u;
         gPrevAiEnabled = !ai_enabled;
         gAlertVisualValid = false;
     }
@@ -2657,6 +2666,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gDynamicReady = false;
         gPrevBarLevel = 255u;
         gPrevFillPct = 255u;
+        gPrevGlucoseMgdl = 255u;
         gPrevAnomaly = 0u;
         gPrevWear = 0u;
         gPrevAiEnabled = false;

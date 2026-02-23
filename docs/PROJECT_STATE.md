@@ -829,3 +829,21 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Optimized glucose line redraw behavior in `src/gauge_render.c`:
+  - `mg/dL` row is now refreshed only when glucose value changes
+  - added cached previous glucose value (`gPrevGlucoseMgdl`) and reset hooks on renderer reinit paths to ensure correct first redraw
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Optimized glucose line redraw behavior in `src/gauge_render.c`:
+  - `mg/dL` row is now refreshed only when glucose value changes
+  - added cached previous glucose value (`gPrevGlucoseMgdl`) and reset hooks on renderer reinit paths to ensure correct first redraw
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
