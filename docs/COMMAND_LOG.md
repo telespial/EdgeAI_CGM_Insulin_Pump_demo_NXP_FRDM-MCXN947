@@ -285,3 +285,5 @@ Format:
 - 2026-02-23T04:30:22Z | cmd: inspect RPM draw path and motor background restore bounds in src/gauge_render.c | result: ok
 - 2026-02-23T04:31:03Z | cmd: patch src/gauge_render.c constrain motor redraw region (20,18..142,102) to avoid clipping AI row/warning box; switch RPM back to DrawTextUi scale=2 for readability | result: ok
 - 2026-02-23T04:31:44Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T04:34:18Z | cmd: patch src/gauge_render.c move RPM row left by two characters (x 46->22) | result: ok
+- 2026-02-23T04:34:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
