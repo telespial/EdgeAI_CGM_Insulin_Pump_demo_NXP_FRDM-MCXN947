@@ -688,6 +688,16 @@ static void DrawTextUiCrisp(int32_t x, int32_t y, int32_t scale, const char *tex
     edgeai_text5x7_draw_scaled(x, y, scale, text, fg);
 }
 
+static void DrawTextUi150(int32_t x, int32_t y, const char *text, uint16_t fg)
+{
+    /* Approximate 1.5x by thickening 1x glyphs in X/Y while keeping crisp edges. */
+    edgeai_text5x7_draw_scaled(x + 1, y + 1, 1, text, RGB565(0, 0, 0));
+    edgeai_text5x7_draw_scaled(x + 2, y + 1, 1, text, RGB565(0, 0, 0));
+    edgeai_text5x7_draw_scaled(x, y, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x + 1, y, 1, text, fg);
+    edgeai_text5x7_draw_scaled(x, y + 1, 1, text, fg);
+}
+
 static void BlitPumpBgRegion(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     int32_t y;
@@ -935,6 +945,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     uint16_t sev = (sample->anomaly_score_pct >= 65u) ? ALERT_RED :
                    ((sample->anomaly_score_pct >= 35u) ? warn : okay);
     bool pumping = (sample->power_mW > 180u);
+    uint16_t pump_color = WARN_YELLOW;
     (void)ai_enabled;
 
     /* Motor area (top-left icon). */
@@ -947,11 +958,11 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     /* Pump area (bottom-left icon). */
     snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
-    DrawTextUi(34, 220, 1, line, pumping ? okay : warn);
+    DrawTextUi150(34, 218, line, pump_color);
     snprintf(line, sizeof(line), "RATE:%3u mL/h", (unsigned int)(sample->power_mW / 10u));
-    DrawTextUi(34, 234, 1, line, okay);
+    DrawTextUi150(34, 236, line, pump_color);
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
-    DrawTextUi(34, 248, 1, line, okay);
+    DrawTextUi150(34, 254, line, pump_color);
 
     /* Human status text removed per latest UI direction. */
     BlitPumpBgRegion(172, 226, 322, 267);

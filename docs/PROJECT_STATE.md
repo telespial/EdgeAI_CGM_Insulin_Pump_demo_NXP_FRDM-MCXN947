@@ -430,3 +430,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated pump overlay typography:
+  - `PUMP`, `RATE`, and `FILL` lines changed to yellow.
+  - pump lines rendered ~50% larger using a new `DrawTextUi150()` helper (thickened 1x glyph pass).
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
