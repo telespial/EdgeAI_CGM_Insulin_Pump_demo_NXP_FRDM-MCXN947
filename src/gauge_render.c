@@ -167,6 +167,18 @@ static uint8_t gUiCgmSqiPct = 100u;
 static uint16_t gUiCgmSensorFlags = 0u;
 static bool gUiCgmPredictionBlocked = false;
 static bool gUiCgmHoldLast = false;
+static uint16_t gUiPred15Mgdl = 98u;
+static uint16_t gUiPred30Mgdl = 98u;
+static uint8_t gUiPredAlertStatus = AI_STATUS_NORMAL;
+static int8_t gUiPredAlertDir = 0; /* -1: hypo, +1: hyper, 0: none */
+static bool gUiPredHypoWarnActive = false;
+static bool gUiPredHypoFaultActive = false;
+static bool gUiPredHyperWarnActive = false;
+static bool gUiPredHyperFaultActive = false;
+static uint8_t gUiPredHypoWarnDebounce = 0u;
+static uint8_t gUiPredHypoFaultDebounce = 0u;
+static uint8_t gUiPredHyperWarnDebounce = 0u;
+static uint8_t gUiPredHyperFaultDebounce = 0u;
 
 enum
 {
@@ -251,6 +263,184 @@ static float ClampF32(float v, float lo, float hi)
         return hi;
     }
     return v;
+}
+
+static uint8_t PredictionAlertStatus(void)
+{
+    return gUiPredAlertStatus;
+}
+
+static int8_t PredictionAlertDir(void)
+{
+    return gUiPredAlertDir;
+}
+
+static void UpdatePredictionModelAndAlerts(void)
+{
+    float pred15_f = (float)gUiGlucoseMgdl + (gUiGlucoseTrendMgDlPerMin * 15.0f);
+    float pred30_f = (float)gUiGlucoseMgdl + (gUiGlucoseTrendMgDlPerMin * 30.0f);
+    bool gating_ok = (!gUiCgmPredictionBlocked) && (gUiCgmSqiPct >= 45u);
+    bool hypo_warn_enter;
+    bool hypo_fault_enter;
+    bool hyper_warn_enter;
+    bool hyper_fault_enter;
+    bool hypo_warn_clear;
+    bool hypo_fault_clear;
+    bool hyper_warn_clear;
+    bool hyper_fault_clear;
+
+    pred15_f = ClampF32(pred15_f, 40.0f, 400.0f);
+    pred30_f = ClampF32(pred30_f, 40.0f, 400.0f);
+    gUiPred15Mgdl = (uint16_t)(pred15_f + 0.5f);
+    gUiPred30Mgdl = (uint16_t)(pred30_f + 0.5f);
+
+    if (!gating_ok)
+    {
+        gUiPredHypoWarnDebounce = 0u;
+        gUiPredHypoFaultDebounce = 0u;
+        gUiPredHyperWarnDebounce = 0u;
+        gUiPredHyperFaultDebounce = 0u;
+        gUiPredHypoWarnActive = false;
+        gUiPredHypoFaultActive = false;
+        gUiPredHyperWarnActive = false;
+        gUiPredHyperFaultActive = false;
+        gUiPredAlertStatus = AI_STATUS_NORMAL;
+        gUiPredAlertDir = 0;
+        return;
+    }
+
+    hypo_warn_enter = (gUiPred15Mgdl <= 78u) || (gUiPred30Mgdl <= 85u);
+    hypo_fault_enter = (gUiPred15Mgdl <= 70u) || (gUiPred30Mgdl <= 75u);
+    hyper_warn_enter = (gUiPred15Mgdl >= 190u) || (gUiPred30Mgdl >= 200u);
+    hyper_fault_enter = (gUiPred15Mgdl >= 230u) || (gUiPred30Mgdl >= 240u);
+
+    hypo_warn_clear = (gUiPred15Mgdl >= 86u) && (gUiPred30Mgdl >= 92u);
+    hypo_fault_clear = (gUiPred15Mgdl >= 79u) && (gUiPred30Mgdl >= 84u);
+    hyper_warn_clear = (gUiPred15Mgdl <= 180u) && (gUiPred30Mgdl <= 190u);
+    hyper_fault_clear = (gUiPred15Mgdl <= 210u) && (gUiPred30Mgdl <= 220u);
+
+    if (!gUiPredHypoFaultActive)
+    {
+        if (hypo_fault_enter)
+        {
+            if (gUiPredHypoFaultDebounce < 5u)
+            {
+                gUiPredHypoFaultDebounce++;
+            }
+            if (gUiPredHypoFaultDebounce >= 4u)
+            {
+                gUiPredHypoFaultActive = true;
+            }
+        }
+        else
+        {
+            gUiPredHypoFaultDebounce = 0u;
+        }
+    }
+    else if (hypo_fault_clear)
+    {
+        gUiPredHypoFaultActive = false;
+        gUiPredHypoFaultDebounce = 0u;
+    }
+
+    if (!gUiPredHypoWarnActive)
+    {
+        if (hypo_warn_enter)
+        {
+            if (gUiPredHypoWarnDebounce < 5u)
+            {
+                gUiPredHypoWarnDebounce++;
+            }
+            if (gUiPredHypoWarnDebounce >= 3u)
+            {
+                gUiPredHypoWarnActive = true;
+            }
+        }
+        else
+        {
+            gUiPredHypoWarnDebounce = 0u;
+        }
+    }
+    else if (hypo_warn_clear)
+    {
+        gUiPredHypoWarnActive = false;
+        gUiPredHypoWarnDebounce = 0u;
+    }
+
+    if (!gUiPredHyperFaultActive)
+    {
+        if (hyper_fault_enter)
+        {
+            if (gUiPredHyperFaultDebounce < 5u)
+            {
+                gUiPredHyperFaultDebounce++;
+            }
+            if (gUiPredHyperFaultDebounce >= 4u)
+            {
+                gUiPredHyperFaultActive = true;
+            }
+        }
+        else
+        {
+            gUiPredHyperFaultDebounce = 0u;
+        }
+    }
+    else if (hyper_fault_clear)
+    {
+        gUiPredHyperFaultActive = false;
+        gUiPredHyperFaultDebounce = 0u;
+    }
+
+    if (!gUiPredHyperWarnActive)
+    {
+        if (hyper_warn_enter)
+        {
+            if (gUiPredHyperWarnDebounce < 5u)
+            {
+                gUiPredHyperWarnDebounce++;
+            }
+            if (gUiPredHyperWarnDebounce >= 3u)
+            {
+                gUiPredHyperWarnActive = true;
+            }
+        }
+        else
+        {
+            gUiPredHyperWarnDebounce = 0u;
+        }
+    }
+    else if (hyper_warn_clear)
+    {
+        gUiPredHyperWarnActive = false;
+        gUiPredHyperWarnDebounce = 0u;
+    }
+
+    /* Hypo risk takes precedence over hyper risk in safety hierarchy. */
+    if (gUiPredHypoFaultActive)
+    {
+        gUiPredAlertStatus = AI_STATUS_FAULT;
+        gUiPredAlertDir = -1;
+    }
+    else if (gUiPredHypoWarnActive)
+    {
+        gUiPredAlertStatus = AI_STATUS_WARNING;
+        gUiPredAlertDir = -1;
+    }
+    else if (gUiPredHyperFaultActive)
+    {
+        gUiPredAlertStatus = AI_STATUS_FAULT;
+        gUiPredAlertDir = 1;
+    }
+    else if (gUiPredHyperWarnActive)
+    {
+        gUiPredAlertStatus = AI_STATUS_WARNING;
+        gUiPredAlertDir = 1;
+    }
+    else
+    {
+        gUiPredAlertStatus = AI_STATUS_NORMAL;
+        gUiPredAlertDir = 0;
+    }
 }
 
 static uint8_t ActivityStageFromPct(uint8_t pct)
@@ -1410,6 +1600,7 @@ static void DrawGlucoseIndicator(void)
                 gUiGlucoseMgdl = (uint16_t)g;
                 gUiGlucoseTrendMgDlPerMin = out.trend_mgdl_min;
             }
+            UpdatePredictionModelAndAlerts();
         }
         gCgmNextRawSampleDs += 10u; /* 1 Hz synthetic raw sample cadence. */
     }
@@ -1531,6 +1722,17 @@ static void UpdateDoseRecommendation(uint32_t now_ds)
     }
 
     rec_u_h = basal_u_h * activity_factor * glucose_factor * trend_factor * iob_factor;
+    if (!gUiCgmPredictionBlocked)
+    {
+        if (PredictionAlertDir() < 0)
+        {
+            rec_u_h *= (PredictionAlertStatus() == AI_STATUS_FAULT) ? 0.45f : 0.70f;
+        }
+        else if (PredictionAlertDir() > 0)
+        {
+            rec_u_h *= (PredictionAlertStatus() == AI_STATUS_FAULT) ? 1.20f : 1.10f;
+        }
+    }
     if (gUiCgmPredictionBlocked)
     {
         if (gUiCgmHoldLast)
@@ -2391,12 +2593,20 @@ static uint16_t AiStatusColor(const gauge_style_preset_t *style, uint8_t ai_stat
 static const char *AiStatusText(uint8_t ai_status)
 {
     (void)ai_status;
+    if (PredictionAlertStatus() != AI_STATUS_NORMAL)
+    {
+        return (PredictionAlertDir() < 0) ? "PRED-HYPO" : "PRED-HYPER";
+    }
     return ActivityStageText(gActivityStage);
 }
 
 static bool IsSevereAlertCondition(const power_sample_t *sample)
 {
     (void)sample;
+    if (PredictionAlertStatus() == AI_STATUS_FAULT)
+    {
+        return true;
+    }
     return gActivityStage >= ACTIVITY_HEAVY;
 }
 
@@ -2436,6 +2646,8 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     int32_t label_scale = 2;
     int32_t label_width = 0;
     int32_t label_max_width = (ALERT_X1 - ALERT_X0 + 1) - 8;
+    uint8_t pred_status = PredictionAlertStatus();
+    int8_t pred_dir = PredictionAlertDir();
 
     if (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive)
     {
@@ -2457,8 +2669,33 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     {
         status = AI_STATUS_NORMAL;
     }
+    if (pred_status > status)
+    {
+        status = pred_status;
+        severe = (status == AI_STATUS_FAULT);
+    }
     BuildAnomalyReason(sample, detail, sizeof(detail));
-    snprintf(human_label, sizeof(human_label), "%s", ActivityHeadlineText(gActivityStage, gActivityPct));
+    if (pred_status != AI_STATUS_NORMAL)
+    {
+        if (pred_dir < 0)
+        {
+            snprintf(human_label, sizeof(human_label), "%s",
+                     (status == AI_STATUS_FAULT) ? "PRED HYPO" : "LOW GLUCOSE");
+        }
+        else
+        {
+            snprintf(human_label, sizeof(human_label), "%s",
+                     (status == AI_STATUS_FAULT) ? "PRED HYPER" : "HIGH GLUCOSE");
+        }
+        snprintf(detail, sizeof(detail), "P15 %3u P30 %3u SQI %3u",
+                 (unsigned int)gUiPred15Mgdl,
+                 (unsigned int)gUiPred30Mgdl,
+                 (unsigned int)gUiCgmSqiPct);
+    }
+    else
+    {
+        snprintf(human_label, sizeof(human_label), "%s", ActivityHeadlineText(gActivityStage, gActivityPct));
+    }
     snprintf(human_cache_key, sizeof(human_cache_key), "%s", human_label);
     label_width = edgeai_text5x7_width(2, human_label);
     if (label_width > label_max_width)
@@ -2581,6 +2818,10 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     else if (gActivityStage >= ACTIVITY_ACTIVE)
     {
         status = AI_STATUS_WARNING;
+    }
+    if (PredictionAlertStatus() > status)
+    {
+        status = PredictionAlertStatus();
     }
     ai_color = AiStatusColor(style, status);
     status_text = ai_enabled ? AiStatusText(status) : "OFF";

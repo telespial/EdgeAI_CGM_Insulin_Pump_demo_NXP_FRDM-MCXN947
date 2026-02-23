@@ -19,7 +19,7 @@ Status legend:
 | 3) Calibration and compensation | simulated | Calibration/compensation path now implemented in preprocessing (`src/cgm_preprocess.c/.h`): runtime calibration hooks, temperature compensation, drift-state compensation, and sensitivity-change detection; runtime source is still synthetic. | Replace synthetic raw stream with live sensor input and tune calibration/drift thresholds with captured data. |
 | 4) Lag and kinetics handling | simulated | Conservative lag/kinetics block now implemented in preprocessing (`src/cgm_preprocess.c/.h`) with optional low-gain correction, SQI-adaptive gain, and bounded compensation; no aggressive look-forward extrapolation. | Validate lag constants and gain bounds against live dermal data and safety envelopes. |
 | 5) SQI and fault detection | simulated | Runtime now emits `sqi_pct` and `sensor_flags` from preprocessing (`src/cgm_preprocess.c/.h`), with prediction gating (`prediction_blocked`) and dropout fallback (`hold_last`) integrated into render/recommendation flow (`src/gauge_render.c`); upstream signal source remains simulated. | Replace synthetic raw source with live sensor signal and tune SQI/flag thresholds from captured dermal datasets. |
-| 6) Trend, prediction, and alert logic | simulated | Trend (`dBG`) and dose recommendation are demo-derived from simulated glucose/IOB/activity (`src/gauge_render.c:1353`, `src/gauge_render.c:2587`). | Need CGM-centric 15/30 min prediction plus SQI-gated predictive hypo/hyper alerting with explicit debounce/hysteresis policy. |
+| 6) Trend, prediction, and alert logic | simulated | Trend (`dBG`) plus short-horizon predictions (P15/P30), SQI-gated predictive hypo/hyper warning/fault checks, and debounce/hysteresis state machine are implemented in runtime logic (`src/gauge_render.c`), with predictive status wired into alert and dose paths; upstream glucose source remains synthetic. | Replace synthetic glucose source with live CGM stream and tune prediction/alert thresholds against captured dermal data. |
 | 7) Performance and validation metrics | missing | No validation protocol artifact or pass/fail metric table in docs/runtime. | Need defined metrics and thresholds (MARD/RMSE/lag/chatter/robustness) with replay test procedure. |
 | 8) Advanced/optional transforms | missing | No FFT/wavelet diagnostic path in current CGM implementation scope. | Optional; decide later based on compute budget after core path is stable. |
 
@@ -30,10 +30,4 @@ Status legend:
 
 ## Immediate Follow-On
 
-Proceed with TODO step 2 and define a formal runtime tuple contract:
-- `glucose_mgdl`
-- `trend_mgdl_min`
-- `sqi_pct`
-- `sensor_flags`
-- `prediction_15m`
-- `prediction_30m`
+Proceed with TODO step 11 to align LCD/terminal contract semantics for SQI/confidence/flags and explicit simulation labeling.
