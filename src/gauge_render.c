@@ -971,7 +971,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
 {
     int32_t cx = MAIN_CX + 2;
-    int32_t cy = MAIN_CY - 20;
+    int32_t cy = MAIN_CY - 22;
     int32_t r = ((MAIN_R - 6) * 5) / 4;
     float angle_deg = 0.0f;
     float angle_rad;
