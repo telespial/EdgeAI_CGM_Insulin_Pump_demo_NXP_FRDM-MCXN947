@@ -272,3 +272,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated human-status text formatting:
+  - corrected `GYR` label to `GYRO`
+  - increased human-status text visual size by approximately 25% using a controlled overdraw helper for scale-1 LCD font rendering
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

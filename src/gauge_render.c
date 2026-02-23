@@ -681,6 +681,14 @@ static void DrawTextUiCrisp(int32_t x, int32_t y, int32_t scale, const char *tex
     edgeai_text5x7_draw_scaled(x, y, scale, text, fg);
 }
 
+/* Approximate +25% text size with stroke-style overdraw for scale-1 font. */
+static void DrawTextUi125(int32_t x, int32_t y, const char *text, uint16_t fg)
+{
+    DrawTextUi(x, y, 1, text, fg);
+    DrawTextUi(x + 1, y, 1, text, fg);
+    DrawTextUi(x, y + 1, 1, text, fg);
+}
+
 static void DrawTerminalLine(int32_t y, const char *text, uint16_t color)
 {
     int32_t x0 = TERM_X + 4;
@@ -934,10 +942,10 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     DrawTextUi(34, 248, 1, line, okay);
 
     /* Human status area below figure, above elapsed-time row. */
-    snprintf(line, sizeof(line), "GYR X:%4d Y:%4d", (int)gx, (int)gy);
-    DrawTextUi(176, 228, 1, line, gGyroValid ? okay : warn);
-    DrawTextUi(176, 242, 1, inverted ? "POSE: INVERTED" : "POSE: NORMAL", inverted ? warn : okay);
-    DrawTextUi(176, 256, 1, drop_risk ? "DROP: POSSIBLE" : "DROP: NONE", drop_risk ? fault : okay);
+    snprintf(line, sizeof(line), "GYRO X:%4d Y:%4d", (int)gx, (int)gy);
+    DrawTextUi125(176, 228, line, gGyroValid ? okay : warn);
+    DrawTextUi125(176, 242, inverted ? "POSE: INVERTED" : "POSE: NORMAL", inverted ? warn : okay);
+    DrawTextUi125(176, 256, drop_risk ? "DROP: POSSIBLE" : "DROP: NONE", drop_risk ? fault : okay);
 }
 
 static void DrawRecordConfirmOverlay(void)
