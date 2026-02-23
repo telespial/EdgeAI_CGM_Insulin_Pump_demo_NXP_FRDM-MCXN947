@@ -3,10 +3,10 @@
 
 /*
  * Generated profile constants for EIL model integration.
- * Source model: package_shipping_monitor
+ * Source model: medical_device_monitor
  */
 
-#define EIL_MODEL_NAME "package_shipping_monitor"
+#define EIL_MODEL_NAME "medical_device_monitor"
 #define EIL_MODEL_VERSION "1.0.0"
 #define EIL_EXTENSION_VERSION "0.1.0"
 

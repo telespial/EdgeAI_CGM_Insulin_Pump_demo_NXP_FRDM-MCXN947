@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "gauge_style.h"
+#include "ext_flash_recorder.h"
 #include "par_lcd_s035.h"
 #include "pump_bg.h"
 #include "text5x7.h"
@@ -1926,7 +1927,7 @@ static void DrawSettingsPopup(void)
     uint16_t button_idle = RGB565(26, 27, 31);
     uint16_t button_selected = RGB565(210, 214, 222);
     uint16_t text_selected = RGB565(10, 10, 12);
-    int32_t label_col_right = GAUGE_RENDER_SET_MODE_X0 - 12;
+    int32_t label_col_right = 154;
     int32_t mode_label_y = GAUGE_RENDER_SET_MODE_Y0 + ((GAUGE_RENDER_SET_MODE_H - 7) / 2);
     int32_t run_label_y = GAUGE_RENDER_SET_RUN_Y0 + ((GAUGE_RENDER_SET_RUN_H - 7) / 2);
     int32_t tune_label_y = GAUGE_RENDER_SET_TUNE_Y0 + ((GAUGE_RENDER_SET_TUNE_H - 7) / 2);
@@ -1935,6 +1936,7 @@ static void DrawSettingsPopup(void)
     int32_t clear_label_y = GAUGE_RENDER_SET_CLEAR_BTN_Y0 + ((GAUGE_RENDER_SET_CLEAR_BTN_H - 7) / 2);
     int32_t log_label_y = GAUGE_RENDER_SET_LOG_Y0 + ((GAUGE_RENDER_SET_LOG_H - 7) / 2);
     char log_rate_line[16];
+    char flash_usage_line[20];
 
     par_lcd_s035_fill_rect(x0 - 3, y0 - 3, x1 + 3, y1 + 3, RGB565(0, 0, 0));
     par_lcd_s035_fill_rect(x0, y0, x1, y1, panel);
@@ -1947,7 +1949,7 @@ static void DrawSettingsPopup(void)
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "MODE"), mode_label_y, 1, "MODE", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "RUN"), run_label_y, 1, "RUN", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "SENS"), tune_label_y, 1, "SENS", body);
-    DrawTextUi(label_col_right - edgeai_text5x7_width(1, "AI:"), ai_label_y, 1, "AI:", body);
+    DrawTextUi(label_col_right - edgeai_text5x7_width(1, "AI"), ai_label_y, 1, "AI", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "LIMITS"), lim_label_y, 1, "LIMITS", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "FLASH"), clear_label_y, 1, "FLASH", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "LOG HZ"), log_label_y, 1, "LOG HZ", body);
@@ -2044,6 +2046,9 @@ static void DrawSettingsPopup(void)
         int32_t by0 = GAUGE_RENDER_SET_CLEAR_BTN_Y0;
         int32_t bx1 = bx0 + GAUGE_RENDER_SET_CLEAR_BTN_W - 1;
         int32_t by1 = by0 + GAUGE_RENDER_SET_CLEAR_BTN_H - 1;
+        uint32_t used_count = 0u;
+        uint32_t capacity_count = 0u;
+        uint32_t usage_pct = 0u;
         const char *t = "CLEAR FLASH";
         DrawPillRect(bx0, by0, bx1, by1, RGB565(58, 18, 18), edge);
         DrawTextUi(bx0 + ((GAUGE_RENDER_SET_CLEAR_BTN_W - edgeai_text5x7_width(1, t)) / 2),
@@ -2051,6 +2056,25 @@ static void DrawSettingsPopup(void)
                    1,
                    t,
                    RGB565(255, 215, 215));
+
+        if (ExtFlashRecorder_GetUsageInfo(&used_count, &capacity_count) && (capacity_count > 0u))
+        {
+            usage_pct = (used_count * 100u + (capacity_count / 2u)) / capacity_count;
+            if (usage_pct > 100u)
+            {
+                usage_pct = 100u;
+            }
+            snprintf(flash_usage_line, sizeof(flash_usage_line), "%3u%% USED", (unsigned int)usage_pct);
+        }
+        else
+        {
+            snprintf(flash_usage_line, sizeof(flash_usage_line), "--%% USED");
+        }
+        DrawTextUi(bx1 + 8,
+                   by0 + ((GAUGE_RENDER_SET_CLEAR_BTN_H - 7) / 2),
+                   1,
+                   flash_usage_line,
+                   dim);
     }
 
     {
@@ -2228,9 +2252,9 @@ static void DrawHelpPopup(void)
         DrawTextUi(x0 + 12, y0 + 194, 1, "DOS USES ACTIVITY TRANSPORT BG TREND AND IOB", body);
         DrawTextUi(x0 + 12, y0 + 208, 1, "DOS VALUE IS RECOMMENDED BASAL U PER HOUR", body);
 
-        DrawTextUi(x0 + 12, y0 + 228, 1, "PERSISTENCE", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 242, 1, "MODE, RUN, AI, SENS, LIMITS SAVE ON CHANGE", body);
-        DrawTextUi(x0 + 12, y0 + 256, 1, "SETTINGS RESTORE AUTOMATICALLY AFTER REBOOT", body);
+        DrawTextUi(x0 + 12, y0 + 228, 1, "SIMULATION NOTICE", RGB565(210, 234, 255));
+        DrawTextUi(x0 + 12, y0 + 242, 1, "CGM DATA IN THIS DEMO IS SIMULATED", body);
+        DrawTextUi(x0 + 12, y0 + 256, 1, "DOSING RESPONSE IS ALSO SIMULATED", body);
         DrawTextUi(x0 + 12, y0 + 264, 1, "TAP X OR OUTSIDE TO CLOSE", dim);
     }
     else

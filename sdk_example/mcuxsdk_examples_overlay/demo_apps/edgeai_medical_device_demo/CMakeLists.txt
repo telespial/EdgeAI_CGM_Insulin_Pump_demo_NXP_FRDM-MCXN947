@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.22.0)
 
 include(${SdkRootDirPath}/cmake/extension/mcux.cmake)
 
-project(edgeai_package_transport_anomaly_demo LANGUAGES C CXX ASM PROJECT_BOARD_PORT_PATH ${board_root}/${board}/demo_apps/edgeai_package_transport_anomaly_demo)
+project(edgeai_medical_device_demo LANGUAGES C CXX ASM PROJECT_BOARD_PORT_PATH ${board_root}/${board}/demo_apps/edgeai_medical_device_demo)
 
 include(${SdkRootDirPath}/CMakeLists.txt)
 
-if(DEFINED ENV{EDGEAI_PACKAGE_TRANSPORT_ANOMALY_DEMO_ROOT})
-    set(EDGEAI_ROOT "$ENV{EDGEAI_PACKAGE_TRANSPORT_ANOMALY_DEMO_ROOT}")
+if(DEFINED ENV{EDGEAI_MEDICAL_DEVICE_DEMO_ROOT})
+    set(EDGEAI_ROOT "$ENV{EDGEAI_MEDICAL_DEVICE_DEMO_ROOT}")
 else()
     get_filename_component(EDGEAI_ROOT "${SdkRootDirPath}/../.." ABSOLUTE)
 endif()
@@ -33,7 +33,7 @@ if(EDGEAI_TIMEBASE_TEST_MODE)
 else()
     mcux_add_source(
         BASE_PATH ${EDGEAI_ROOT}
-        SOURCES src/edgeai_package_transport_anomaly_demo.c
+        SOURCES src/edgeai_medical_device_demo.c
     )
 endif()
 
@@ -58,7 +58,7 @@ mcux_add_include(
     INCLUDES components/touch/gt911
 )
 
-include(${SdkRootDirPath}/${board_root}/${board}/demo_apps/edgeai_package_transport_anomaly_demo/reconfig.cmake OPTIONAL)
+include(${SdkRootDirPath}/${board_root}/${board}/demo_apps/edgeai_medical_device_demo/reconfig.cmake OPTIONAL)
 
 option(EDGEAI_SENSOR_SCAN_MODE "Build firmware in UART-only sensor scan mode" OFF)
 option(EDGEAI_SHIELD_SCAN_DIAG "Enable broad shield datastream diagnostics" OFF)

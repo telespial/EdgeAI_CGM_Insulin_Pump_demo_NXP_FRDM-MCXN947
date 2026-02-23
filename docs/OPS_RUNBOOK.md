@@ -18,6 +18,10 @@ Last updated: 2026-02-23
 
 `./scripts/flash.sh`
 
+Safe direct flash:
+
+`./scripts/flash_safe.sh`
+
 ## Build + Flash
 
 `./scripts/build_and_flash.sh`

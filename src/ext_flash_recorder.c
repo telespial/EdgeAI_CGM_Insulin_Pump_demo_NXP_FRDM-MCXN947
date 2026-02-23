@@ -653,6 +653,18 @@ bool ExtFlashRecorder_GetRecordInfo(uint32_t *count)
     return true;
 }
 
+bool ExtFlashRecorder_GetUsageInfo(uint32_t *used_count, uint32_t *capacity_count)
+{
+    if (!s_ready || (used_count == NULL) || (capacity_count == NULL))
+    {
+        return false;
+    }
+
+    *used_count = s_sampleCount;
+    *capacity_count = s_capacityPages;
+    return true;
+}
+
 bool ExtFlashRecorder_SaveUiSettings(uint8_t mode,
                                      uint8_t tune,
                                      bool run_live,

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 
-DEFAULT_MODEL_NAME = "package_monitor_v1"
+DEFAULT_MODEL_NAME = "medical_device_demo_v1"
 DEFAULT_MODEL_VERSION = "0.0.0"
 DEFAULT_EXTENSION_VERSION = "0.1.0"
 DEFAULT_WARN = 0.05

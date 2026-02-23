@@ -54,6 +54,7 @@ bool ExtFlashRecorder_StartPlayback(void);
 bool ExtFlashRecorder_ReadNextSample(ext_flash_sample_t *sample);
 bool ExtFlashRecorder_GetPlaybackInfo(uint32_t *offset, uint32_t *count);
 bool ExtFlashRecorder_GetRecordInfo(uint32_t *count);
+bool ExtFlashRecorder_GetUsageInfo(uint32_t *used_count, uint32_t *capacity_count);
 bool ExtFlashRecorder_SaveUiSettings(uint8_t mode,
                                      uint8_t tune,
                                      bool run_live,

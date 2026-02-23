@@ -5,7 +5,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OVERLAY_DIR="$HERE/mcuxsdk_examples_overlay"
 MCUX_EXAMPLES_DIR="${MCUX_EXAMPLES_DIR:-}"
 
-if [[ ! -d "$OVERLAY_DIR/demo_apps/edgeai_package_transport_anomaly_demo" ]]; then
+if [[ ! -d "$OVERLAY_DIR/demo_apps/edgeai_medical_device_demo" ]]; then
   echo "Overlay not found at: $OVERLAY_DIR" >&2
   exit 1
 fi
@@ -17,9 +17,9 @@ if [[ ! -d "$MCUX_EXAMPLES_DIR" ]]; then
 fi
 
 mkdir -p "$MCUX_EXAMPLES_DIR/demo_apps" "$MCUX_EXAMPLES_DIR/_boards/frdmmcxn947/demo_apps"
-rm -rf "$MCUX_EXAMPLES_DIR/demo_apps/edgeai_package_transport_anomaly_demo"
-rm -rf "$MCUX_EXAMPLES_DIR/_boards/frdmmcxn947/demo_apps/edgeai_package_transport_anomaly_demo"
-cp -a "$OVERLAY_DIR/demo_apps/edgeai_package_transport_anomaly_demo" "$MCUX_EXAMPLES_DIR/demo_apps/"
-cp -a "$OVERLAY_DIR/_boards/frdmmcxn947/demo_apps/edgeai_package_transport_anomaly_demo" "$MCUX_EXAMPLES_DIR/_boards/frdmmcxn947/demo_apps/"
+rm -rf "$MCUX_EXAMPLES_DIR/demo_apps/edgeai_medical_device_demo"
+rm -rf "$MCUX_EXAMPLES_DIR/_boards/frdmmcxn947/demo_apps/edgeai_medical_device_demo"
+cp -a "$OVERLAY_DIR/demo_apps/edgeai_medical_device_demo" "$MCUX_EXAMPLES_DIR/demo_apps/"
+cp -a "$OVERLAY_DIR/_boards/frdmmcxn947/demo_apps/edgeai_medical_device_demo" "$MCUX_EXAMPLES_DIR/_boards/frdmmcxn947/demo_apps/"
 
-echo "Installed edgeai_package_transport_anomaly_demo wrapper into: $MCUX_EXAMPLES_DIR"
+echo "Installed edgeai_medical_device_demo wrapper into: $MCUX_EXAMPLES_DIR"

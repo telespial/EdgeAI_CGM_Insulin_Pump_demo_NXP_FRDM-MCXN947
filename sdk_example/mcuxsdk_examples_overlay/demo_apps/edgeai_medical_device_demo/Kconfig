@@ -2,7 +2,7 @@
 
 rsource "${SdkRootDirPath}/Kconfig.mcuxpresso"
 
-mainmenu "EdgeAI Package Transport Anomaly Demo Configuration"
+mainmenu "EdgeAI Medical Device Demo Configuration"
 
 menuconfig EDGEAI_USE_PAR_LCD_S035
     bool "Enable PAR-LCD-S035 (FlexIO ST7796S) display"

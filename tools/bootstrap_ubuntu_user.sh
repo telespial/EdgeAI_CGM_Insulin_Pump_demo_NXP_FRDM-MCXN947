@@ -11,7 +11,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-mkdir -p "$HOME/.local/bin" "$HOME/.local/opt" "$HOME/.cache/edgeai_package_transport_anomaly_demo"
+mkdir -p "$HOME/.local/bin" "$HOME/.local/opt" "$HOME/.cache/edgeai_medical_device_demo"
 export PATH="$HOME/.local/bin:$PATH"
 
 need_cmd() { command -v "$1" >/dev/null 2>&1; }
@@ -38,7 +38,7 @@ fi
 
 if ! python3 -m pip -V >/dev/null 2>&1; then
   echo "[bootstrap] installing pip (user-local)"
-  GETPIP="$HOME/.cache/edgeai_package_transport_anomaly_demo/get-pip.py"
+  GETPIP="$HOME/.cache/edgeai_medical_device_demo/get-pip.py"
   fetch_to https://bootstrap.pypa.io/get-pip.py "$GETPIP"
   python3 "$GETPIP" --user --break-system-packages
 fi
@@ -60,7 +60,7 @@ import tarfile
 import urllib.request
 
 home = os.path.expanduser("~")
-cache = os.path.join(home, ".cache", "edgeai_package_transport_anomaly_demo")
+cache = os.path.join(home, ".cache", "edgeai_medical_device_demo")
 os.makedirs(cache, exist_ok=True)
 
 api = "https://api.github.com/repos/git-lfs/git-lfs/releases/latest"
@@ -121,7 +121,7 @@ import urllib.request
 
 home = os.path.expanduser("~")
 opt = os.path.join(home, ".local", "opt")
-cache = os.path.join(home, ".cache", "edgeai_package_transport_anomaly_demo")
+cache = os.path.join(home, ".cache", "edgeai_medical_device_demo")
 os.makedirs(opt, exist_ok=True)
 os.makedirs(cache, exist_ok=True)
 

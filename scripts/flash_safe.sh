@@ -4,4 +4,5 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-./scripts/flash_safe.sh
+echo "[flash_safe] project=edgeai_medical_device_demo"
+"$ROOT_DIR/tools/flash_frdmmcxn947.sh"

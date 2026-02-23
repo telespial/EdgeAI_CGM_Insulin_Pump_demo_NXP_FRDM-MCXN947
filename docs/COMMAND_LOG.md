@@ -541,3 +541,14 @@ Format:
 2026-02-23T18:18:15Z | cmd: apply_patch docs/PROJECT_STATE.md add 2026-02-23 hygiene/CI verification update | result: ok
 2026-02-23T18:18:26Z | cmd: rg -n 'codemaster' . ; git status --short --branch | result: ok (no codemaster refs; worktree dirty)
 2026-02-23T18:18:35Z | cmd: git diff -- docs/COMMAND_LOG.md docs/PROJECT_STATE.md docs/TODO.md .github/workflows/build.yml | result: ok
+2026-02-23T18:18:47Z | cmd: git add docs/COMMAND_LOG.md docs/PROJECT_STATE.md docs/TODO.md .github/workflows/build.yml && git commit -m 'Harden hygiene docs and add CI build checks' && git push origin main | result: ok (93d36f6)
+2026-02-23T18:23:32Z | cmd: cat docs/CGM_DERMAL_ALGORITHM_REVIEW.md | result: ok
+2026-02-23T18:24:39Z | cmd: sed -n 1,220p docs/TODO.md | result: ok
+2026-02-23T18:25:05Z | cmd: apply_patch docs/TODO.md replace contents with CGM alignment step list | result: ok
+2026-02-23T18:25:15Z | cmd: apply_patch docs/PROJECT_STATE.md add update for CGM-alignment TODO rewrite | result: ok
+2026-02-23T18:25:22Z | cmd: sed -n 1,220p docs/TODO.md | result: ok (CGM alignment list present)
+2026-02-23T18:26:50Z | cmd: git status + package keyword/path scans for leak risk | result: ok (no active refs; repo still dirty with package-file deletions pending commit)
+2026-02-23T18:28:48Z | cmd: git status --short --branch | result: ok
+2026-02-23T18:28:48Z | cmd: rg package-related keywords across repo | result: ok
+2026-02-23T18:29:09Z | cmd: ./scripts/preflight.sh && ./scripts/build_and_flash.sh | result: ok (build+flash pass, probe #1)
+2026-02-23T18:29:21Z | cmd: apply_patch docs/PROJECT_STATE.md add final cleanup verification update | result: ok

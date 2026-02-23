@@ -13,6 +13,23 @@ Last updated: 2026-02-23
 - Git repository initialized locally.
 
 ## Update 2026-02-23
+- Change: Finalized medical-demo repo cleanup to eliminate package-demo crossover risk.
+  - removed legacy package-demo app sources/overlay paths from active tree
+  - retained medical-demo app paths/scripts as the sole build/flash target
+  - confirmed repo scan has no package-demo keyword references in active files
+- Verification:
+  - `./scripts/preflight.sh` PASS
+  - `./scripts/build_and_flash.sh` PASS (build + LinkServer flash, probe `#1`)
+  - repo keyword scan PASS (`edgeai_package_transport*` not found in active files)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Replaced legacy TODO backlog with a direct CGM-alignment task list derived from `docs/CGM_DERMAL_ALGORITHM_REVIEW.md`.
+  - cleared prior mixed historical checklist in `docs/TODO.md`
+  - added explicit execution steps for CGM data contract, preprocessing, filtering, compensation, SQI/fault gating, prediction/alerts, UI semantics, and validation protocol
+- Result: ok
+
+## Update 2026-02-23
 - Change: Completed hygiene and operations alignment pass for medical demo baseline.
   - sanitized project command-log wording to remove internal/root path naming in `docs/COMMAND_LOG.md`
   - synced stale TODO status to reflect implemented display/runtime items in `docs/TODO.md`
