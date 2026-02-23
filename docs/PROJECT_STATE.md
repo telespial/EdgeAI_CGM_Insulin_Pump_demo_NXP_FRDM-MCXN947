@@ -3,7 +3,7 @@
 Last updated: 2026-02-23
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-23-R4`
+- Golden: `GOLDEN-2026-02-23-R5`
 - Failsafe: `FAILSAFE-2026-02-23-R3`
 - Status: active
 
@@ -1594,4 +1594,19 @@ Last updated: 2026-02-23
   - `./scripts/build_and_flash.sh` PASS
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Promoted current firmware/docs runtime to golden restore baseline `R5` (failsafe remains `R3`).
+  - staged artifact:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
+  - active restore points:
+    - `GOLDEN-2026-02-23-R5`
+    - `FAILSAFE-2026-02-23-R3`
+  - synchronized baseline references in:
+    - `README.md`, `STATUS.md`
+    - `docs/START_HERE.md`, `docs/OPS_RUNBOOK.md`, `docs/TODO.md`
+- Verification:
+  - source binary copied from latest successful build:
+    - `mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin`
 - Result: ok

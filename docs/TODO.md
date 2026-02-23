@@ -5,7 +5,7 @@ Last updated: 2026-02-23
 ## CGM Alignment Steps
 
 0. [x] Promote current firmware/docs baseline as restore points:
-   - `GOLDEN-2026-02-23-R4`
+   - `GOLDEN-2026-02-23-R5`
    - `FAILSAFE-2026-02-23-R3`
    - artifacts staged in `failsafe/`
 

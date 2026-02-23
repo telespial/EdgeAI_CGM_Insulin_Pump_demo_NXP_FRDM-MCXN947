@@ -106,11 +106,11 @@ Alternative wrapper scripts:
 ## Restore Baseline
 
 Current restore points:
-- `GOLDEN-2026-02-23-R4`
+- `GOLDEN-2026-02-23-R5`
 - `FAILSAFE-2026-02-23-R3`
 
 Staged restore artifacts:
-- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R4.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
 - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
 
 Failsafe restore command:

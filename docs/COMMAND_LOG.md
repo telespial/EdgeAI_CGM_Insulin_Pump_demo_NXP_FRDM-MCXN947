@@ -688,3 +688,7 @@ Format:
 2026-02-23T22:11:23Z | cmd: ./scripts/build_and_flash.sh | result: ok (runtime verification pass after step-9, build+flash successful)
 2026-02-23T22:11:43Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for additional runtime verification | result: ok
 2026-02-23T22:11:55Z | cmd: cleaned malformed duplicate runtime entry in docs/PROJECT_STATE.md and kept verified build+flash record
+2026-02-23T22:14:47Z | cmd: rg/sed/ls inspect project docs and failsafe artifacts for active restore baseline references | result: ok
+2026-02-23T22:14:47Z | cmd: cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin | result: ok
+2026-02-23T22:14:47Z | cmd: apply_patch update README.md STATUS.md docs/START_HERE.md docs/OPS_RUNBOOK.md docs/TODO.md and docs/PROJECT_STATE.md to golden R5 / failsafe R3 baseline | result: ok
+2026-02-23T22:14:47Z | cmd: tail docs/PROJECT_STATE.md and append project-state update for golden R5 promotion | result: ok
