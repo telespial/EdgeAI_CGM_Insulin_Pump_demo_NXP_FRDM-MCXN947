@@ -242,3 +242,4 @@ Format:
 - 2026-02-23T03:41:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:42:13Z | cmd: patch src/gauge_render.c remove legacy center-area blit that clipped bottom of accel-ball path; keep only pump-text-region blit | result: ok
 - 2026-02-23T03:42:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T03:42:30Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Fix accel-ball clipping from legacy center redraw box" && git push origin main | result: ok (commit f2501a8 pushed)
