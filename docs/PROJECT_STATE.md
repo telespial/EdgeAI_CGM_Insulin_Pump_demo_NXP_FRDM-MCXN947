@@ -400,3 +400,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Revised orientation UI per request:
+  - removed the added left-segment gravity widget so the pump-text area remains in its prior layout.
+  - replaced center arrow marker with a rolling ball inside the existing orientation circle.
+  - rolling ball is accelerometer-driven (360-degree orientation mapping), light green in normal orientation, and light orange when upside down.
+  - UI-only damping remains active for stable motion while leaving raw sensor/model data unchanged.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

@@ -213,3 +213,5 @@ Format:
 - 2026-02-23T03:19:11Z | cmd: patch src/gauge_render.c add UI-only orientation damping (low-pass + per-frame delta clamp) and add compact GRAV/TABLE indicator widget outside human dial | result: ok
 - 2026-02-23T03:19:11Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:19:42Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Add stabilized orientation pointer and gravity table indicator" && git push origin main | result: ok (commit 67007f0 pushed)
+- 2026-02-23T03:24:38Z | cmd: patch src/gauge_render.c remove left-segment gravity widget, keep pump text region unchanged, replace center orientation arrow with accel-driven rolling ball (green/orange upside-down) | result: ok
+- 2026-02-23T03:24:38Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

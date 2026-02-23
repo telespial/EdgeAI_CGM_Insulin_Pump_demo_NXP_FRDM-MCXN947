@@ -962,17 +962,10 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t r = MAIN_R - 6;
     float angle_deg = 0.0f;
     float angle_rad;
-    int32_t tip_x;
-    int32_t tip_y;
-    int32_t hx1;
-    int32_t hy1;
-    int32_t hx2;
-    int32_t hy2;
-    int32_t bx1;
-    int32_t by1;
-    int32_t bx2;
-    int32_t by2;
-    uint16_t ptr_color = style->palette.text_primary;
+    int32_t ball_x = cx;
+    int32_t ball_y = cy;
+    uint16_t ball_color = RGB565(156, 244, 178); /* light green */
+    (void)style;
 
     if (gAccelValid)
     {
@@ -1043,77 +1036,25 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     }
     if (gAccelValid && (gAccelZmg < -200))
     {
-        ptr_color = style->palette.accent_red;
+        ball_color = RGB565(255, 186, 104); /* light orange when upside down */
     }
 
     /* Restore the human-circle area before redrawing gauge to prevent pointer trails. */
     BlitPumpBgRegion(cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8);
 
     angle_rad = angle_deg * (3.14159265f / 180.0f);
-    tip_x = cx + (int32_t)(cosf(angle_rad) * (float)r);
-    tip_y = cy - (int32_t)(sinf(angle_rad) * (float)r);
+    ball_x = cx + (int32_t)(cosf(angle_rad) * (float)(r - 8));
+    ball_y = cy - (int32_t)(sinf(angle_rad) * (float)(r - 8));
 
-    /* Head-only pointer marker (no center needle). */
-    hx1 = tip_x + (int32_t)(cosf(angle_rad + 2.55f) * 12.0f);
-    hy1 = tip_y - (int32_t)(sinf(angle_rad + 2.55f) * 12.0f);
-    hx2 = tip_x + (int32_t)(cosf(angle_rad - 2.55f) * 12.0f);
-    hy2 = tip_y - (int32_t)(sinf(angle_rad - 2.55f) * 12.0f);
-    bx1 = tip_x + (int32_t)(cosf(angle_rad + 3.14159265f) * 5.0f);
-    by1 = tip_y - (int32_t)(sinf(angle_rad + 3.14159265f) * 5.0f);
-    bx2 = tip_x + (int32_t)(cosf(angle_rad + 3.14159265f) * 9.0f);
-    by2 = tip_y - (int32_t)(sinf(angle_rad + 3.14159265f) * 9.0f);
-    DrawLine(tip_x, tip_y, hx1, hy1, 2, ptr_color);
-    DrawLine(tip_x, tip_y, hx2, hy2, 2, ptr_color);
-    DrawLine(hx1, hy1, bx2, by2, 2, ptr_color);
-    DrawLine(hx2, hy2, bx2, by2, 2, ptr_color);
-    DrawLine(bx1, by1, bx2, by2, 2, ptr_color);
-}
-
-static void DrawGravityTableIndicator(const gauge_style_preset_t *style)
-{
-    int32_t cx = 106;
-    int32_t cy = 186;
-    int32_t r = 13;
-    int32_t dot_x = cx;
-    int32_t dot_y = cy;
-    int32_t tilt_x = 0;
-    int32_t tilt_y = 0;
-    bool table_flat = false;
-    uint16_t dot_color = WARN_YELLOW;
-    uint16_t ring_color = style->palette.text_primary;
-    uint16_t text_color = style->palette.text_secondary;
-    uint16_t i;
-
-    BlitPumpBgRegion(cx - r - 40, cy - r - 12, cx + r + 10, cy + r + 12);
-
-    for (i = 0u; i < 24u; i++)
-    {
-        float a0 = ((float)i * 2.0f * 3.14159265f) / 24.0f;
-        float a1 = ((float)(i + 1u) * 2.0f * 3.14159265f) / 24.0f;
-        int32_t x0 = cx + (int32_t)(cosf(a0) * (float)r);
-        int32_t y0 = cy + (int32_t)(sinf(a0) * (float)r);
-        int32_t x1 = cx + (int32_t)(cosf(a1) * (float)r);
-        int32_t y1 = cy + (int32_t)(sinf(a1) * (float)r);
-        DrawLine(x0, y0, x1, y1, 1, ring_color);
-    }
-
-    DrawLine(cx - r + 2, cy, cx + r - 2, cy, 1, RGB565(90, 170, 220));
-    DrawLine(cx, cy - r + 2, cx, cy + r - 2, 1, RGB565(90, 170, 220));
-
-    if (gAccelValid)
-    {
-        tilt_x = ClampI32(gAccelXmg / 80, -10, 10);
-        tilt_y = ClampI32(gAccelYmg / 80, -10, 10);
-        dot_x = cx + tilt_x;
-        dot_y = cy - tilt_y;
-        table_flat = ((gAccelXmg < 180) && (gAccelXmg > -180) &&
-                      (gAccelYmg < 180) && (gAccelYmg > -180) &&
-                      (gAccelZmg > 820));
-    }
-    dot_color = table_flat ? style->palette.accent_green : WARN_YELLOW;
-    par_lcd_s035_fill_rect(dot_x - 2, dot_y - 2, dot_x + 2, dot_y + 2, dot_color);
-    DrawTextUi(36, 182, 1, "GRAV", text_color);
-    DrawTextUi(36, 194, 1, table_flat ? "TABLE" : "TILT ", dot_color);
+    /* 7x7 filled circle (line-filled) for the rolling marker. */
+    DrawLine(ball_x, ball_y - 3, ball_x, ball_y - 3, 1, ball_color);
+    DrawLine(ball_x - 2, ball_y - 2, ball_x + 2, ball_y - 2, 1, ball_color);
+    DrawLine(ball_x - 3, ball_y - 1, ball_x + 3, ball_y - 1, 1, ball_color);
+    DrawLine(ball_x - 3, ball_y, ball_x + 3, ball_y, 1, ball_color);
+    DrawLine(ball_x - 3, ball_y + 1, ball_x + 3, ball_y + 1, 1, ball_color);
+    DrawLine(ball_x - 2, ball_y + 2, ball_x + 2, ball_y + 2, 1, ball_color);
+    DrawLine(ball_x, ball_y + 3, ball_x, ball_y + 3, 1, ball_color);
+    DrawLine(ball_x - 3, ball_y - 1, ball_x - 3, ball_y + 1, 1, RGB565(220, 255, 230));
 }
 
 static void DrawRecordConfirmOverlay(void)
@@ -2645,7 +2586,6 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     }
     DrawLeftBargraphDynamic(style, DisplayTempC10(sample));
     DrawHumanOrientationPointer(style);
-    DrawGravityTableIndicator(style);
     if (!(gSettingsVisible || gHelpVisible || gLimitsVisible))
     {
         DrawAiAlertOverlay(style, sample, ai_enabled);
