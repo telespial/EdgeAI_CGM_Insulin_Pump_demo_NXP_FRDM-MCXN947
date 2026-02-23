@@ -755,3 +755,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Reworked glucose behavior to be slow and stable.
+  - glucose now constrained to `96..106 mg/dL`.
+  - value changes by `1 mg/dL` steps every `90..180` seconds (random), yielding ~15-30 minute full-range trend movement.
+  - added direction state with occasional reversals plus hard boundary reversal at 96/106.
+  - moved glucose text to `y=252` to keep it outside high-frequency gyro refresh blit area and eliminate rapid flashing artifacts.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

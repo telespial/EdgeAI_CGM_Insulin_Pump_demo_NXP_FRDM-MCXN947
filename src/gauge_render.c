@@ -130,6 +130,10 @@ static uint16_t gUiRpmTenths = 0u;
 static uint32_t gUiRpmNextUpdateDs = 0u;
 static bool gUiRpmSchedulePrimed = false;
 static bool gUiRpmZeroHold = false;
+static uint8_t gUiGlucoseMgdl = 98u;
+static int8_t gUiGlucoseDir = 1;
+static uint32_t gUiGlucoseNextStepDs = 0u;
+static bool gUiGlucoseSchedPrimed = false;
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 {
@@ -968,10 +972,44 @@ static __attribute__((unused)) void DrawCenterAccelBall(void)
 
 static void DrawGlucoseIndicator(void)
 {
-    /* Center-segment glucose indicator. Draw late in frame to avoid clipping. */
-    const char *bg_text = "98 mg/dL";
-    int32_t bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
-    int32_t bg_y = MAIN_CY + 40;
+    /* Slowly changing glucose model: 96..106 mg/dL, step every 90..180 s. */
+    uint32_t now_ds = UiNowDs();
+    char bg_text[20];
+    int32_t bg_x;
+    int32_t bg_y = 252; /* Below gyro-refresh area to avoid visible flashing. */
+
+    if ((!gUiGlucoseSchedPrimed) || ((int32_t)(now_ds - gUiGlucoseNextStepDs) >= 0))
+    {
+        uint32_t r = NextUiRand();
+        if (gUiGlucoseMgdl <= 96u)
+        {
+            gUiGlucoseDir = 1;
+        }
+        else if (gUiGlucoseMgdl >= 106u)
+        {
+            gUiGlucoseDir = -1;
+        }
+        else if ((r % 8u) == 0u)
+        {
+            /* Occasional direction changes keep the trend natural-looking. */
+            gUiGlucoseDir = (int8_t)(-gUiGlucoseDir);
+        }
+
+        if (gUiGlucoseDir > 0)
+        {
+            gUiGlucoseMgdl++;
+        }
+        else
+        {
+            gUiGlucoseMgdl--;
+        }
+
+        gUiGlucoseNextStepDs = now_ds + 900u + (r % 901u); /* 90..180 seconds per 1 mg/dL step. */
+        gUiGlucoseSchedPrimed = true;
+    }
+
+    snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseMgdl);
+    bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
     DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
 }
 

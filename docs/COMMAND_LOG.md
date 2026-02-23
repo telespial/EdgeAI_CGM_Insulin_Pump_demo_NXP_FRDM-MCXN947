@@ -323,3 +323,5 @@ Format:
 - 2026-02-23T05:53:30Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T05:57:35Z | cmd: patch src/gauge_render.c move glucose draw out of DrawHumanOrientationPointer into late-frame DrawGlucoseIndicator() call after DrawMedicalOverlayData() to prevent pump background clipping | result: ok
 - 2026-02-23T05:58:15Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T06:03:42Z | cmd: patch src/gauge_render.c implement slow glucose stepping model (96..106 mg/dL, 1 mg/dL per 90..180s step) with trend direction state and RTC/frame time scheduling; move glucose y to 252 (outside gyro refresh region) to prevent high-rate flashing | result: ok
+- 2026-02-23T06:04:22Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
