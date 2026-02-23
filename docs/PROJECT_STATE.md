@@ -575,3 +575,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Tuned motor `RPM` headline position/size.
+  - moved downward by about one-third row (`y: 18 -> 23`, +5 px).
+  - reduced text size by about 20% by switching from scale-2 shadow render to `DrawTextUi125` pass.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
