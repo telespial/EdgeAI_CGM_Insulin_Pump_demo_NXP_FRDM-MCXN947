@@ -370,3 +370,4 @@ Format:
 2026-02-23T05:06:41Z | cmd: apply_patch src/gauge_render.c move pump background refresh Y-start 228->240 to avoid mg/dL redraw overlap | result: ok
 2026-02-23T05:06:41Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:06:41Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:06:55Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Fix mg/dL disappearance from pump-region redraw overlap' && git push origin main | result: ok (ce25e73)
