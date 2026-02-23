@@ -127,16 +127,17 @@ static float gUiBallYmgFilt = 0.0f;
 static bool gUiBallFiltPrimed = false;
 static uint32_t gUiRpmRand = 0x73A51C9Du;
 static uint16_t gUiRpmTenths = 0u;
-static uint32_t gUiRpmNextUpdateDs = 0u;
 static bool gUiRpmSchedulePrimed = false;
 static bool gUiMotorRunning = false;
 /* Dose rate is in milli-units per hour (mU/h). 1000 mU = 1 U. */
-static uint32_t gUiDoseRateUhMilli = 0u;
+static uint32_t gUiDoseRateUhMilli = 4000u; /* 4.000 U/h startup target for 3-day 3mL profile. */
+static uint32_t gUiDoseRateNextUpdateDs = 0u;
+static uint32_t gUiMotorPulseNextDs = 0u;
+static uint32_t gUiMotorPulseEndDs = 0u;
 /* 3.0 mL reservoir starts at 92% and drains from dose flow model. */
 static float gUiReservoirMl = 2.76f;
 static uint8_t gUiReservoirPct = 92u;
 static bool gUiReservoirPrimed = false;
-static uint32_t gUiReservoirLastDs = 0u;
 static uint8_t gUiGlucoseMgdl = 98u;
 static int8_t gUiGlucoseDir = 1;
 static uint32_t gUiGlucoseNextStepDs = 0u;
@@ -1025,10 +1026,9 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     char line[40];
     uint16_t rpm_ma;
     uint32_t now_ds;
-    uint32_t delta_ds;
-    float delta_h;
-    float dose_rate_ml_h_avg;
-    float dose_rate_ml_h_effective;
+    uint32_t rate_step;
+    uint32_t pulse_interval_ds;
+    uint32_t pulse_width_ds;
     uint32_t dose_rate_mlh_x1000;
     uint32_t fill_pct_u32;
     uint16_t okay = style->palette.text_primary;
@@ -1044,57 +1044,84 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     now_ds = UiNowDs();
     if (!gUiRpmSchedulePrimed)
     {
-        uint32_t r = NextUiRand();
         gUiMotorRunning = false;
         gUiRpmTenths = 0u;
-        gUiDoseRateUhMilli = 0u;
-        gUiRpmNextUpdateDs = now_ds + 100u + (r % 101u); /* stop for 10.0 .. 20.0 seconds */
+        gUiDoseRateUhMilli = 4000u; /* 4.000 U/h baseline (~0.040 mL/h). */
+        gUiDoseRateNextUpdateDs = now_ds + 12000u + (NextUiRand() % 12001u); /* retune every 20..40 min */
+        gUiMotorPulseNextDs = now_ds + 120u; /* first basal pulse in ~12s */
+        gUiMotorPulseEndDs = now_ds;
         gUiRpmSchedulePrimed = true;
     }
-    else if ((int32_t)(now_ds - gUiRpmNextUpdateDs) >= 0)
+
+    /* Basal profile update (still in 0.025 U/h increments). Keep centered near
+     * 4 U/h so a 3 mL cartridge trends toward ~3-day runtime. */
+    if ((int32_t)(now_ds - gUiDoseRateNextUpdateDs) >= 0)
     {
-        uint32_t r = NextUiRand();
-        if (gUiMotorRunning)
+        rate_step = NextUiRand() % 81u;          /* 0..80 */
+        gUiDoseRateUhMilli = 3000u + (rate_step * 25u); /* 3.000 .. 5.000 U/h */
+        gUiDoseRateNextUpdateDs = now_ds + 12000u + (NextUiRand() % 12001u); /* 20..40 min */
+    }
+
+    /* Motor behavior: brief micro-dosing pulses instead of long run windows.
+     * Each pulse delivers a fixed micro-bolus volume, and pulse interval is
+     * computed from current U/h so total delivery matches configured dose. */
+    if (gUiReservoirMl > 0.0f)
+    {
+        if (gUiMotorRunning && ((int32_t)(now_ds - gUiMotorPulseEndDs) >= 0))
         {
             gUiMotorRunning = false;
             gUiRpmTenths = 0u;
-            gUiDoseRateUhMilli = 0u;
-            gUiRpmNextUpdateDs = now_ds + 100u + (r % 101u); /* stop for 10.0 .. 20.0 seconds */
         }
-        else
+
+        if ((!gUiMotorRunning) && ((int32_t)(now_ds - gUiMotorPulseNextDs) >= 0))
         {
-            uint32_t rate_step;
+            float dose_per_pulse_ml = 0.0002f; /* 0.02 U per pulse on U100 insulin. */
+            float interval_ds_f;
+
+            if (gUiDoseRateUhMilli < 25u)
+            {
+                gUiDoseRateUhMilli = 25u;
+            }
+
+            /* mL/h = U/h / 100. Here U/h = gUiDoseRateUhMilli / 1000. */
+            interval_ds_f = dose_per_pulse_ml * 3600000000.0f / (float)gUiDoseRateUhMilli;
+            pulse_interval_ds = (uint32_t)(interval_ds_f + 0.5f);
+            if (pulse_interval_ds < 30u)
+            {
+                pulse_interval_ds = 30u;
+            }
+            if (pulse_interval_ds > 36000u)
+            {
+                pulse_interval_ds = 36000u;
+            }
+
+            pulse_width_ds = 8u + (NextUiRand() % 5u); /* 0.8 .. 1.2 s motor movement */
+            gUiRpmTenths = (uint16_t)(120u + (NextUiRand() % 141u)); /* 12.0 .. 26.0 RPM pulse */
             gUiMotorRunning = true;
-            gUiRpmTenths = (uint16_t)(10u + (r % 481u)); /* 1.0 .. 49.0 */
-            /* Random dosing in realistic insulin pump range centered near 4 U/h:
-             * 3.000 .. 5.000 U/h in 0.025 U/h increments (mU/h storage). */
-            rate_step = NextUiRand() % 81u; /* 0..80 -> 81 steps */
-            gUiDoseRateUhMilli = (3000u + (rate_step * 25u));
-            gUiRpmNextUpdateDs = now_ds + 50u + (r % 51u); /* run for 5.0 .. 10.0 seconds */
+            gUiMotorPulseEndDs = now_ds + pulse_width_ds;
+            gUiMotorPulseNextDs = now_ds + pulse_interval_ds;
+
+            gUiReservoirMl -= dose_per_pulse_ml;
+            if (gUiReservoirMl < 0.0f)
+            {
+                gUiReservoirMl = 0.0f;
+            }
         }
+    }
+    else
+    {
+        gUiMotorRunning = false;
+        gUiRpmTenths = 0u;
     }
 
     /* Reservoir drain model:
-     * - U100 insulin => mL/h = U/h / 100
-     * - motor shows pulsed movement (run/idle windows), so when running we apply
-     *   a 3x pulse-compensation factor to preserve the displayed average dose trend.
-     * - starts at 92% of a 3.0 mL cartridge and drains toward empty over ~3 days. */
+     * - starts at 92% of a 3.0 mL cartridge
+     * - drains directly from delivered micro-bolus pulses. */
     if (!gUiReservoirPrimed)
     {
         gUiReservoirMl = 3.0f * 0.92f;
         gUiReservoirPct = 92u;
-        gUiReservoirLastDs = now_ds;
         gUiReservoirPrimed = true;
-    }
-    delta_ds = (now_ds >= gUiReservoirLastDs) ? (now_ds - gUiReservoirLastDs) : 0u;
-    gUiReservoirLastDs = now_ds;
-    delta_h = ((float)delta_ds) / 36000.0f;
-    dose_rate_ml_h_avg = ((float)gUiDoseRateUhMilli) / 100000.0f;
-    dose_rate_ml_h_effective = gUiMotorRunning ? (dose_rate_ml_h_avg * 3.0f) : 0.0f;
-    gUiReservoirMl -= (dose_rate_ml_h_effective * delta_h);
-    if (gUiReservoirMl < 0.0f)
-    {
-        gUiReservoirMl = 0.0f;
     }
     fill_pct_u32 = (uint32_t)((gUiReservoirMl * 100.0f / 3.0f) + 0.5f);
     if (fill_pct_u32 > 100u)

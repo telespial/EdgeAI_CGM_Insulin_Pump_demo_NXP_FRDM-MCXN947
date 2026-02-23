@@ -344,3 +344,8 @@ Format:
 2026-02-23T04:56:12Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T04:56:12Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T04:56:27Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Calibrate reservoir to 92% boot and 3-day U100 flow model' && git push origin main
+2026-02-23T04:59:45Z | cmd: git status + rg/sed inspect motor/rate/reservoir paths in src/gauge_render.c | result: ok
+2026-02-23T04:59:45Z | cmd: apply_patch src/gauge_render.c switch motor to insulin-style micro-pulse behavior (pulse interval from U/h, brief 0.8-1.2s motor runs), remove run/idle long windows | result: ok
+2026-02-23T04:59:45Z | cmd: rg check for stale symbols gUiReservoirLastDs/gUiRpmNextUpdateDs and apply_patch remove unused gUiReservoirLastDs | result: ok
+2026-02-23T04:59:45Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T04:59:45Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)

@@ -806,3 +806,15 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Updated motor simulation to better match insulin-pump delivery behavior in `src/gauge_render.c`:
+  - replaced long run/idle windows with short micro-dosing motor pulses (`0.8..1.2s`)
+  - pulse interval is computed from basal dose rate (`U/h`) and fixed micro-bolus volume (`0.02 U` per pulse on U100)
+  - basal target remains in pump-style `0.025 U/h` increments and retunes every `20..40 min`
+  - current demo profile keeps basal centered near `4 U/h` (`3..5 U/h`) to align with 3-day 3mL depletion behavior
+  - reservoir drain now occurs from each delivered pulse (discrete delivery model), not synthetic time scaling
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
