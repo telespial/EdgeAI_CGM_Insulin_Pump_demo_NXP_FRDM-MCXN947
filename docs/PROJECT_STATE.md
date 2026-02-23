@@ -639,3 +639,12 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Standardized motor text readability by matching `mA` row to `RPM` row typography.
+  - `mA` row now uses `DrawTextUi(..., scale=2)` (same font style and same text size as RPM).
+  - replaced prior `DrawTextUi125` path used for mA rendering.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

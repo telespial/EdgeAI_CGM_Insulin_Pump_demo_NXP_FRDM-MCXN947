@@ -298,3 +298,5 @@ Format:
 - 2026-02-23T04:54:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T05:00:12Z | cmd: patch src/gauge_render.c move mA row right by 4 chars (x 22->46) and increase size ~50% via DrawTextUi125 | result: ok
 - 2026-02-23T05:00:52Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
+- 2026-02-23T05:03:20Z | cmd: patch src/gauge_render.c make mA row use same renderer and size as RPM (DrawTextUi scale=2) | result: ok
+- 2026-02-23T05:04:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
