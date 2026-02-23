@@ -1102,9 +1102,9 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     /* Center-segment blood sugar indicator (green, doubled size from previous). */
     {
         const char *bg_text = "98 mg/dL";
-        int32_t bg_x = SECTION2_CX - (edgeai_text5x7_width(3, bg_text) / 2);
+        int32_t bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
         int32_t bg_y = MAIN_CY + 40;
-        DrawTextUi(bg_x, bg_y, 3, bg_text, RGB565(124, 255, 124));
+        DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
     }
 }
 
