@@ -257,3 +257,5 @@ Format:
 - 2026-02-23T03:53:46Z | cmd: patch src/gauge_render.c move pump text lines down by one scale-2 row (+14px): y 232/248/264 -> 246/262/278 | result: ok
 - 2026-02-23T03:53:46Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:54:18Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Move pump text down one row" && git push origin main | result: ok (commit 2a8f589 pushed)
+- 2026-02-23T03:55:28Z | cmd: patch src/gauge_render.c split pump text background restore into two rects to avoid elapsed-time band overlap (30,228..198,281 and 30,282..169,300) | result: ok
+- 2026-02-23T03:55:28Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)

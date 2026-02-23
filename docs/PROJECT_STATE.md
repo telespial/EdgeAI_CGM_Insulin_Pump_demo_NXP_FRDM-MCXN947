@@ -520,3 +520,11 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Fixed elapsed-timer clipping caused by pump text background restore overlap.
+  - replaced single restore rectangle with two segmented regions that avoid the timer band in center area.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
