@@ -681,14 +681,6 @@ static void DrawTextUiCrisp(int32_t x, int32_t y, int32_t scale, const char *tex
     edgeai_text5x7_draw_scaled(x, y, scale, text, fg);
 }
 
-/* Approximate +25% text size with stroke-style overdraw for scale-1 font. */
-static void DrawTextUi125(int32_t x, int32_t y, const char *text, uint16_t fg)
-{
-    DrawTextUi(x, y, 1, text, fg);
-    DrawTextUi(x + 1, y, 1, text, fg);
-    DrawTextUi(x, y + 1, 1, text, fg);
-}
-
 static void BlitPumpBgRegion(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     int32_t y;
@@ -933,15 +925,9 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     char line[40];
     uint16_t okay = style->palette.text_primary;
     uint16_t warn = WARN_YELLOW;
-    uint16_t fault = ALERT_RED;
-    uint16_t sev = (sample->anomaly_score_pct >= 65u) ? fault :
+    uint16_t sev = (sample->anomaly_score_pct >= 65u) ? ALERT_RED :
                    ((sample->anomaly_score_pct >= 35u) ? warn : okay);
     bool pumping = (sample->power_mW > 180u);
-    bool inverted = gAccelValid && (gAccelZmg < -200);
-    bool drop_risk = (sample->anomaly_score_pct >= 80u) || (gAnomOverall >= 3u);
-    int16_t gx = gGyroValid ? gGyroXdps : 0;
-    int16_t gy = gGyroValid ? gGyroYdps : 0;
-    int16_t gz = gGyroValid ? gGyroZdps : 0;
     (void)ai_enabled;
 
     /* Motor area (top-left icon). */
@@ -960,12 +946,8 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)sample->soc_pct);
     DrawTextUi(34, 248, 1, line, okay);
 
-    /* Human status area below figure, above elapsed-time row. */
+    /* Human status text removed per latest UI direction. */
     BlitPumpBgRegion(172, 226, 322, 267);
-    snprintf(line, sizeof(line), "GYRO X:%3d Y:%3d Z:%3d", (int)gx, (int)gy, (int)gz);
-    DrawTextUi125(176, 228, line, gGyroValid ? okay : warn);
-    DrawTextUi125(176, 242, inverted ? "POSE: INVERTED" : "POSE: NORMAL", inverted ? warn : okay);
-    DrawTextUi125(176, 256, drop_risk ? "DROP: POSSIBLE" : "DROP: NONE", drop_risk ? fault : okay);
 }
 
 static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)

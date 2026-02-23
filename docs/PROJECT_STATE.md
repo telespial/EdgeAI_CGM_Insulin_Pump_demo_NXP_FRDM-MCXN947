@@ -355,3 +355,10 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Removed center `GYRO`, `POSE`, and `DROP` text overlays; the center status region is now background-only.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS (after removing now-unused helper)
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
