@@ -984,7 +984,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
             gUiBallYmgFilt = (gUiBallYmgFilt * 0.70f) + ((float)gAccelYmg * 0.30f);
         }
 
-        fx = (gUiBallXmgFilt / 1000.0f) * maxr;
+        fx = (-gUiBallXmgFilt / 1000.0f) * maxr;
         fy = (-gUiBallYmgFilt / 1000.0f) * maxr;
         mag = sqrtf((fx * fx) + (fy * fy));
         if ((mag > maxr) && (mag > 0.001f))

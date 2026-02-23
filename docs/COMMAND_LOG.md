@@ -251,3 +251,5 @@ Format:
 - 2026-02-23T03:49:45Z | cmd: patch src/gauge_render.c rework center ball orientation to filtered accel X/Y projection with circular clamp; remove legacy angle/radius state vars | result: ok
 - 2026-02-23T03:49:45Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
 - 2026-02-23T03:50:15Z | cmd: git add src/text5x7.c src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m "Add slash glyph and switch ball to accel XY projection" && git push origin main | result: ok (commit 05e113e pushed)
+- 2026-02-23T03:51:13Z | cmd: patch src/gauge_render.c invert accel X projection sign for center ball (left/right correction, up/down unchanged) | result: ok
+- 2026-02-23T03:51:13Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (build+flash pass via LinkServer probe #1)
