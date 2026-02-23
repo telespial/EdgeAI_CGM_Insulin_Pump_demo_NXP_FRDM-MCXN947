@@ -1540,3 +1540,19 @@ Last updated: 2026-02-23
   - pushed tag: `GOLDEN-2026-02-23-R4`
   - failsafe tag intentionally unchanged: `FAILSAFE-2026-02-23-R3`
 - Result: ok
+
+## Update 2026-02-23
+- Change: Completed CGM alignment step 7 by implementing calibration and compensation path in preprocessing.
+  - `src/cgm_preprocess.h/.c` updates:
+    - runtime factory-calibration hooks: `CgmPreprocess_SetCalibration(...)`, `CgmPreprocess_ResetCalibrationAge(...)`
+    - temperature compensation retained in calibrated glucose conversion path
+    - aging/drift compensation state added (`drift_state_mgdl`) with bounded adaptive correction
+    - sensitivity-change detection added using short/long EMA ratio with hold counter
+    - output telemetry fields added: calibration age, drift compensation, calibration-stale/drift-warn/sensitivity-change flags
+  - `src/gauge_render.c` integration:
+    - consumes updated preprocessing outputs during glucose/trend path
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok

@@ -666,3 +666,8 @@ Format:
 2026-02-23T21:55:30Z | cmd: rg -n FAILSAFE-2026-02-23-R4|failsafe_2026-02-23-R4 <project> | result: ok (no matches)
 2026-02-23T21:55:59Z | cmd: git add ... && git commit -m 'Implement CGM step 6 and promote golden R4 (failsafe stays R3)' && git push origin main | result: ok (d7e2deb)
 2026-02-23T21:55:59Z | cmd: git tag -f GOLDEN-2026-02-23-R4 d7e2deb && git push origin GOLDEN-2026-02-23-R4 | result: ok
+2026-02-23T21:56:13Z | cmd: git add docs/COMMAND_LOG.md docs/PROJECT_STATE.md && git commit -m 'Record golden R4 publication metadata' && git push origin main | result: ok (8cf3644)
+2026-02-23T22:01:27Z | cmd: apply_patch src/cgm_preprocess.h/.c add calibration hooks, drift compensation, and sensitivity-change detection | result: ok
+2026-02-23T22:01:27Z | cmd: apply_patch src/gauge_render.c integrate updated preprocessing outputs | result: ok
+2026-02-23T22:01:27Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after step-7 implementation)
+2026-02-23T22:01:27Z | cmd: apply_patch docs/TODO.md docs/CGM_TRACEABILITY.md and append docs/PROJECT_STATE.md step-7 update | result: ok
