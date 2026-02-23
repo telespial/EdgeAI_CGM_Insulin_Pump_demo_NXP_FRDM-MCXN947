@@ -26,6 +26,19 @@ Safe direct flash:
 
 `./scripts/build_and_flash.sh`
 
+## Restore Points
+
+Current baseline:
+- Golden: `GOLDEN-2026-02-23-R3`
+- Failsafe: `FAILSAFE-2026-02-23-R3`
+
+Artifacts:
+- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+
+Restore command (direct):
+- `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+
 ## State Updates
 
 `./scripts/update_state.sh --change "<summary>" [--binary <path>] [--command "<cmd>"] [--result <ok|fail>]`

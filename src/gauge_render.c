@@ -46,6 +46,7 @@ static bool gAlertVisualSevere = false;
 static bool gAlertVisualAiEnabled = false;
 static bool gAlertVisualRecording = false;
 static char gAlertVisualDetail[30];
+static char gAlertVisualHeadline[48];
 static uint32_t gScopeSampleAccumUs = 0u;
 static bool gTimelineTouchLatch = false;
 static bool gScopePaused = true;
@@ -245,19 +246,20 @@ static float ClampF32(float v, float lo, float hi)
 
 static uint8_t ActivityStageFromPct(uint8_t pct)
 {
-    if (pct >= 78u)
+    /* Make activity staging ~20% easier to enter for moderate/heavy ranges. */
+    if (pct >= 62u)
     {
         return ACTIVITY_HEAVY;
     }
-    if (pct >= 58u)
+    if (pct >= 46u)
     {
         return ACTIVITY_ACTIVE;
     }
-    if (pct >= 38u)
+    if (pct >= 30u)
     {
         return ACTIVITY_MODERATE;
     }
-    if (pct >= 16u)
+    if (pct >= 10u)
     {
         return ACTIVITY_LIGHT;
     }
@@ -295,6 +297,25 @@ static const char *ActivityCodeText(uint8_t stage)
             return "ACT-L4";
         default:
             return "ACT-L0";
+    }
+}
+
+static const char *ActivityHeadlineText(uint8_t stage, uint8_t pct)
+{
+    switch (stage)
+    {
+        case ACTIVITY_LIGHT:
+            /* Split LIGHT band into two alert thresholds on the scale:
+             * HUMAN MOVEMENT (lower LIGHT) then HUMAN ACTIVE (upper LIGHT). */
+            return (pct < 18u) ? "HUMAN MOVEMENT" : "HUMAN ACTIVE";
+        case ACTIVITY_MODERATE:
+            return "MOD ACTIVITY";
+        case ACTIVITY_ACTIVE:
+            return "HIGH ACTIVITY";
+        case ACTIVITY_HEAVY:
+            return "EXT ACTIVITY";
+        default:
+            return "HUMAN REST";
     }
 }
 
@@ -483,7 +504,8 @@ static void UpdateActivityModel(void)
     {
         score *= 0.25f;
     }
-    score = ClampF32(score * effort_scale, 0.0f, 1.0f);
+    /* Global sensitivity trim: reduce over-triggering across movement states. */
+    score = ClampF32(score * effort_scale * 0.80f, 0.0f, 1.0f);
     gActivityScoreFilt = (gActivityScoreFilt * 0.78f) + (score * 0.22f);
     gActivityPct = (uint8_t)(gActivityScoreFilt * 100.0f + 0.5f);
     gActivityStage = ActivityStageFromPct(gActivityPct);
@@ -2340,9 +2362,13 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     bool severe;
     bool recording = !gScopePaused;
     bool training_mode = (!gLiveBannerMode && (gAnomMode == 1u) && gScopePaused);
-    const char *normal_label = "SYSTEM REST";
     uint8_t status = AI_STATUS_NORMAL;
     char detail[30];
+    char human_label[24];
+    char human_cache_key[48];
+    int32_t label_scale = 2;
+    int32_t label_width = 0;
+    int32_t label_max_width = (ALERT_X1 - ALERT_X0 + 1) - 8;
 
     if (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive)
     {
@@ -2365,6 +2391,14 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         status = AI_STATUS_NORMAL;
     }
     BuildAnomalyReason(sample, detail, sizeof(detail));
+    snprintf(human_label, sizeof(human_label), "%s", ActivityHeadlineText(gActivityStage, gActivityPct));
+    snprintf(human_cache_key, sizeof(human_cache_key), "%s", human_label);
+    label_width = edgeai_text5x7_width(2, human_label);
+    if (label_width > label_max_width)
+    {
+        label_scale = 1;
+        label_width = edgeai_text5x7_width(1, human_label);
+    }
 
     if (recording)
     {
@@ -2384,6 +2418,7 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         gAlertVisualAiEnabled = ai_enabled;
         gAlertVisualRecording = true;
         snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", "RECORDING");
+        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", "RECORDING");
         return;
     }
 
@@ -2405,6 +2440,7 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         gAlertVisualAiEnabled = ai_enabled;
         gAlertVisualRecording = false;
         snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", "TRAINING");
+        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", "TRAINING");
         return;
     }
 
@@ -2413,6 +2449,7 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         (gAlertVisualSevere == severe) &&
         (gAlertVisualAiEnabled == ai_enabled) &&
         (gAlertVisualRecording == recording) &&
+        (strcmp(gAlertVisualHeadline, human_cache_key) == 0) &&
         (strcmp(gAlertVisualDetail, detail) == 0))
     {
         return;
@@ -2427,8 +2464,8 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
         DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
         DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(2, normal_label)) / 2;
-        DrawTextUi(tx, ALERT_Y0 + 12, 2, normal_label, RGB565(220, 255, 220));
+        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
+        DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, RGB565(220, 255, 220));
     }
     else
     {
@@ -2438,10 +2475,8 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
         DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
         DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(2, AiStatusText(status))) / 2;
-        DrawTextUi(tx, ALERT_Y0 + 8, 2, AiStatusText(status), color);
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(1, detail)) / 2;
-        DrawTextUi(tx, ALERT_Y0 + 28, 1, detail, style->palette.text_primary);
+        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
+        DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, color);
     }
 
     gAlertVisualValid = true;
@@ -2449,6 +2484,7 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     gAlertVisualSevere = severe;
     gAlertVisualAiEnabled = ai_enabled;
     gAlertVisualRecording = recording;
+    snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", human_cache_key);
     snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", detail);
 }
 

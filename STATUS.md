@@ -1,6 +1,6 @@
 Status date: 2026-02-23
 Project status: ACTIVE
-Golden restore point: GOLDEN-2026-02-23-R2
-Failsafe restore point: FAILSAFE-2026-02-23-R2
-Documentation sync: COMPLETE (2026-02-23, AI MCU/NPU settings format reflected)
-Latest runtime update: PASS (2026-02-23, docs sanitized and restore points promoted to R2 baseline; firmware baseline unchanged)
+Golden restore point: GOLDEN-2026-02-23-R3
+Failsafe restore point: FAILSAFE-2026-02-23-R3
+Documentation sync: COMPLETE (2026-02-23, docs synchronized to R3 restore baseline)
+Latest runtime update: PASS (2026-02-23, built/flashed and staged R3 golden+failsafe artifacts)

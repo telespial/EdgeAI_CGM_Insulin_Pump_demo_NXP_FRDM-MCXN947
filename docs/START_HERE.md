@@ -12,3 +12,7 @@ Then use the scripts in `scripts/`.
 Current docs baseline:
 - Settings row format: `AI MCU NPU`.
 - Latest runtime/flash history: `docs/PROJECT_STATE.md` and `docs/COMMAND_LOG.md`.
+- Active restore baseline:
+  - Golden: `GOLDEN-2026-02-23-R3`
+  - Failsafe: `FAILSAFE-2026-02-23-R3`
+  - artifacts: `failsafe/edgeai_medical_device_demo_cm33_core0_*_2026-02-23-R3.bin`

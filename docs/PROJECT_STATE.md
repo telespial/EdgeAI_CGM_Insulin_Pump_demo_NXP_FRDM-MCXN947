@@ -3,14 +3,204 @@
 Last updated: 2026-02-23
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-23-R2`
-- Failsafe: `FAILSAFE-2026-02-23-R2`
+- Golden: `GOLDEN-2026-02-23-R3`
+- Failsafe: `FAILSAFE-2026-02-23-R3`
 - Status: active
 
 ## Current Status
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
 - Git repository initialized locally.
+
+## Update 2026-02-23
+- Change: Promoted current built/flashed runtime as the active golden/failsafe baseline and synchronized project docs.
+  - built and flashed current firmware via `./scripts/build_and_flash.sh`
+  - staged restore artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+  - updated state/runbook/start/hardware/todo/readme/status documentation to reference R3 restore baseline
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Finalized higher-band label naming for consistent style.
+  - `ACTIVE ACTIVITY` renamed to `HIGH ACTIVITY`
+  - final/top band renamed from `HEAVY ACTIVITY` to `EXT ACTIVITY`
+  - keeps post-`MOD` labels in compact same-format phrasing
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Renamed ACTIVE-stage alert label for wording consistency.
+  - updated headline text from `ACTIVE ACTIVITY` to `HIGH ACTIVITY`
+  - keeps naming progression aligned with `MOD ACTIVITY` and `HEAVY ACTIVITY`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Prevented long activity labels from overflowing the alert box.
+  - added dynamic label-fit logic in `DrawAiAlertOverlay()`:
+    - headline renders at scale-2 when it fits
+    - automatically falls back to scale-1 if width exceeds alert box budget
+  - fixes overflow for strings such as `MOD ACTIVITY` and other long labels
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Fixed alert headline overflow for long state labels (e.g., `MODERATE ACTIVITY`).
+  - added width-aware auto-fit in `DrawAiAlertOverlay()`:
+    - default headline scale remains 2
+    - automatically falls back to scale 1 when text width exceeds alert box width budget
+  - applies to both normal and warning/fault alert render paths
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Tuned REST coverage to occupy the first three ticks of the activity arc bargraph.
+  - activity arc uses `54` ticks (5-degree segments over 270 degrees)
+  - set LIGHT entry threshold to `6%` (`~3/54`) so `HUMAN REST` spans the first three ticks
+  - kept LIGHT split behavior (`HUMAN MOVEMENT` / `HUMAN ACTIVE`) unchanged
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Made LIGHT-band triggering much earlier and advanced HUMAN ACTIVE transition.
+  - LIGHT entry threshold reduced from `10` to `3` (~75% earlier trigger)
+  - LIGHT split threshold reduced from `22` to `14` so `HUMAN ACTIVE` appears earlier
+  - resulting LIGHT-band labels:
+    - `HUMAN MOVEMENT` for `3..13`
+    - `HUMAN ACTIVE` for `14..29`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Reduced HUMAN MOVEMENT trigger threshold so it engages earlier.
+  - lowered LIGHT entry threshold in `ActivityStageFromPct()` from `13` to `10`
+  - result: earlier transition from `HUMAN REST` to LIGHT-band labels (`HUMAN MOVEMENT` / `HUMAN ACTIVE`)
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Split LIGHT stage into two separate alert-scale labels (instead of LIGHT ACTIVITY wording).
+  - lower LIGHT sub-threshold now shows `HUMAN MOVEMENT`
+  - upper LIGHT sub-threshold now shows `HUMAN ACTIVE`
+  - removed prior two-line LIGHT rendering and restored single-line threshold label behavior
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Split LIGHT activity headline into two-part human-movement wording in alert box.
+  - for LIGHT stage, alert now renders two lines:
+    - `HUMAN MOVEMENT`
+    - `LIGHT ACTIVITY`
+  - other stages continue using single-line headline labels
+  - extended alert headline cache key size and logic to support two-line state redraw correctness
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Tuned human-activity stage sensitivity to make moderate/heavy states easier to enter.
+  - adjusted `ActivityStageFromPct()` thresholds in `src/gauge_render.c` from:
+    - `HEAVY 78`, `ACTIVE 58`, `MODERATE 38`, `LIGHT 16`
+    - to `HEAVY 62`, `ACTIVE 46`, `MODERATE 30`, `LIGHT 13`
+  - intent: approximately 20% easier transition into higher activity bands with no change to sensor-fusion inputs
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Reverted alert box width and reduced alert headline visual size.
+  - restored alert width geometry to prior values (`ALERT_X0=147`, `ALERT_X1=325`)
+  - switched headline draw path from shadowed text to crisp text at same scale for approximately 10% smaller perceived size
+  - retained headline-change redraw caching fix to avoid stale glyph artifacts
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Improved alert box layout and state redraw stability.
+  - increased alert-box width by ~5% (`ALERT_X0: 147 -> 142`, `ALERT_X1: 325 -> 330`)
+  - added cached alert-headline tracking so headline changes force redraw and prevent stale/stray glyph artifacts
+  - targeted issue: stray character appearing next to warning box during state transitions
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Refined alert headline phrasing to explicit human-state wording.
+  - mapped alert labels to:
+    - `HUMAN REST`
+    - `LIGHT ACTIVITY`
+    - `MODERATE ACTIVITY`
+    - `ACTIVE ACTIVITY`
+    - `HEAVY ACTIVITY`
+  - implemented with new activity-headline string mapping in `src/gauge_render.c`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Updated alert box headline text to human-state mapping across all activity stages.
+  - replaced fixed/system status headline with `HUMAN <state>` text derived from runtime activity stage
+  - states now displayed in alert headline: `REST`, `LIGHT`, `MODERATE`, `ACTIVE`, `HEAVY`
+  - applied in `src/gauge_render.c` `DrawAiAlertOverlay()` for both normal and warning/fault render paths
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Rebuilt and reflashed current medical demo firmware on FRDM-MCXN947.
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Reformatted CGM alignment TODO into explicit numbered execution steps.
+  - updated `docs/TODO.md` from unordered checklist format to `1..12` numbered checklist format
+  - preserved task content while improving planning readability and review handoff
+- Result: ok
 
 ## Update 2026-02-23
 - Change: Finalized medical-demo repo cleanup to eliminate package-demo crossover risk.
@@ -1212,4 +1402,19 @@ Last updated: 2026-02-23
 - Verification:
   - `EDGEAI_WEST_BUILD_ARGS='-p always' ./tools/build_frdmmcxn947.sh debug` PASS
   - `./scripts/flash_safe.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Tuned activity stage entry so `HUMAN REST` spans first ~5 bargraph ticks.
+  - `src/gauge_render.c`: `ActivityStageFromPct()` LIGHT threshold set to `pct >= 10` (REST below 10)
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Unified alert headline rendering style for warning/fault states (including `HIGH ACTIVITY`) with normal alerts.
+  - `src/gauge_render.c` in `DrawAiAlertOverlay()` now renders warning/fault headline at the same Y offset/scale path as normal alerts.
+  - removed secondary detail line from warning/fault alert box to keep single-line headline presentation.
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
 - Result: ok

@@ -552,3 +552,83 @@ Format:
 2026-02-23T18:28:48Z | cmd: rg package-related keywords across repo | result: ok
 2026-02-23T18:29:09Z | cmd: ./scripts/preflight.sh && ./scripts/build_and_flash.sh | result: ok (build+flash pass, probe #1)
 2026-02-23T18:29:21Z | cmd: apply_patch docs/PROJECT_STATE.md add final cleanup verification update | result: ok
+2026-02-23T18:30:50Z | cmd: sed -n 1,260p docs/TODO.md | result: ok
+2026-02-23T18:31:15Z | cmd: apply_patch docs/TODO.md convert CGM checklist to numbered steps | result: ok
+2026-02-23T18:31:27Z | cmd: apply_patch docs/PROJECT_STATE.md add update for numbered CGM TODO formatting | result: ok
+2026-02-23T18:31:32Z | cmd: sed -n 1,120p docs/TODO.md | result: ok (numbered list confirmed)
+2026-02-23T18:33:32Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass, probe #1)
+2026-02-23T18:33:41Z | cmd: apply_patch docs/PROJECT_STATE.md add build+flash PASS update | result: ok
+2026-02-23T18:39:48Z | cmd: rg activity-state symbols in src/gauge_render.c | result: ok
+2026-02-23T18:39:48Z | cmd: sed -n 320,560p src/gauge_render.c | result: ok
+2026-02-23T18:39:48Z | cmd: sed -n 2320,2525p src/gauge_render.c | result: ok
+2026-02-23T18:39:54Z | cmd: sed -n 2525,2565p src/gauge_render.c | result: ok
+2026-02-23T18:40:00Z | cmd: sed -n 236,306p src/gauge_render.c | result: ok
+2026-02-23T18:40:05Z | cmd: rg activity-state terms in docs/PROJECT_STATE.md | result: ok
+2026-02-23T18:43:32Z | cmd: sed -n 2328,2465p src/gauge_render.c | result: ok
+2026-02-23T18:44:03Z | cmd: apply_patch src/gauge_render.c use HUMAN REST/LIGHT/MODERATE/ACTIVE/HEAVY in alert box | result: ok
+2026-02-23T18:44:24Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass, HUMAN state alert label patch)
+2026-02-23T18:44:35Z | cmd: apply_patch docs/PROJECT_STATE.md add HUMAN state alert headline update | result: ok
+2026-02-23T18:47:36Z | cmd: sed activity mapping + alert render slices in src/gauge_render.c | result: ok
+2026-02-23T18:47:47Z | cmd: apply_patch src/gauge_render.c add ActivityHeadlineText() and apply in alert box | result: ok
+2026-02-23T18:48:12Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after HUMAN/ACTIVITY label wording update)
+2026-02-23T18:48:23Z | cmd: apply_patch docs/PROJECT_STATE.md add explicit HUMAN/ACTIVITY labels update | result: ok
+2026-02-23T18:51:01Z | cmd: rg/sed inspect alert constants and visual cache fields | result: ok
+2026-02-23T18:51:27Z | cmd: apply_patch src/gauge_render.c adjust ALERT_X0/X1 and cache headline for redraw decisions | result: ok
+2026-02-23T18:51:50Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after alert box width/cache fix)
+2026-02-23T18:52:01Z | cmd: apply_patch docs/PROJECT_STATE.md add alert width+artifact fix update | result: ok
+2026-02-23T18:53:09Z | cmd: rg/sed inspect DrawTextUi helper functions | result: ok
+2026-02-23T18:53:15Z | cmd: sed -n 1018,1068p src/gauge_render.c | result: ok
+2026-02-23T18:53:28Z | cmd: apply_patch src/gauge_render.c ALERT_X0/X1 revert + DrawTextUiCrisp for headline | result: ok
+2026-02-23T18:53:47Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after width revert + smaller headline)
+2026-02-23T18:54:00Z | cmd: apply_patch docs/PROJECT_STATE.md add warning-box width revert + smaller headline entry | result: ok
+2026-02-23T18:55:05Z | cmd: sed -n 236,278p src/gauge_render.c | result: ok
+2026-02-23T18:55:22Z | cmd: apply_patch src/gauge_render.c retune ActivityStageFromPct thresholds (62/46/30/13) | result: ok
+2026-02-23T18:55:41Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after activity threshold retune)
+2026-02-23T18:55:56Z | cmd: apply_patch docs/PROJECT_STATE.md add activity threshold tuning entry | result: ok
+2026-02-23T18:56:41Z | cmd: sed activity headline + alert draw slices in src/gauge_render.c | result: ok
+2026-02-23T18:57:10Z | cmd: apply_patch src/gauge_render.c add two-line LIGHT headline + cache key support | result: ok
+2026-02-23T18:57:32Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after HUMAN MOVEMENT/LIGHT ACTIVITY split)
+2026-02-23T18:57:45Z | cmd: apply_patch docs/PROJECT_STATE.md add LIGHT two-line headline update | result: ok
+2026-02-23T18:59:54Z | cmd: apply_patch src/gauge_render.c ActivityHeadlineText uses LIGHT sub-thresholds (movement/active) and reverts to single-line draw | result: ok
+2026-02-23T19:00:20Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after LIGHT threshold split labels)
+2026-02-23T19:00:31Z | cmd: apply_patch docs/PROJECT_STATE.md add LIGHT split-threshold label update | result: ok
+2026-02-23T19:01:37Z | cmd: apply_patch src/gauge_render.c adjust ActivityStageFromPct LIGHT threshold 13->10 | result: ok
+2026-02-23T19:01:58Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after LIGHT threshold 10 update)
+2026-02-23T19:02:08Z | cmd: apply_patch docs/PROJECT_STATE.md add threshold 13->10 update entry | result: ok
+2026-02-23T19:04:41Z | cmd: rg/sed inspect current ActivityStageFromPct + ActivityHeadlineText thresholds | result: ok
+2026-02-23T19:04:55Z | cmd: apply_patch src/gauge_render.c LIGHT threshold 10->3 and split threshold 22->14 | result: ok
+2026-02-23T19:05:19Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after threshold retune to LIGHT=3 and split=14)
+2026-02-23T19:05:32Z | cmd: apply_patch docs/PROJECT_STATE.md add LIGHT=3 and split=14 threshold update | result: ok
+2026-02-23T19:06:52Z | cmd: rg/sed inspect ActivityStageFromPct and bargraph tick context | result: ok
+2026-02-23T19:07:09Z | cmd: apply_patch src/gauge_render.c ActivityStageFromPct LIGHT threshold 3->6 for REST first three ticks | result: ok
+2026-02-23T19:07:31Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after LIGHT threshold 6 update)
+2026-02-23T19:07:42Z | cmd: apply_patch docs/PROJECT_STATE.md add REST first-three-ticks threshold update (LIGHT=6) | result: ok
+2026-02-23T19:09:27Z | cmd: sed -n 2368,2478p src/gauge_render.c | result: ok
+2026-02-23T19:10:03Z | cmd: apply_patch src/gauge_render.c auto-fit alert headline width (scale2->scale1 fallback) | result: ok
+2026-02-23T19:10:03Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after alert headline auto-fit fix)
+2026-02-23T19:10:17Z | cmd: apply_patch docs/PROJECT_STATE.md add alert headline auto-fit update | result: ok
+2026-02-23T19:12:09Z | cmd: apply_patch src/gauge_render.c moderate label -> MOD ACTIVITY | result: ok
+2026-02-23T19:12:39Z | cmd: apply_patch docs/PROJECT_STATE.md add dynamic alert label fit update | result: ok
+2026-02-23T19:15:26Z | cmd: apply_patch src/gauge_render.c ACTIVE headline -> HIGH ACTIVITY | result: ok
+2026-02-23T19:15:47Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after HIGH ACTIVITY rename)
+2026-02-23T19:16:00Z | cmd: apply_patch docs/PROJECT_STATE.md add ACTIVE->HIGH label rename update | result: ok
+2026-02-23T19:16:53Z | cmd: apply_patch src/gauge_render.c final stage label to EXT ACTIVITY | result: ok
+2026-02-23T19:17:18Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after EXT ACTIVITY label set)
+2026-02-23T19:17:31Z | cmd: apply_patch docs/PROJECT_STATE.md add HIGH/EXT naming finalization entry | result: ok
+2026-02-23T19:22:38Z | cmd: apply_patch src/gauge_render.c score clamp uses effort_scale*0.80 for lower sensitivity | result: ok
+2026-02-23T19:23:03Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after HIGH/EXT final label update)
+2026-02-23T19:24:11Z | cmd: apply_patch src/gauge_render.c HUMAN MOVEMENT split 14->18 (~+2 bars) | result: ok
+2026-02-23T19:25:50Z | cmd: rg threshold lines in src/gauge_render.c | result: ok (262:    if (pct >= 6u))
+2026-02-23T19:26:26Z | cmd: apply_patch src/gauge_render.c LIGHT threshold 6->10 for REST first 5 bars | result: ok
+2026-02-23T19:27:57Z | cmd: rg/tail inspect gauge thresholds + project docs for REST-first-5-bars update | result: ok
+2026-02-23T19:27:57Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after LIGHT threshold 10 for REST first 5 bars)
+2026-02-23T19:27:57Z | cmd: nl -ba src/gauge_render.c | sed -n 250,275p | result: ok (confirmed LIGHT threshold at line 262)
+2026-02-23T19:29:27Z | cmd: rg/sed inspect ActivityHeadlineText + DrawAiAlertOverlay in src/gauge_render.c | result: ok
+2026-02-23T19:29:27Z | cmd: apply_patch src/gauge_render.c remove extra warning/fault detail line and unify headline placement | result: ok
+2026-02-23T19:29:27Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass after HIGH ACTIVITY single-line style fix)
+2026-02-23T19:29:27Z | cmd: nl -ba src/gauge_render.c | sed -n 2460,2488p | result: ok
+2026-02-23T19:30:19Z | cmd: rg/sed inspect all alert label strings in src/gauge_render.c | result: ok
+2026-02-23T19:33:35Z | cmd: sed/rg/ls inspect project docs, restore workflow, and git/remote status | result: ok
+2026-02-23T19:33:35Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass for restore-point baseline)
+2026-02-23T19:33:35Z | cmd: cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin failsafe/*_2026-02-23-R3.bin | result: ok
+2026-02-23T19:33:35Z | cmd: apply_patch docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md docs/PROJECT_STATE.md README.md STATUS.md | result: ok
