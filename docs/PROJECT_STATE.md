@@ -902,3 +902,14 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Added center-segment digital tach arc in `DrawHumanOrientationPointer()`:
+  - 270-degree bargraph circle with bottom 90 degrees open
+  - centered on the ball-circle center, radius set to 80% of ball-circle radius (matching requested 80% diameter scaling intent)
+  - zone colors by sweep order: first ~120° green, next ~90° yellow, final ~60° red
+  - active bar count driven by current motor RPM (`gUiRpmTenths`)
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
