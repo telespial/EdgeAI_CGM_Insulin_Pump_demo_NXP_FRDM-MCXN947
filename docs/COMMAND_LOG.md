@@ -405,7 +405,7 @@ Format:
 2026-02-23T05:34:40Z | cmd: apply_patch src/gauge_render.c fix build issues (remove early macro dependency in ActivityColor and rewire terminal line to retain AnomModeText/AnomLevelColor usage) | result: ok
 2026-02-23T05:34:40Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:34:40Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
-2026-02-23T05:34:40Z | cmd: read /home/user/python_projects/codemaster/docs/START_HERE.md, /home/user/python_projects/codemaster/docs/PROJECT_STATE.md, /home/user/python_projects/codemaster/docs/OPS_RUNBOOK.md | result: ok
+2026-02-23T05:34:40Z | cmd: read workspace root onboarding docs (START_HERE, PROJECT_STATE, OPS_RUNBOOK) | result: ok
 2026-02-23T05:34:40Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Drive activity/error codes from accel+gyro+baro and map center bargraph to activity' && git push origin main | result: ok (dcfe861)
 2026-02-23T05:38:39Z | cmd: rg/sed inspect scope trace pipeline, center ball redraw path, and ext flash recorder paths in src/gauge_render.c src/ext_flash_recorder.c src/<app_runtime>.c | result: ok
 2026-02-23T05:38:39Z | cmd: apply_patch src/gauge_render.c fix center ball trailing by restoring full human-circle region each frame and redrawing glucose row every frame after motion update | result: ok
@@ -500,3 +500,44 @@ Format:
 | 2026-02-23 07:22:03 PST | `remove final legacy phrase variants from markdown docs` | success |
 | 2026-02-23 07:22:11 PST | `final term scan for legacy shipping wording` | success |
 | 2026-02-23 07:22:17 PST | `review git status and diffstat before commit` | success |
+| 2026-02-23 07:22:26 PST | `commit and push medical docs cleanup and restore-point promotion` | success |
+| 2026-02-23 07:39:41 PST | `inspect git status in package and medical projects before restore` | success |
+| 2026-02-23 07:40:13 PST | `build and flash medical demo to restore correct runtime firmware` | success |
+| 2026-02-23 07:40:35 PST | `append medical PROJECT_STATE restore entry after wrong-project flash correction` | success |
+| 2026-02-23 07:40:44 PST | `verify latest medical PROJECT_STATE restore entry` | success |
+| 2026-02-23 07:40:44 PST | `final verify package repo clean and medical repo status` | success |
+| 2026-02-23 07:45:02 PST | `scan medical repo for package/demo remnant keywords` | success |
+| 2026-02-23 07:45:02 PST | `inspect workflows and build scripts for legacy app naming` | success |
+| 2026-02-23 07:45:44 PST | `rename legacy package app paths/names to medical demo naming` | success |
+| 2026-02-23 07:46:14 PST | `build and flash medical demo after package-remnant cleanup renaming` | fail (stale build dir app path mismatch) |
+| 2026-02-23 07:46:14 PST | `pristine build and flash medical demo after app rename cleanup` | success |
+| 2026-02-23 07:46:40 PST | `update medical PROJECT_STATE for package-remnant cleanup and app rename` | success |
+| 2026-02-23 07:46:49 PST | `final verification of remnant cleanup scope in medical repo` | success |
+| 2026-02-23 07:47:03 PST | `final full medical-repo residue scan for legacy package naming` | success |
+| 2026-02-23 07:48:25 PST | `add CGM_DERMAL_ALGORITHM_REVIEW.md to medical docs and update PROJECT_STATE` | success |
+| 2026-02-23 07:48:30 PST | `verify CGM doc added in medical repo` | success |
+| 2026-02-23 07:49:52 PST | `rebuild medical demo to restore correct flashed target` | success |
+| 2026-02-23 07:49:57 PST | `flash medical demo to FRDM-MCXN947` | success |
+| 2026-02-23 07:50:05 PST | `append medical PROJECT_STATE restore-after-wrong-flash entry` | success |
+| 2026-02-23 07:52:57 PST | `check git status in medical and package before edits` | success |
+| 2026-02-23 07:53:08 PST | `inspect medical DrawHelpPopup text lines for CGM simulation note placement` | success |
+| 2026-02-23 07:53:08 PST | `inspect package script layout and build-and-flash scripts` | success |
+| 2026-02-23 07:53:59 PST | `inspect medical scripts/flash.sh and build_and_flash.sh for accurate patching` | success |
+| 2026-02-23 07:54:35 PST | `chmod new flash_safe scripts and run bash -n syntax checks` | success |
+| 2026-02-23 07:54:43 PST | `build medical demo after help and flash-safe updates` | success |
+| 2026-02-23 07:54:49 PST | `flash medical demo via scripts/flash_safe.sh` | success |
+| 2026-02-23 07:55:10 PST | `verify package flash fail-fast blocks mismatched medical build artifacts` | success |
+| 2026-02-23 07:55:22 PST | `inspect OPS_RUNBOOK flash sections for medical and package` | success |
+| 2026-02-23 07:55:43 PST | `update PROJECT_STATE entries for flash-safe guards and CGM simulation help note` | success |
+| 2026-02-23 07:55:54 PST | `verify flash-safe and help-note changes plus repo status` | success |
+2026-02-23T18:16:44Z | cmd: apply_patch docs/COMMAND_LOG.md sanitize root-path reference in historical entry | result: ok
+2026-02-23T18:16:49Z | cmd: sed -n 1,120p docs/TODO.md | result: ok
+2026-02-23T18:17:04Z | cmd: apply_patch docs/TODO.md mark display/terminal/graph/anomaly tasks complete | result: ok
+2026-02-23T18:17:13Z | cmd: create .github/workflows/build.yml (preflight, shell syntax, host compile smoke) | result: ok
+2026-02-23T18:17:18Z | cmd: sed -n 1,90p docs/PROJECT_STATE.md | result: ok
+2026-02-23T18:17:26Z | cmd: ./scripts/preflight.sh | result: ok
+2026-02-23T18:17:50Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass, probe #1)
+2026-02-23T18:18:02Z | cmd: bash -n scripts/*.sh tools/*build*/flash* && cc host smoke compile/run | result: ok
+2026-02-23T18:18:15Z | cmd: apply_patch docs/PROJECT_STATE.md add 2026-02-23 hygiene/CI verification update | result: ok
+2026-02-23T18:18:26Z | cmd: rg -n 'codemaster' . ; git status --short --branch | result: ok (no codemaster refs; worktree dirty)
+2026-02-23T18:18:35Z | cmd: git diff -- docs/COMMAND_LOG.md docs/PROJECT_STATE.md docs/TODO.md .github/workflows/build.yml | result: ok

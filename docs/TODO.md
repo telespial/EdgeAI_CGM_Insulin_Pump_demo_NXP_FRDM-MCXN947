@@ -26,14 +26,14 @@ Last updated: 2026-02-23
 - [ ] Tune overlay coordinates/contrast on real LCD hardware for final readability.
 
 ## Priority 1 (Display Integration)
-- [ ] Replace stub display HAL with FRDM-MCXN947 LCD driver bindings.
-- [ ] Wire terminal fields to live telemetry channels (motor/temp/activity/alerts).
-- [ ] Wire graph panel to selected runtime channels with scrolling buffer.
+- [x] Replace stub display HAL with FRDM-MCXN947 LCD driver bindings.
+- [x] Wire terminal fields to live telemetry channels (motor/temp/activity/alerts).
+- [x] Wire graph panel to selected runtime channels with scrolling buffer.
 
 ## Priority 2 (Telemetry + Intelligence)
 - [ ] Define medical-device telemetry schema.
 - [ ] Add sensor drivers and simulation fallback.
-- [ ] Add anomaly/inference pipeline in `src/`.
+- [x] Add anomaly/inference pipeline in `src/`.
 
 ## Priority 3 (Quality)
 - [x] Add build target integration for SDK workspace.

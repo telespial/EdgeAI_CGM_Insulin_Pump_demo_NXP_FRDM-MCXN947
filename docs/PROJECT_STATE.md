@@ -13,6 +13,20 @@ Last updated: 2026-02-23
 - Git repository initialized locally.
 
 ## Update 2026-02-23
+- Change: Completed hygiene and operations alignment pass for medical demo baseline.
+  - sanitized project command-log wording to remove internal/root path naming in `docs/COMMAND_LOG.md`
+  - synced stale TODO status to reflect implemented display/runtime items in `docs/TODO.md`
+  - added CI workflow `/.github/workflows/build.yml` with:
+    - `./scripts/preflight.sh`
+    - shell syntax checks for core scripts/tools
+    - host compile smoke test (`src/main.c` + `src/medical_lcd_layout.c` + `src/medical_display_stub.c`)
+- Verification:
+  - `./scripts/preflight.sh` PASS
+  - `./scripts/build_and_flash.sh` PASS (build + LinkServer flash, probe `#1`)
+  - local CI-equivalent run PASS (shell syntax + host compile/run)
+- Result: ok
+
+## Update 2026-02-23
 - Change: Completed full documentation cleanup to remove legacy naming tied to earlier non-medical wording.
   - updated `README.md`, `docs/TODO.md`, `docs/PROJECT_STATE.md`, and SDK overlay readme text for medical-demo wording consistency
   - normalized prior command-log wording in `docs/COMMAND_LOG.md` where legacy naming appeared
@@ -1137,4 +1151,48 @@ Last updated: 2026-02-23
   - `./tools/flash_frdmmcxn947.sh` PASS
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Restored runtime target after wrong-project flash by rebuilding/flashing the medical demo.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Removed legacy package-demo naming from medical project code/build paths to prevent project confusion.
+  - renamed runtime source file to `src/edgeai_medical_device_demo.c`
+  - renamed MCUX overlay app path to `demo_apps/edgeai_medical_device_demo`
+  - updated build/install scripts and environment variable names to medical-demo identifiers
+  - updated generated model name defaults from package naming to medical naming
+- Verification:
+  - `EDGEAI_WEST_BUILD_ARGS='-p always' ./tools/build_frdmmcxn947.sh debug` PASS
+  - output: `mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin`
+  - `./tools/flash_frdmmcxn947.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Added CGM algorithm review document to medical demo docs.
+  - new file: `docs/CGM_DERMAL_ALGORITHM_REVIEW.md`
+  - content covers dermal CGM preprocessing, filtering, calibration/compensation, lag handling, SQI/fault detection, prediction/alerts, and validation metrics
+- Result: ok
+
+## Update 2026-02-23
+- Change: Restored board runtime to medical demo after accidental package-demo flash.
+- Verification:
+  - `EDGEAI_WEST_BUILD_ARGS='-p always' ./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Added explicit demo-CGM simulation wording in help popup.
+  - updated page-1 help text in `src/gauge_render.c` to state CGM data and dosing response are simulated
+- Change: Added flash fail-fast guard and safe wrapper.
+  - `tools/flash_frdmmcxn947.sh` now blocks flash if expected medical artifact is missing or build dir app path does not match project
+  - new wrapper: `scripts/flash_safe.sh`
+  - `scripts/flash.sh` now delegates to `scripts/flash_safe.sh`
+- Verification:
+  - `EDGEAI_WEST_BUILD_ARGS='-p always' ./tools/build_frdmmcxn947.sh debug` PASS
+  - `./scripts/flash_safe.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
 - Result: ok
