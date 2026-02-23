@@ -1418,3 +1418,11 @@ Last updated: 2026-02-23
 - Verification:
   - `./scripts/build_and_flash.sh` PASS (probe `#1`, target `MCXN947:FRDM-MCXN947`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Committed and published R3 restore baseline.
+  - commit: `067e438` on `main`
+  - pushed tags:
+    - `GOLDEN-2026-02-23-R3`
+    - `FAILSAFE-2026-02-23-R3`
+- Result: ok

@@ -632,3 +632,7 @@ Format:
 2026-02-23T19:33:35Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass for restore-point baseline)
 2026-02-23T19:33:35Z | cmd: cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin failsafe/*_2026-02-23-R3.bin | result: ok
 2026-02-23T19:33:35Z | cmd: apply_patch docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md docs/PROJECT_STATE.md README.md STATUS.md | result: ok
+2026-02-23T19:34:20Z | cmd: git status --short && git diff --stat | result: ok
+2026-02-23T19:34:20Z | cmd: git add ... && git commit -m 'Promote R3 golden/failsafe baseline and sync project docs' && git push origin main | result: ok (067e438)
+2026-02-23T19:34:20Z | cmd: git tag -f GOLDEN-2026-02-23-R3 067e438 && git tag -f FAILSAFE-2026-02-23-R3 067e438 && git push origin GOLDEN-2026-02-23-R3 FAILSAFE-2026-02-23-R3 | result: ok
+2026-02-23T19:34:20Z | cmd: append docs/PROJECT_STATE.md with commit/tag publication entry | result: ok
