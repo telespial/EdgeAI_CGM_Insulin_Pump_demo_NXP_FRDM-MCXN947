@@ -424,3 +424,4 @@ Format:
 2026-02-23T05:49:04Z | cmd: apply_patch src/gauge_render.c recalibrate activity baseline (use accel magnitude deviation from 1g, guard linear-accel gravity contamination, adjust rest clamp and transport gating) | result: ok
 2026-02-23T05:49:04Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:49:04Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:49:04Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Recalibrate activity baseline so rest stays in green zone' && git push origin main | result: ok (d9144d8)
