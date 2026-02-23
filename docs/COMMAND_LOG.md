@@ -443,3 +443,5 @@ Format:
 2026-02-23T14:35:41Z | cmd: inspect diffs for src/gauge_render.c and src/edgeai_package_transport_anomaly_demo.c | result: ok (AI ON/OFF -> MCU/NPU labels and AI_SET,MCU/NPU)
 2026-02-23T14:35:41Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T14:35:41Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1 UYLKOJI11H2B3)
+2026-02-23T14:36:42Z | cmd: git status --short | result: ok
+2026-02-23T14:36:42Z | cmd: git add src/gauge_render.c src/edgeai_package_transport_anomaly_demo.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Switch AI setting labels from ON/OFF to MCU/NPU' && git push origin main | result: ok (fe15d35)
