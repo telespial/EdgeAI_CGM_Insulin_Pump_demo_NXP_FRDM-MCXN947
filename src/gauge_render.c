@@ -1736,17 +1736,17 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
 
 static void DrawBatteryIndicatorFrame(const gauge_style_preset_t *style)
 {
-    int32_t nub_w = 8;
-    int32_t nub_h = 12;
+    int32_t nub_w = 11;
+    int32_t nub_h = 10;
     int32_t text_x = BATT_X - edgeai_text5x7_width(1, "BATT") - 2;
     int32_t text_y = BATT_Y + ((BATT_H - 7) / 2);
-    int32_t nub_x0 = BATT_X + BATT_W + 1;
+    int32_t nub_x0 = BATT_X + BATT_W - 1;
     int32_t nub_y0 = BATT_Y + ((BATT_H - nub_h) / 2);
     int32_t nub_x1 = nub_x0 + nub_w;
-    par_lcd_s035_fill_rect(BATT_X, BATT_Y, BATT_X + BATT_W, BATT_Y + BATT_H, RGB565(8, 10, 12));
-    /* Right-side battery terminal: solid white protruding rectangle. */
-    par_lcd_s035_fill_rect(nub_x0, nub_y0, nub_x1, nub_y0 + nub_h, RGB565(245, 245, 245));
+    par_lcd_s035_fill_rect(BATT_X, BATT_Y, BATT_X + BATT_W, BATT_Y + BATT_H, RGB565(245, 245, 245));
     par_lcd_s035_fill_rect(BATT_X + 1, BATT_Y + 1, BATT_X + BATT_W - 1, BATT_Y + BATT_H - 1, RGB565(72, 76, 84));
+    /* Keep terminal attached and thick enough to read as a battery nub on LCD. */
+    par_lcd_s035_fill_rect(nub_x0, nub_y0, nub_x1, nub_y0 + nub_h, RGB565(245, 245, 245));
     DrawTextUi(text_x, text_y, 1, "BATT", style->palette.text_secondary);
 }
 
@@ -1772,6 +1772,7 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
         fill_color = RGB565(255, 180, 24);
     }
 
+    DrawBatteryIndicatorFrame(style);
     par_lcd_s035_fill_rect(inner_x0, inner_y0, inner_x0 + inner_w, inner_y0 + inner_h, RGB565(82, 86, 92));
     if (fill > 0)
     {

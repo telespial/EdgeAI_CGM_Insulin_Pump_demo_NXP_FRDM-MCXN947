@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-02-22
+Last updated: 2026-02-23
 
 ## Current Status
 - Project framework scaffold created.
@@ -215,6 +215,16 @@ Last updated: 2026-02-22
 
 ## Update 2026-02-22
 - Change: Styled battery positive terminal as a white boxed `+` and aligned it with the `BATT` text baseline; retained persistent `BATT` label redraw each frame.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Reworked battery indicator rendering for better readability on-device:
+  - battery body now uses a stronger white outline around the dark interior
+  - right-side positive terminal is a thicker, centered white rectangular nub attached to the battery body
+  - battery frame is redrawn in the dynamic path each frame to prevent partial visual overwrite
 - Verification:
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
