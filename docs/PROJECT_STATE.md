@@ -938,3 +938,15 @@ Last updated: 2026-02-23
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
 - Result: ok
+
+## Update 2026-02-23
+- Change: Reworked displayed error/reason/status coding to activity staging derived from motion/environment sensors:
+  - activity model now fuses accelerometer dynamics, gyro magnitude, and barometric pressure-rate trend
+  - stage bands: `REST`, `LIGHT`, `MODERATE`, `ACTIVE`, `HEAVY`
+  - reason/detail text rewritten to activity codes (`ACT-L0..ACT-L4`) plus movement/vertical trend context
+  - terminal status/system rows now report activity state and activity code instead of prior alert-reason strings
+- Change: Circular 270-degree center bargraph now represents activity intensity (0-100%) instead of motor RPM while keeping requested color zones and geometry.
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS (after one compile-fix iteration)
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer, probe `#1`)
+- Result: ok

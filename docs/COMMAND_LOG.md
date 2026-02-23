@@ -397,3 +397,12 @@ Format:
 2026-02-23T05:24:33Z | cmd: apply_patch src/gauge_render.c increase tach diameter additional 10% (radius factor 88->97) | result: ok
 2026-02-23T05:24:33Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
 2026-02-23T05:24:45Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Increase tach diameter another 10 percent' && git push origin main | result: ok (e8b18dd)
+2026-02-23T05:34:40Z | cmd: inspect src/power_data_source.h and src/gauge_render.c with rg/sed for alert reason text paths, terminal status paths, activity sensors (gyro/accel/baro), and circular tach rendering | result: ok
+2026-02-23T05:34:40Z | cmd: apply_patch src/gauge_render.c add activity model state and helpers (REST/LIGHT/MODERATE/ACTIVE/HEAVY), derive activity score from accel+gyro+barometric trend, and persist smoothed activity percent/stage | result: ok
+2026-02-23T05:34:40Z | cmd: apply_patch src/gauge_render.c rewrite displayed reason/error text to activity codes/states, map alert severity/colors to activity stage, and update terminal status/system lines to activity-driven output | result: ok
+2026-02-23T05:34:40Z | cmd: apply_patch src/gauge_render.c drive 270-degree circular bargraph fill from activity percent (instead of RPM) and call UpdateActivityModel() once per frame | result: ok
+2026-02-23T05:34:40Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: fail (first pass compile issues: early macro dependency + unused functions)
+2026-02-23T05:34:40Z | cmd: apply_patch src/gauge_render.c fix build issues (remove early macro dependency in ActivityColor and rewire terminal line to retain AnomModeText/AnomLevelColor usage) | result: ok
+2026-02-23T05:34:40Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
+2026-02-23T05:34:40Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:34:40Z | cmd: read /home/user/python_projects/codemaster/docs/START_HERE.md, /home/user/python_projects/codemaster/docs/PROJECT_STATE.md, /home/user/python_projects/codemaster/docs/OPS_RUNBOOK.md | result: ok

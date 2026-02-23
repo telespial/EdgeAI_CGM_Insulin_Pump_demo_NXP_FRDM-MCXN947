@@ -142,6 +142,22 @@ static int8_t gUiGlucoseDir = 1;
 static uint32_t gUiGlucoseNextStepDs = 0u;
 static bool gUiGlucoseSchedPrimed = false;
 static uint8_t gPrevGlucoseMgdl = 255u;
+static bool gActivityModelPrimed = false;
+static uint32_t gActivityPrevDs = 0u;
+static int16_t gActivityPrevBaroDhpa = 10132;
+static float gActivityScoreFilt = 0.0f;
+static uint8_t gActivityPct = 0u;
+static uint8_t gActivityStage = 0u;
+static float gActivityBaroRateHpaS = 0.0f;
+
+enum
+{
+    ACTIVITY_REST = 0,
+    ACTIVITY_LIGHT = 1,
+    ACTIVITY_MODERATE = 2,
+    ACTIVITY_ACTIVE = 3,
+    ACTIVITY_HEAVY = 4,
+};
 
 static void CopyUiTextUpper(char *dst, size_t dst_size, const char *src)
 {
@@ -194,6 +210,163 @@ static uint32_t UiNowDs(void)
 
     /* Fallback when RTC is unavailable: approximate deciseconds from frame count. */
     return gFrameCounter / 3u;
+}
+
+static float ClampF32(float v, float lo, float hi)
+{
+    if (v < lo)
+    {
+        return lo;
+    }
+    if (v > hi)
+    {
+        return hi;
+    }
+    return v;
+}
+
+static uint8_t ActivityStageFromPct(uint8_t pct)
+{
+    if (pct >= 78u)
+    {
+        return ACTIVITY_HEAVY;
+    }
+    if (pct >= 58u)
+    {
+        return ACTIVITY_ACTIVE;
+    }
+    if (pct >= 38u)
+    {
+        return ACTIVITY_MODERATE;
+    }
+    if (pct >= 16u)
+    {
+        return ACTIVITY_LIGHT;
+    }
+    return ACTIVITY_REST;
+}
+
+static const char *ActivityStageText(uint8_t stage)
+{
+    switch (stage)
+    {
+        case ACTIVITY_LIGHT:
+            return "LIGHT";
+        case ACTIVITY_MODERATE:
+            return "MODERATE";
+        case ACTIVITY_ACTIVE:
+            return "ACTIVE";
+        case ACTIVITY_HEAVY:
+            return "HEAVY";
+        default:
+            return "REST";
+    }
+}
+
+static const char *ActivityCodeText(uint8_t stage)
+{
+    switch (stage)
+    {
+        case ACTIVITY_LIGHT:
+            return "ACT-L1";
+        case ACTIVITY_MODERATE:
+            return "ACT-L2";
+        case ACTIVITY_ACTIVE:
+            return "ACT-L3";
+        case ACTIVITY_HEAVY:
+            return "ACT-L4";
+        default:
+            return "ACT-L0";
+    }
+}
+
+static uint16_t ActivityColor(const gauge_style_preset_t *style, uint8_t stage)
+{
+    if (stage >= ACTIVITY_HEAVY)
+    {
+        return 0xF800u;
+    }
+    if (stage >= ACTIVITY_ACTIVE)
+    {
+        return 0xFFE0u;
+    }
+    return style->palette.accent_green;
+}
+
+static void UpdateActivityModel(void)
+{
+    uint32_t now_ds = UiNowDs();
+    float dt_s = 0.1f;
+    float accel_dyn_mg;
+    float accel_norm;
+    float gyro_mag_dps;
+    float gyro_norm;
+    float baro_rate_hpa_s = 0.0f;
+    float baro_norm;
+    float score;
+
+    if (!gActivityModelPrimed)
+    {
+        gActivityModelPrimed = true;
+        gActivityPrevDs = now_ds;
+        gActivityPrevBaroDhpa = gBaroDhpa;
+    }
+    else
+    {
+        uint32_t delta_ds = now_ds - gActivityPrevDs;
+        if ((delta_ds > 0u) && (delta_ds < 300u))
+        {
+            dt_s = (float)delta_ds * 0.1f;
+        }
+    }
+
+    if (gLinAccelValid)
+    {
+        accel_dyn_mg = sqrtf((float)(gLinAccelXmg * gLinAccelXmg) +
+                             (float)(gLinAccelYmg * gLinAccelYmg) +
+                             (float)(gLinAccelZmg * gLinAccelZmg));
+    }
+    else if (gAccelValid)
+    {
+        float amag = sqrtf((float)(gAccelXmg * gAccelXmg) +
+                           (float)(gAccelYmg * gAccelYmg) +
+                           (float)(gAccelZmg * gAccelZmg));
+        accel_dyn_mg = fabsf(amag - 1000.0f);
+    }
+    else
+    {
+        accel_dyn_mg = 0.0f;
+    }
+    accel_norm = ClampF32(accel_dyn_mg / 450.0f, 0.0f, 1.0f);
+
+    if (gGyroValid)
+    {
+        gyro_mag_dps = sqrtf((float)(gGyroXdps * gGyroXdps) +
+                             (float)(gGyroYdps * gGyroYdps) +
+                             (float)(gGyroZdps * gGyroZdps)) * 0.1f;
+    }
+    else
+    {
+        gyro_mag_dps = 0.0f;
+    }
+    gyro_norm = ClampF32(gyro_mag_dps / 180.0f, 0.0f, 1.0f);
+
+    if (gBaroValid && (dt_s > 0.01f))
+    {
+        float delta_hpa = ((float)gBaroDhpa - (float)gActivityPrevBaroDhpa) * 0.1f;
+        baro_rate_hpa_s = delta_hpa / dt_s;
+    }
+    gActivityBaroRateHpaS = baro_rate_hpa_s;
+    baro_norm = ClampF32(fabsf(baro_rate_hpa_s) / 0.10f, 0.0f, 1.0f);
+
+    score = (0.52f * accel_norm) + (0.33f * gyro_norm) + (0.15f * baro_norm);
+    score = ClampF32(score, 0.0f, 1.0f);
+    gActivityScoreFilt = (gActivityScoreFilt * 0.78f) + (score * 0.22f);
+    gActivityPct = (uint8_t)(gActivityScoreFilt * 100.0f + 0.5f);
+    gActivityStage = ActivityStageFromPct(gActivityPct);
+
+    gActivityPrevDs = now_ds;
+    gActivityPrevBaroDhpa = gBaroDhpa;
 }
 
 #define SCOPE_TRACE_POINTS 100u
@@ -1257,7 +1430,7 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
      * - first 120 deg (24 seg) green
      * - next 90 deg (18 seg) yellow
      * - final 60 deg (12 seg) red */
-    lit_segments = (int32_t)(((uint32_t)gUiRpmTenths * (uint32_t)total_segments + 245u) / 490u);
+    lit_segments = (int32_t)(((uint32_t)gActivityPct * (uint32_t)total_segments + 50u) / 100u);
     if (lit_segments < 0)
     {
         lit_segments = 0;
@@ -1839,83 +2012,42 @@ static void DrawTerminalFrame(const gauge_style_preset_t *style)
 
 static uint16_t AiStatusColor(const gauge_style_preset_t *style, uint8_t ai_status)
 {
-    if (ai_status == AI_STATUS_FAULT)
-    {
-        return style->palette.accent_red;
-    }
-    if (ai_status == AI_STATUS_WARNING)
-    {
-        return WARN_YELLOW;
-    }
-    return style->palette.accent_green;
+    (void)ai_status;
+    return ActivityColor(style, gActivityStage);
 }
 
 static const char *AiStatusText(uint8_t ai_status)
 {
-    if (ai_status == AI_STATUS_FAULT)
-    {
-        return "FAULT";
-    }
-    if (ai_status == AI_STATUS_WARNING)
-    {
-        return "WARNING";
-    }
-    return "NORMAL";
+    (void)ai_status;
+    return ActivityStageText(gActivityStage);
 }
 
 static bool IsSevereAlertCondition(const power_sample_t *sample)
 {
-    return sample->ai_status == AI_STATUS_FAULT;
+    (void)sample;
+    return gActivityStage >= ACTIVITY_HEAVY;
 }
 
 static void BuildAnomalyReason(const power_sample_t *sample, char *out, size_t out_len)
 {
-    switch (sample->alert_reason_code)
+    const char *baro_state = "FLAT";
+    const char *motion_state = ActivityStageText(gActivityStage);
+    (void)sample;
+
+    if (gBaroValid)
     {
-        case ALERT_REASON_ACCEL_FAIL:
-            snprintf(out, out_len, "ACCEL FAIL");
-            break;
-        case ALERT_REASON_ACCEL_WARN:
-            snprintf(out, out_len, "ACCEL WARN");
-            break;
-        case ALERT_REASON_TEMP_FAIL:
-            snprintf(out, out_len, "TEMP FAIL");
-            break;
-        case ALERT_REASON_TEMP_WARN:
-            snprintf(out, out_len, "TEMP WARN");
-            break;
-        case ALERT_REASON_GYRO_WARN:
-            snprintf(out, out_len, "GYRO WARN");
-            break;
-        case ALERT_REASON_SCORE_FAIL:
-            snprintf(out, out_len, "BREAK");
-            break;
-        case ALERT_REASON_SCORE_WARN:
-            snprintf(out, out_len, "SHIFT");
-            break;
-        case ALERT_REASON_ANOMALY_WATCH:
-            snprintf(out, out_len, "WATCH STATE");
-            break;
-        case ALERT_REASON_INVERTED_WARN:
-            snprintf(out, out_len, "INVERTED");
-            break;
-        case ALERT_REASON_TILT_WARN:
-            snprintf(out, out_len, "TILTED");
-            break;
-        case ALERT_REASON_TEMP_APPROACH_LOW:
-            snprintf(out, out_len, "TEMP LOW SOON");
-            break;
-        case ALERT_REASON_TEMP_APPROACH_HIGH:
-            snprintf(out, out_len, "TEMP HIGH SOON");
-            break;
-        case ALERT_REASON_ERRATIC_MOTION:
-            snprintf(out, out_len, "ERRATIC MOTION");
-            break;
-        default:
-            snprintf(out, out_len, "NORMAL TRACKING");
-            break;
+        if (gActivityBaroRateHpaS >= 0.03f)
+        {
+            baro_state = "DOWN";
+        }
+        else if (gActivityBaroRateHpaS <= -0.03f)
+        {
+            baro_state = "UP";
+        }
     }
+    snprintf(out, out_len, "%s %s %s", ActivityCodeText(gActivityStage), motion_state, baro_state);
 }
+
 
 static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
 {
@@ -1924,8 +2056,8 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     bool severe;
     bool recording = !gScopePaused;
     bool training_mode = (!gLiveBannerMode && (gAnomMode == 1u) && gScopePaused);
-    const char *normal_label = "SYSTEM NORMAL";
-    uint8_t status = sample->ai_status;
+    const char *normal_label = "SYSTEM REST";
+    uint8_t status = AI_STATUS_NORMAL;
     char detail[30];
 
     if (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive)
@@ -1936,6 +2068,18 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     }
 
     severe = IsSevereAlertCondition(sample);
+    if (gActivityStage >= ACTIVITY_HEAVY)
+    {
+        status = AI_STATUS_FAULT;
+    }
+    else if (gActivityStage >= ACTIVITY_ACTIVE)
+    {
+        status = AI_STATUS_WARNING;
+    }
+    else
+    {
+        status = AI_STATUS_NORMAL;
+    }
     BuildAnomalyReason(sample, detail, sizeof(detail));
 
     if (recording)
@@ -1993,7 +2137,7 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
     if (status == AI_STATUS_NORMAL)
     {
-        color = style->palette.accent_green;
+        color = ActivityColor(style, gActivityStage);
         par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(6, 16, 10));
         DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
         DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
@@ -2004,34 +2148,16 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     }
     else
     {
-        bool suppress_warning_label = (status == AI_STATUS_WARNING) && (strcmp(detail, "NORMAL TRACKING") == 0);
         color = severe ? ALERT_RED : AiStatusColor(style, status);
         par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(18, 3, 7));
         DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
         DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
         DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
         DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
-
-        if (!suppress_warning_label)
-        {
-            tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(2, AiStatusText(status))) / 2;
-            DrawTextUi(tx, ALERT_Y0 + 8, 2, AiStatusText(status), color);
-            tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(1, detail)) / 2;
-            DrawTextUi(tx, ALERT_Y0 + 28, 1, detail, style->palette.text_primary);
-        }
-        else
-        {
-            /* Special-case: keep WARNING color semantics but render detail as yellow-highlight state. */
-            const char *line1 = "NORMAL";
-            const char *line2 = "TRACKING";
-            int32_t l1x;
-            int32_t l2x;
-            par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(34, 30, 0));
-            l1x = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(2, line1)) / 2;
-            l2x = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(2, line2)) / 2;
-            DrawTextUi(l1x, ALERT_Y0 + 6, 2, line1, WARN_YELLOW);
-            DrawTextUi(l2x, ALERT_Y0 + 22, 2, line2, WARN_YELLOW);
-        }
+        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(2, AiStatusText(status))) / 2;
+        DrawTextUi(tx, ALERT_Y0 + 8, 2, AiStatusText(status), color);
+        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(1, detail)) / 2;
+        DrawTextUi(tx, ALERT_Y0 + 28, 1, detail, style->palette.text_primary);
     }
 
     gAlertVisualValid = true;
@@ -2052,10 +2178,24 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     int16_t gy_abs = (gy10 < 0) ? (int16_t)-gy10 : gy10;
     int16_t gz_abs = (gz10 < 0) ? (int16_t)-gz10 : gz10;
     const char *mode_text = gLiveBannerMode ? "LIVE" : ((gAnomMode == 1u && gScopePaused) ? "TRAIN" : (gScopePaused ? "PLAY" : "REC"));
-    uint8_t status = sample->ai_status;
+    uint8_t status = AI_STATUS_NORMAL;
     uint16_t ai_color = AiStatusColor(style, status);
     const char *status_text = ai_enabled ? AiStatusText(status) : "OFF";
-    const char *sys_text = AiStatusText(status);
+    const char *sys_text = ai_enabled ? ActivityCodeText(gActivityStage) : "OFF";
+    const char *anom_text = AnomModeText(gAnomMode, gAnomTraining);
+    uint16_t anom_color = AnomLevelColor(gAnomOverall);
+    (void)sample;
+
+    if (gActivityStage >= ACTIVITY_HEAVY)
+    {
+        status = AI_STATUS_FAULT;
+    }
+    else if (gActivityStage >= ACTIVITY_ACTIVE)
+    {
+        status = AI_STATUS_WARNING;
+    }
+    ai_color = AiStatusColor(style, status);
+    status_text = ai_enabled ? AiStatusText(status) : "OFF";
 
     /* Refresh header band from background image to keep terminal visually transparent. */
     {
@@ -2108,8 +2248,8 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     FormatDewAltCompact(line, sizeof(line));
     DrawTerminalLine(TERM_Y + 122, line, RGB565(176, 218, 238));
 
-    snprintf(line, sizeof(line), "%s %s", AnomModeText(gAnomMode, gAnomTraining), gAnomTrainedReady ? "RDY" : "");
-    DrawTerminalLine(TERM_Y + 138, line, AnomLevelColor(gAnomOverall));
+    snprintf(line, sizeof(line), "ACT %3u%% %s %s", (unsigned int)gActivityPct, ActivityCodeText(gActivityStage), anom_text);
+    DrawTerminalLine(TERM_Y + 138, line, (gActivityStage >= ACTIVITY_ACTIVE) ? ActivityColor(style, gActivityStage) : anom_color);
 
     if (gHelpVisible)
     {
@@ -2777,6 +2917,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         cpu_pct = 98u;
     }
     gFrameCounter++;
+    UpdateActivityModel();
 
     if (gSettingsVisible || gHelpVisible || gLimitsVisible)
     {
