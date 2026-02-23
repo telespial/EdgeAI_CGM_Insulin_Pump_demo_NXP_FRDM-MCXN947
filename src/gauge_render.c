@@ -1083,15 +1083,21 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     ball_x = cx + (int32_t)(cosf(angle_rad) * (float)ball_r);
     ball_y = cy - (int32_t)(sinf(angle_rad) * (float)ball_r);
 
-    /* 7x7 filled circle (line-filled) for the rolling marker. */
-    DrawLine(ball_x, ball_y - 3, ball_x, ball_y - 3, 1, ball_color);
-    DrawLine(ball_x - 2, ball_y - 2, ball_x + 2, ball_y - 2, 1, ball_color);
-    DrawLine(ball_x - 3, ball_y - 1, ball_x + 3, ball_y - 1, 1, ball_color);
-    DrawLine(ball_x - 3, ball_y, ball_x + 3, ball_y, 1, ball_color);
-    DrawLine(ball_x - 3, ball_y + 1, ball_x + 3, ball_y + 1, 1, ball_color);
-    DrawLine(ball_x - 2, ball_y + 2, ball_x + 2, ball_y + 2, 1, ball_color);
-    DrawLine(ball_x, ball_y + 3, ball_x, ball_y + 3, 1, ball_color);
-    DrawLine(ball_x - 3, ball_y - 1, ball_x - 3, ball_y + 1, 1, RGB565(220, 255, 230));
+    /* ~14x14 filled circle (line-filled) for the rolling marker (2x larger). */
+    DrawLine(ball_x - 2, ball_y - 6, ball_x + 2, ball_y - 6, 1, ball_color);
+    DrawLine(ball_x - 4, ball_y - 5, ball_x + 4, ball_y - 5, 1, ball_color);
+    DrawLine(ball_x - 5, ball_y - 4, ball_x + 5, ball_y - 4, 1, ball_color);
+    DrawLine(ball_x - 6, ball_y - 3, ball_x + 6, ball_y - 3, 1, ball_color);
+    DrawLine(ball_x - 6, ball_y - 2, ball_x + 6, ball_y - 2, 1, ball_color);
+    DrawLine(ball_x - 6, ball_y - 1, ball_x + 6, ball_y - 1, 1, ball_color);
+    DrawLine(ball_x - 6, ball_y, ball_x + 6, ball_y, 1, ball_color);
+    DrawLine(ball_x - 6, ball_y + 1, ball_x + 6, ball_y + 1, 1, ball_color);
+    DrawLine(ball_x - 6, ball_y + 2, ball_x + 6, ball_y + 2, 1, ball_color);
+    DrawLine(ball_x - 6, ball_y + 3, ball_x + 6, ball_y + 3, 1, ball_color);
+    DrawLine(ball_x - 5, ball_y + 4, ball_x + 5, ball_y + 4, 1, ball_color);
+    DrawLine(ball_x - 4, ball_y + 5, ball_x + 4, ball_y + 5, 1, ball_color);
+    DrawLine(ball_x - 2, ball_y + 6, ball_x + 2, ball_y + 6, 1, ball_color);
+    DrawLine(ball_x - 5, ball_y - 2, ball_x - 5, ball_y + 2, 1, RGB565(220, 255, 230));
 }
 
 static void DrawRecordConfirmOverlay(void)
