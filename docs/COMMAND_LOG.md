@@ -419,3 +419,4 @@ Format:
 2026-02-23T05:44:53Z | cmd: apply_patch src/gauge_render.c expose transport mode in anomaly detail and terminal row (TRN + confidence + ACT) while retaining automatic operation (no setting required) | result: ok
 2026-02-23T05:44:53Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok
 2026-02-23T05:44:53Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok (LinkServer probe #1)
+2026-02-23T05:44:53Z | cmd: git add src/gauge_render.c docs/PROJECT_STATE.md docs/COMMAND_LOG.md && git commit -m 'Add automatic transport classification and transport-aware activity scoring' && git push origin main | result: ok (b51f833)
