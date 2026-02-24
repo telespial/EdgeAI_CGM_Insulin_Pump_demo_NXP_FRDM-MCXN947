@@ -885,3 +885,5 @@ Format:
 2026-02-24T02:07:42Z | cmd: apply_patch docs/START_HERE.md docs/PROJECT_STATE.md docs/TODO.md baseline R1->R2 and add restore update entry | result: ok
 2026-02-24T02:08:14Z | cmd: git status --short and list failsafe/*2026-02-24-R2.bin | result: ok
 2026-02-24T02:08:33Z | cmd: git ls-files failsafe | result: ok
+2026-02-24T02:09:21Z | cmd: git add docs/src files + git add -f failsafe/*_2026-02-24-R2.bin && git commit -m "Promote 2026-02-24 R2 golden+failsafe restore baseline" | result: ok (commit 2c75bea)
+2026-02-24T02:09:27Z | cmd: git push origin main | result: ok
