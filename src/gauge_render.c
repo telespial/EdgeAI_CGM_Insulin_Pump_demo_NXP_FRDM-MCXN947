@@ -301,6 +301,12 @@ static void UpdatePredictionModelAndAlerts(void)
 {
     float pred15_f = (float)gUiGlucoseMgdl + (gUiGlucoseTrendMgDlPerMin * 15.0f);
     float pred30_f = (float)gUiGlucoseMgdl + (gUiGlucoseTrendMgDlPerMin * 30.0f);
+    float trend = gUiGlucoseTrendMgDlPerMin;
+    bool trend_hypo_warn_ok = (trend <= -0.12f);
+    bool trend_hypo_fault_ok = (trend <= -0.20f);
+    bool trend_hyper_warn_ok = (trend >= 0.12f);
+    bool trend_hyper_fault_ok = (trend >= 0.20f);
+    bool roc_implausible = ((gUiCgmSensorFlags & CGM_FLAG_IMPLAUSIBLE_ROC) != 0u);
     bool gating_ok = (!gUiCgmPredictionBlocked) && (gUiCgmSqiPct >= 45u);
     bool hypo_warn_enter;
     bool hypo_fault_enter;
@@ -316,7 +322,7 @@ static void UpdatePredictionModelAndAlerts(void)
     gUiPred15Mgdl = (uint16_t)(pred15_f + 0.5f);
     gUiPred30Mgdl = (uint16_t)(pred30_f + 0.5f);
 
-    if (!gating_ok)
+    if (!gating_ok || roc_implausible)
     {
         gUiPredHypoWarnDebounce = 0u;
         gUiPredHypoFaultDebounce = 0u;
@@ -331,10 +337,14 @@ static void UpdatePredictionModelAndAlerts(void)
         return;
     }
 
-    hypo_warn_enter = (gUiPred15Mgdl <= 78u) || (gUiPred30Mgdl <= 85u);
-    hypo_fault_enter = (gUiPred15Mgdl <= 70u) || (gUiPred30Mgdl <= 75u);
-    hyper_warn_enter = (gUiPred15Mgdl >= 190u) || (gUiPred30Mgdl >= 200u);
-    hyper_fault_enter = (gUiPred15Mgdl >= 230u) || (gUiPred30Mgdl >= 240u);
+    hypo_warn_enter = trend_hypo_warn_ok && (((gUiPred15Mgdl <= 78u) || (gUiPred30Mgdl <= 85u)) &&
+                                             (gUiGlucoseMgdl <= 120u));
+    hypo_fault_enter = trend_hypo_fault_ok && (((gUiPred15Mgdl <= 70u) || (gUiPred30Mgdl <= 75u)) &&
+                                               (gUiGlucoseMgdl <= 110u));
+    hyper_warn_enter = trend_hyper_warn_ok && (((gUiPred15Mgdl >= 190u) || (gUiPred30Mgdl >= 200u)) &&
+                                               (gUiGlucoseMgdl >= 100u));
+    hyper_fault_enter = trend_hyper_fault_ok && (((gUiPred15Mgdl >= 230u) || (gUiPred30Mgdl >= 240u)) &&
+                                                 (gUiGlucoseMgdl >= 120u));
 
     hypo_warn_clear = (gUiPred15Mgdl >= 86u) && (gUiPred30Mgdl >= 92u);
     hypo_fault_clear = (gUiPred15Mgdl >= 79u) && (gUiPred30Mgdl >= 84u);
@@ -1537,10 +1547,13 @@ static void DrawGlucoseIndicator(void)
     uint32_t now_ds = UiNowDs();
     char bg_text[20];
     char cgm_meta[32];
+    char cgm_quality[32];
     int32_t bg_x;
     int32_t meta_x;
+    int32_t quality_x;
     int32_t bg_w;
     int32_t meta_w;
+    int32_t quality_w;
     int32_t bg_y = 208; /* keep both lines above pump clear bands that start at y=240. */
     int32_t text_x0;
     int32_t text_y0;
@@ -1551,7 +1564,10 @@ static void DrawGlucoseIndicator(void)
     static uint16_t sLastBgMgdl = 0xFFFFu;
     static uint16_t sLastP15 = 0xFFFFu;
     static uint16_t sLastP30 = 0xFFFFu;
+    static uint8_t sLastSqiPct = 0xFFu;
+    static uint16_t sLastSensorFlags = 0xFFFFu;
     static int32_t sPrevTextW = 0;
+    const char *cgm_conf = CgmConfidenceCode(gUiCgmSqiPct);
     cgm_preprocess_output_t out;
 
     if ((!gUiGlucoseSchedPrimed) || ((int32_t)(now_ds - gUiGlucoseNextStepDs) >= 0))
@@ -1655,28 +1671,46 @@ static void DrawGlucoseIndicator(void)
     snprintf(cgm_meta, sizeof(cgm_meta), "SIM P15 %3u P30 %3u",
              (unsigned int)gUiPred15DisplayMgdl,
              (unsigned int)gUiPred30DisplayMgdl);
+    snprintf(cgm_quality, sizeof(cgm_quality), "SQI %3u %s F%04X",
+             (unsigned int)gUiCgmSqiPct,
+             cgm_conf,
+             (unsigned int)gUiCgmSensorFlags);
 
     bg_w = edgeai_text5x7_width(2, bg_text);
     meta_w = edgeai_text5x7_width(1, cgm_meta);
+    quality_w = edgeai_text5x7_width(1, cgm_quality);
     bg_x = SECTION2_CX - (bg_w / 2);
     meta_x = SECTION2_CX - (meta_w / 2);
+    quality_x = SECTION2_CX - (quality_w / 2);
 
     /* Clear center text band only when displayed values change; prevents smear without frame-by-frame flashing. */
-    text_w = (bg_w > meta_w) ? bg_w : meta_w;
+    text_w = bg_w;
+    if (meta_w > text_w)
+    {
+        text_w = meta_w;
+    }
+    if (quality_w > text_w)
+    {
+        text_w = quality_w;
+    }
     if ((!sTextBgPrimed) ||
         (sLastBgMgdl != gUiGlucoseDisplayMgdl) ||
         (sLastP15 != gUiPred15DisplayMgdl) ||
-        (sLastP30 != gUiPred30DisplayMgdl))
+        (sLastP30 != gUiPred30DisplayMgdl) ||
+        (sLastSqiPct != gUiCgmSqiPct) ||
+        (sLastSensorFlags != gUiCgmSensorFlags))
     {
         int32_t clear_w = (text_w > sPrevTextW) ? text_w : sPrevTextW;
         text_x0 = SECTION2_CX - (clear_w / 2) - 3;
         text_y0 = bg_y - 2;
         text_x1 = SECTION2_CX + (clear_w / 2) + 3;
-        text_y1 = (bg_y + 16 + 7) + 2;
+        text_y1 = (bg_y + 24 + 7) + 1;
         BlitPumpBgRegion(text_x0, text_y0, text_x1, text_y1);
         sLastBgMgdl = gUiGlucoseDisplayMgdl;
         sLastP15 = gUiPred15DisplayMgdl;
         sLastP30 = gUiPred30DisplayMgdl;
+        sLastSqiPct = gUiCgmSqiPct;
+        sLastSensorFlags = gUiCgmSensorFlags;
         sPrevTextW = text_w;
         sTextBgPrimed = true;
     }
@@ -1684,6 +1718,7 @@ static void DrawGlucoseIndicator(void)
     /* Final center overlay text. */
     DrawTextUiCrisp(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
     DrawTextUiCrisp(meta_x, bg_y + 16, 1, cgm_meta, RGB565(166, 216, 244));
+    DrawTextUiCrisp(quality_x, bg_y + 24, 1, cgm_quality, RGB565(166, 216, 244));
     gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 

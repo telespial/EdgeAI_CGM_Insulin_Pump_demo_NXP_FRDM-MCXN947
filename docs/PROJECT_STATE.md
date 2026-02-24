@@ -3,14 +3,47 @@
 Last updated: 2026-02-24
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R2`
-- Failsafe: `FAILSAFE-2026-02-24-R2`
+- Golden: `GOLDEN-2026-02-24-R3`
+- Failsafe: `FAILSAFE-2026-02-24-R3`
 - Status: active
 
 ## Current Status
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
 - Git repository initialized locally.
+
+## Update 2026-02-24
+- Change: Promoted latest verified firmware/docs baseline to new restore points and staged artifacts.
+  - restore tags:
+    - `GOLDEN-2026-02-24-R3`
+    - `FAILSAFE-2026-02-24-R3`
+  - staged artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R3.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R3.bin`
+  - updated `docs/TODO.md` step 0 and `docs/PROJECT_STATE.md` restore headers to R3
+- Result: ok
+
+## Update 2026-02-24
+- Change: Completed CGM alignment step 12 by defining a measurable validation protocol and acceptance thresholds.
+  - new doc: `docs/CGM_VALIDATION_PROTOCOL.md`
+  - includes pass/fail criteria for:
+    - lag estimation (median/P95/max)
+    - trend accuracy by glucose range (MAE and sign agreement)
+    - alert false-positive and chatter rates
+    - replay robustness under dropout/noise/motion artifacts
+  - TODO step 12 marked complete in `docs/TODO.md`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Tuned predictive CGM alert gating to reduce false low/high warnings around stable near-range glucose.
+  - updated `src/gauge_render.c` `UpdatePredictionModelAndAlerts()`:
+    - suppress predictive alert evaluation when `CGM_FLAG_IMPLAUSIBLE_ROC` is active
+    - require trend-direction and minimum trend magnitude for hypo/hyper warning/fault entry
+    - add current-glucose sanity bands for alert entry (warn/fault) to avoid unrealistic trips from transient trend spikes
+  - no change to CGM preprocessing math; this is alert-decision logic only
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+- Result: ok
 
 ## Update 2026-02-23
 - Change: Completed CGM alignment step 1 by adding stage-by-stage traceability against the dermal CGM review.
@@ -1956,4 +1989,86 @@ Last updated: 2026-02-24
 - Change: Restored runtime behavior path where center `mg/dL` + `SIM` lines are present while activity ball/bargraph are active by rebuilding/flashing from current source (not a saved restore artifact).
   - note: the exact historical point before ball-removal tests was a runtime iteration and was not captured as a standalone failsafe/golden `.bin`.
   - command: `./scripts/build_and_flash.sh`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed elapsed-time counter stability in runtime, record, and playback clock paths.
+  - runtime path now computes deciseconds directly from OSTIMER ticks:
+    - `runtime_elapsed_ds = (dt_ticks * 10) / s_timebase_hz`
+  - removed partial backstep threshold logic and now enforce strict monotonic display clocks unless explicitly reset by mode transitions.
+  - applied monotonic clamp consistently in:
+    - normal runtime clock update
+    - record elapsed clock update
+    - playback timestamp display update
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Completed/normalized Step-11 CGM LCD semantics and corrected Step-2 TODO contract naming.
+  - `docs/TODO.md` step 2 corrected to `trend_mgdl_min_x100` to match `docs/CGM_RUNTIME_CONTRACT.md`.
+  - `src/gauge_render.c` `DrawGlucoseIndicator()` now renders on-screen quality line:
+    - `SQI <pct> <confidence> F<flags>`
+    - includes confidence code via `CgmConfidenceCode(...)` and full sensor flags (`F%04X`)
+  - center text redraw cache/clear conditions now include SQI and sensor flags updates.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed elapsed-time refresh cadence and random freeze behavior in runtime clock handling.
+  - `src/edgeai_medical_device_demo.c`
+    - switched runtime timebase selection to decoded OSTIMER path (`s_timebase_use_raw = false`) and preferred configured 32.768 kHz clock for stable scaling
+    - changed runtime display tracking from whole seconds to deciseconds (`runtime_displayed_ds`) in normal, record, and playback paths
+    - `GaugeRender_SetRuntimeClock(...)` now receives computed deciseconds instead of fixed `0` tenths
+  - `src/gauge_render.c`
+    - updated on-screen runtime format from `HHHH:MM:SS` to `HHHH:MM:SS.d`
+    - updated static placeholder to `--:--:--.-`
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS (LinkServer probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reverted runtime clock display to second-only format and corrected timebase source selection.
+  - `src/gauge_render.c`
+    - runtime clock format restored to `HHHH:MM:SS`
+    - removed tenths placeholder from static/dynamic clock draw strings
+  - `src/edgeai_medical_device_demo.c`
+    - timebase source selection now prefers plausible calibrated 32.768 kHz OSTIMER values (`dec_cal` then `raw_cal` then plausible `cfg`), otherwise falls back to nominal crystal rate
+    - keeps runtime monotonic decisecond tracking internally but avoids unstable frequency selection that can skew elapsed time
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Corrected elapsed-time rate by removing delay-based calibration from runtime time conversion.
+  - `src/edgeai_medical_device_demo.c`
+    - runtime `s_timebase_hz` now uses nominal 32.768 kHz unless `CLOCK_GetOstimerClkFreq()` is tightly within expected range (30.72k..34.816k)
+    - retained `raw_hz`/`dec_hz` measurements for diagnostics only; no longer used for runtime scaling
+    - prevents ~25-33% slow runtime caused by miscalibrated delay-window estimates
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Applied explicit 1:4 elapsed-rate correction by switching runtime elapsed ticks to raw OSTIMER counter mode.
+  - `src/edgeai_medical_device_demo.c`
+    - `s_timebase_use_raw` set to `true` in `TimebaseInit()`
+    - runtime scale remains nominal/bounded 32.768 kHz (not delay-window calibrated)
+    - UART `TIMEBASE` print now includes `mode=raw|dec` for immediate verification
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Removed OSTIMER elapsed-time guesswork by aligning runtime time conversion with SDK driver semantics.
+  - Confirmed from `mcuxsdk_ws/mcuxsdk/drivers/ostimer/fsl_ostimer.c` that `OSTIMER_GetCurrentTimerValue()` is the valid decimal counter API (raw may be Gray-encoded)
+  - `src/edgeai_medical_device_demo.c`:
+    - set `s_timebase_use_raw = false`
+    - runtime `s_timebase_hz` now prefers measured decimal counter rate (`dec_meas`) within `[4096..65536]`, else bounded config/nominal fallback
+- Verification:
+  - `./tools/build_frdmmcxn947.sh debug` PASS
+  - `./tools/flash_frdmmcxn947.sh` PASS
 - Result: ok

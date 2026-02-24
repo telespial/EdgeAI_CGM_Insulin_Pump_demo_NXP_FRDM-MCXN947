@@ -887,3 +887,57 @@ Format:
 2026-02-24T02:08:33Z | cmd: git ls-files failsafe | result: ok
 2026-02-24T02:09:21Z | cmd: git add docs/src files + git add -f failsafe/*_2026-02-24-R2.bin && git commit -m "Promote 2026-02-24 R2 golden+failsafe restore baseline" | result: ok (commit 2c75bea)
 2026-02-24T02:09:27Z | cmd: git push origin main | result: ok
+2026-02-24T02:14:20Z | cmd: cd project root and verify access via pwd/ls | result: ok
+2026-02-24T02:15:31Z | cmd: rg/sed inspect elapsed-time and RTC/OSTIMER paths in src/edgeai_medical_device_demo.c | result: ok
+2026-02-24T02:17:09Z | cmd: apply_patch src/edgeai_medical_device_demo.c use decisecond tick conversion and strict monotonic runtime/record/playback clock clamp | result: ok
+2026-02-24T02:18:43Z | cmd: ./scripts/build_and_flash.sh | result: ok (elapsed-time monotonic and decisecond conversion fix)
+2026-02-24T02:20:34Z | cmd: review docs/TODO.md docs/CGM_TRACEABILITY.md docs/CGM_RUNTIME_CONTRACT.md docs/CGM_SENSOR_FLAGS.md | result: ok
+2026-02-24T02:21:09Z | cmd: review src/cgm_preprocess.c/.h and src/gauge_render.c evidence for steps 5-10 via rg/sed | result: ok
+2026-02-24T02:21:33Z | cmd: rg cross-check for step coverage and tuple-contract naming consistency | result: ok
+2026-02-24T02:22:51Z | cmd: sed/rg inspect TODO step-11 alignment and on-screen CGM semantics evidence in src/gauge_render.c | result: ok
+2026-02-24T02:23:27Z | cmd: apply_patch src/gauge_render.c add on-screen SQI/confidence/flags line in DrawGlucoseIndicator and include in redraw caching | result: ok
+2026-02-24T02:23:40Z | cmd: apply_patch docs/TODO.md fix step-2 tuple field name trend_mgdl_min -> trend_mgdl_min_x100 | result: ok
+2026-02-24T02:24:13Z | cmd: ./scripts/build_and_flash.sh | result: ok (step-11 LCD semantics completion fix)
+2026-02-24T00:00:00Z | cmd: sed -n '1,220p' docs/START_HERE.md && sed -n '1,260p' docs/PROJECT_STATE.md && sed -n '1,260p' docs/OPS_RUNBOOK.md && sed -n '1,260p' projects/nxp/frdm-mcxn947/EdgeAI_medical_device_demo_NXP_FRDM-MCXN947/docs/TODO.md | result: ok | note: Loaded required entry docs and current project TODO to scope step 12.
+2026-02-24T00:00:00Z | cmd: rg --files projects/nxp/frdm-mcxn947/EdgeAI_medical_device_demo_NXP_FRDM-MCXN947/docs | sort | result: ok | note: Listed documentation files to choose step-12 artifact location.
+2026-02-24T00:00:00Z | cmd: sed -n '1,260p' projects/nxp/frdm-mcxn947/EdgeAI_medical_device_demo_NXP_FRDM-MCXN947/docs/PROJECT_STATE.md && sed -n '1,260p' projects/nxp/frdm-mcxn947/EdgeAI_medical_device_demo_NXP_FRDM-MCXN947/docs/COMMAND_LOG.md | result: ok | note: Reviewed project-local state and command log format before adding step-12 updates.
+2026-02-24T00:00:00Z | cmd: apply_patch add docs/CGM_VALIDATION_PROTOCOL.md | result: ok | note: Added step-12 validation protocol with explicit pass/fail thresholds.
+2026-02-24T00:00:00Z | cmd: apply_patch update docs/TODO.md step 12 unchecked->checked + completion reference | result: ok
+2026-02-24T00:00:00Z | cmd: apply_patch update docs/PROJECT_STATE.md with 2026-02-24 step-12 completion entry | result: ok
+2026-02-24T00:00:00Z | cmd: sed -n review docs/CGM_VALIDATION_PROTOCOL.md + docs/TODO.md and rg check in docs/PROJECT_STATE.md | result: ok | note: Verified step-12 artifact content and completion references.
+2026-02-24T00:00:00Z | cmd: git -C projects/nxp/frdm-mcxn947/EdgeAI_medical_device_demo_NXP_FRDM-MCXN947 status --short | result: ok | note: Confirmed expected docs edits and pre-existing source modifications remain in workspace.
+2026-02-24T00:00:00Z | cmd: rg -n "hypo|hyper|prediction_15m|prediction_30m|sqi|glucose|alert|AI|SIM|trend_mgdl_min_x100" src/gauge_render.c src/cgm_preprocess.c src/cgm_preprocess.h src/edgeai_medical_device_demo.c | result: ok | note: Root-caused predictive low/high warnings while glucose is near 100 mg/dL.
+2026-02-24T00:00:00Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok | note: Verified alert-gating tuning compiles successfully; output bin updated in mcuxsdk_ws/build.
+2026-02-24T00:00:00Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok | note: Flashed via LinkServer runner, probe #1 (UYLKOJI11H2B3), no rebuild required.
+2026-02-24T00:00:00Z | cmd: rg -n "hypo|hyper|prediction_15m|prediction_30m|sqi|glucose|alert|AI|SIM|trend_mgdl_min_x100" src/gauge_render.c src/cgm_preprocess.c src/cgm_preprocess.h src/edgeai_medical_device_demo.c | result: ok | note: Located CGM prediction/alert and AI status code paths for user question.
+2026-02-24T00:00:00Z | cmd: sed -n '1480,1725p' src/gauge_render.c && sed -n '300,470p' src/gauge_render.c && sed -n '2670,2795p' src/gauge_render.c | result: ok | note: Confirmed simulated glucose source, prediction formula, and alert overlay behavior.
+2026-02-24T00:00:00Z | cmd: ls -la src && rg --files src | rg "cgm_preprocess|gauge_render|edgeai_medical_device_demo" | result: ok | note: Validated source paths after transient read-path mismatch.
+2026-02-24T00:00:00Z | cmd: sed -n '1,240p' src/cgm_preprocess.h && sed -n '320,490p' src/cgm_preprocess.c && rg -n "gUiGlucoseTrendMgDlPerMin|trend_mgdl" src/gauge_render.c | result: ok | note: Verified trend units and prediction scaling used by alert logic.
+2026-02-24T00:00:00Z | cmd: rg -n "elapsed|runtime_clock|ClockFrom|rtc|RTC|timebase|Draw.*Clock|NXP EDGEAI|runtime_elapsed|clock" src/gauge_render.c src/edgeai_medical_device_demo.c src/timebase_test_main.c | result: ok | note: Located elapsed-time update and render paths.
+2026-02-24T00:00:00Z | cmd: sed -n '3640,3745p' src/gauge_render.c && sed -n '1975,2055p' src/gauge_render.c && sed -n '3315,3385p' src/gauge_render.c | result: ok | note: Inspected runtime clock draw and nearby background blit regions.
+2026-02-24T00:00:00Z | cmd: rg -n "RUNTIME_CLOCK_PERIOD_US|GaugeRender_SetRuntimeClock|gRtcValid|SetRuntimeClock|runtime_displayed_sec|runtime_clock_tick_accum_us" src/edgeai_medical_device_demo.c src/gauge_render.c src/gauge_render.h | result: ok | note: Identified second-only runtime update gate.
+2026-02-24T00:00:00Z | cmd: sed -n '3488,3535p' src/gauge_render.c && sed -n '4308,4375p' src/edgeai_medical_device_demo.c && sed -n '4418,4538p' src/edgeai_medical_device_demo.c | result: ok | note: Confirmed runtime clock push sites in normal/record/playback flows.
+2026-02-24T00:00:00Z | cmd: rg -n "RuntimeRtcReadClock|RTC_Get|rtc_datetime|fsl_rtc|rtc" src/edgeai_medical_device_demo.c src/*.h | result: ok | note: Confirmed this firmware currently uses OSTIMER timebase path (no hardware RTC read path).
+2026-02-24T00:00:00Z | cmd: sed -n '1080,1225p' src/edgeai_medical_device_demo.c && sed -n '60,140p' src/edgeai_medical_device_demo.c | result: ok | note: Reviewed OSTIMER calibration/selection and scheduler period constants.
+2026-02-24T00:00:00Z | cmd: sed -n '3518,3565p' src/edgeai_medical_device_demo.c && sed -n '3660,3720p' src/edgeai_medical_device_demo.c && sed -n '4324,4370p' src/edgeai_medical_device_demo.c && sed -n '4418,4535p' src/edgeai_medical_device_demo.c && sed -n '3688,3720p' src/gauge_render.c && sed -n '3348,3375p' src/gauge_render.c | result: ok | note: Collected edit context for runtime display/timing fixes.
+2026-02-24T00:00:00Z | cmd: apply_patch src/edgeai_medical_device_demo.c | result: ok | note: Switched to decoded OSTIMER source selection and changed runtime display tracking from seconds to deciseconds (normal/record/playback paths).
+2026-02-24T00:00:00Z | cmd: rg -n -e "rtc_line" -e "RTC_TEXT_Y" -e "--:--:--" src/gauge_render.c && sed -n '3338,3380p' src/gauge_render.c && sed -n '3688,3724p' src/gauge_render.c | result: ok | note: Verified exact clock display format strings before patching.
+2026-02-24T00:00:00Z | cmd: apply_patch src/gauge_render.c | result: ok | note: Updated runtime clock UI format to HHHH:MM:SS.d with matching placeholder text.
+2026-02-24T00:00:00Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok | note: Build passed after elapsed-time fixes.
+2026-02-24T00:00:00Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok | note: Flashed fixed firmware via LinkServer probe #1.
+2026-02-24T00:00:00Z | cmd: apply_patch src/edgeai_medical_device_demo.c | result: ok | note: Reworked timebase selection to prefer plausible calibrated 32.768k OSTIMER source and avoid unstable source choice.
+2026-02-24T00:00:00Z | cmd: apply_patch src/gauge_render.c | result: ok | note: Removed tenths digit from runtime display format and restored HHHH:MM:SS output.
+2026-02-24T00:00:00Z | cmd: ./tools/build_frdmmcxn947.sh debug | result: ok | note: Build passed after timebase and clock-format rollback/fix.
+2026-02-24T00:00:00Z | cmd: ./tools/flash_frdmmcxn947.sh | result: ok | note: Flashed updated firmware via LinkServer probe #1.
+2026-02-24T00:00:00Z | cmd: apply_patch src/edgeai_medical_device_demo.c | result: ok | note: Disabled runtime use of delay-based timebase calibration and forced stable 32.768k/cfg-bounded Hz selection.
+2026-02-24T00:00:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok | note: Built and flashed timebase-correction firmware.
+2026-02-24T00:00:00Z | cmd: sed -n '1110,1205p' src/edgeai_medical_device_demo.c | result: ok | note: Inspected current timebase selection before 1:4-rate fix.
+2026-02-24T00:00:00Z | cmd: apply_patch src/edgeai_medical_device_demo.c | result: ok | note: Forced raw OSTIMER tick mode and retained 32.768k/cfg-bounded Hz scale for elapsed conversion.
+2026-02-24T00:00:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok | note: Built and flashed raw-tick elapsed-rate fix.
+2026-02-24T00:00:00Z | cmd: sed -n '1,260p' mcuxsdk_ws/mcuxsdk/drivers/ostimer/fsl_ostimer.c && sed -n '1,260p' mcuxsdk_ws/mcuxsdk/drivers/ostimer/fsl_ostimer.h | result: ok | note: Verified OSTIMER raw-vs-dec semantics from driver source.
+2026-02-24T00:00:00Z | cmd: rg -n "OSTIMER_GetCurrentTimerValue|CLOCK_GetOstimerClkFreq|CLOCK_GetOsc32KFreq" mcuxsdk_ws/mcuxsdk/devices/MCX/MCXN/MCXN947/drivers/fsl_clock.c && sed -n '1848,1908p' .../fsl_clock.c && sed -n '2428,2488p' .../fsl_clock.c | result: ok | note: Verified MCXN947 clock driver returns 32k source frequency without divider.
+2026-02-24T00:00:00Z | cmd: apply_patch src/edgeai_medical_device_demo.c | result: ok | note: Switched elapsed timing to decimal OSTIMER counter mode and selected measured decimal counter Hz for runtime scale.
+2026-02-24T00:00:00Z | cmd: ./tools/build_frdmmcxn947.sh debug && ./tools/flash_frdmmcxn947.sh | result: ok | note: Built/flashed decimal-counter timebase fix.
+2026-02-24T00:00:00Z | cmd: git status --short --branch && ls -la failsafe && sed -n '1,220p' docs/TODO.md && sed -n '1,220p' docs/PROJECT_STATE.md | result: ok | note: Collected release baseline state before promoting restore points.
+2026-02-24T00:00:00Z | cmd: cp -f mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R3.bin && cp -f mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R3.bin | result: ok | note: Staged new R3 golden/failsafe artifacts from current built binary.
+2026-02-24T00:00:00Z | cmd: apply_patch docs/TODO.md docs/PROJECT_STATE.md | result: ok | note: Updated restore-point references to GOLDEN/FAILSAFE 2026-02-24-R3 and recorded promotion entry.

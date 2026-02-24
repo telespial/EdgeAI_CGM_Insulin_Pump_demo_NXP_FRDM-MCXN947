@@ -1132,11 +1132,15 @@ static uint32_t TimebaseCalibrateHz(bool use_raw)
 static bool TimebaseInit(void)
 {
     status_t st = CLOCK_SetupOsc32KClocking(kCLOCK_Osc32kToWake);
+    const uint32_t nominal_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ;
+    const uint32_t min_cfg_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ - 2048u;  /* 30720 */
+    const uint32_t max_cfg_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ + 2048u;  /* 34816 */
+    const uint32_t min_meas_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ / 8u;     /* 4096  */
+    const uint32_t max_meas_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ * 2u;     /* 65536 */
     uint32_t cfg_hz;
     uint32_t raw_hz;
     uint32_t dec_hz;
-    uint32_t err_raw;
-    uint32_t err_dec;
+    const char *src = "nominal";
 
     CLOCK_AttachClk(kXTAL32K2_to_OSTIMER);
     OSTIMER_Init(OSTIMER0);
@@ -1144,41 +1148,34 @@ static bool TimebaseInit(void)
 
     s_timebase_use_core_cycle = false;
     s_timebase_use_raw = false;
-    s_timebase_hz = (cfg_hz != 0u) ? cfg_hz : EDGEAI_TIMEBASE_CRYSTAL_HZ;
+    s_timebase_hz = nominal_hz;
 
+    /* Keep calibration diagnostics for UART visibility only.
+     * Do not use calibrated values for runtime conversion; delay-based calibration
+     * can skew significantly depending on clock-tree/transient conditions. */
     raw_hz = TimebaseCalibrateHz(true);
     dec_hz = TimebaseCalibrateHz(false);
 
-    if (cfg_hz != 0u)
-    {
-        err_raw = (raw_hz > cfg_hz) ? (raw_hz - cfg_hz) : (cfg_hz - raw_hz);
-        err_dec = (dec_hz > cfg_hz) ? (dec_hz - cfg_hz) : (cfg_hz - dec_hz);
-        s_timebase_use_raw = (raw_hz != 0u) && ((dec_hz == 0u) || (err_raw <= err_dec));
-    }
-    else
-    {
-        s_timebase_use_raw = (raw_hz != 0u);
-    }
-
-    if (s_timebase_use_raw)
-    {
-        s_timebase_hz = (raw_hz != 0u) ? raw_hz : s_timebase_hz;
-    }
-    else if (dec_hz != 0u)
+    /* Use decimal OSTIMER counter for elapsed math.
+     * The raw counter may be Gray-encoded on this device, so raw deltas are not valid. */
+    if ((dec_hz >= min_meas_hz) && (dec_hz <= max_meas_hz))
     {
         s_timebase_hz = dec_hz;
+        src = "dec_meas";
     }
-    else if (cfg_hz != 0u)
+    else if ((cfg_hz >= min_cfg_hz) && (cfg_hz <= max_cfg_hz))
     {
         s_timebase_hz = cfg_hz;
+        src = "cfg";
     }
 
-    PRINTF("TIMEBASE: src=ostimer32k setup=%d cfg=%u raw=%u dec=%u use_raw=%u use_hz=%u\r\n",
+    PRINTF("TIMEBASE: src=ostimer32k setup=%d cfg=%u raw=%u dec=%u sel=%s mode=%s use_hz=%u\r\n",
            (int)st,
            (unsigned int)cfg_hz,
            (unsigned int)raw_hz,
            (unsigned int)dec_hz,
-           (unsigned int)s_timebase_use_raw,
+           src,
+           s_timebase_use_raw ? "raw" : "dec",
            (unsigned int)s_timebase_hz);
     s_timebase_ready = true;
     return true;
@@ -3531,7 +3528,7 @@ int main(void)
     uint32_t shield_aux_tick_accum_us = 0u;
     uint32_t accel_test_tick_accum_us = 0u;
     uint32_t runtime_elapsed_ds = 0u;
-    uint32_t runtime_displayed_sec = UINT32_MAX;
+    uint32_t runtime_displayed_ds = UINT32_MAX;
     uint32_t rec_elapsed_ds = 0u;
     uint32_t play_off = 0u;
     uint32_t play_cnt = 0u;
@@ -3701,7 +3698,7 @@ int main(void)
     {
         playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
         runtime_elapsed_ds = 0u;
-        runtime_displayed_sec = UINT32_MAX;
+        runtime_displayed_ds = UINT32_MAX;
         runtime_clock_start_ticks = TimebaseNowTicks();
         GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
         PRINTF("EXT_FLASH_PLAY: %s\r\n", playback_active ? "ready" : "no_data");
@@ -4082,7 +4079,7 @@ int main(void)
         {
             playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
             runtime_elapsed_ds = 0u;
-            runtime_displayed_sec = UINT32_MAX;
+            runtime_displayed_ds = UINT32_MAX;
             runtime_clock_start_ticks = TimebaseNowTicks();
             GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
             PRINTF("EXT_FLASH_PLAY: %s\r\n", playback_active ? "restart" : "no_data");
@@ -4104,7 +4101,7 @@ int main(void)
                 runtime_elapsed_ds = 0u;
                 rec_elapsed_ds = 0u;
                 ResetSignalPeakWindows();
-                runtime_displayed_sec = UINT32_MAX;
+                runtime_displayed_ds = UINT32_MAX;
                 runtime_clock_start_ticks = TimebaseNowTicks();
                 GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
                 if (anom_mode == ANOMALY_MODE_TRAINED_MONITOR)
@@ -4121,7 +4118,7 @@ int main(void)
                 train_armed_idle = (anom_mode == ANOMALY_MODE_TRAINED_MONITOR);
                 runtime_elapsed_ds = 0u;
                 ResetSignalPeakWindows();
-                runtime_displayed_sec = UINT32_MAX;
+                runtime_displayed_ds = UINT32_MAX;
                 runtime_clock_start_ticks = TimebaseNowTicks();
                 GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
                 PRINTF("EXT_FLASH_REC: clear_failed\r\n");
@@ -4137,7 +4134,7 @@ int main(void)
             GaugeRender_SetRecordMode(false);
             train_armed_idle = (anom_mode == ANOMALY_MODE_TRAINED_MONITOR) && !GaugeRender_IsLiveBannerMode();
             runtime_elapsed_ds = 0u;
-            runtime_displayed_sec = UINT32_MAX;
+            runtime_displayed_ds = UINT32_MAX;
             runtime_clock_start_ticks = TimebaseNowTicks();
             GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
             PRINTF("EXT_FLASH_REC: stop_confirmed\r\n");
@@ -4154,7 +4151,7 @@ int main(void)
             GaugeRender_SetPlayhead(99u, false);
             runtime_elapsed_ds = 0u;
             rec_elapsed_ds = 0u;
-            runtime_displayed_sec = UINT32_MAX;
+            runtime_displayed_ds = UINT32_MAX;
             runtime_clock_start_ticks = TimebaseNowTicks();
             GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
             PRINTF("EXT_FLASH_MANUAL_CLEAR: %s\r\n", cleared ? "ok" : "failed");
@@ -4183,7 +4180,7 @@ int main(void)
                 }
                 playback_active = (!GaugeRender_IsLiveBannerMode()) && ext_flash_ok && ExtFlashRecorder_StartPlayback();
                 runtime_elapsed_ds = 0u;
-                runtime_displayed_sec = UINT32_MAX;
+                runtime_displayed_ds = UINT32_MAX;
                 runtime_clock_start_ticks = TimebaseNowTicks();
                 GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
                 PRINTF("EXT_FLASH_PLAY: %s\r\n", playback_active ? "ready" : "no_data");
@@ -4203,7 +4200,7 @@ int main(void)
                 runtime_elapsed_ds = 0u;
                 rec_elapsed_ds = 0u;
                 ResetSignalPeakWindows();
-                runtime_displayed_sec = UINT32_MAX;
+                runtime_displayed_ds = UINT32_MAX;
                 runtime_clock_start_ticks = TimebaseNowTicks();
                 GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
                 PRINTF("EXT_FLASH_REC: active\r\n");
@@ -4332,33 +4329,29 @@ int main(void)
             runtime_clock_tick_accum_us -= RUNTIME_CLOCK_PERIOD_US;
             if (!record_mode && !playback_active)
             {
-                uint32_t elapsed_sec;
                 if (s_timebase_ready && (s_timebase_hz != 0u))
                 {
                     uint64_t now_ticks = TimebaseNowTicks();
                     uint64_t dt_ticks = (now_ticks >= runtime_clock_start_ticks) ? (now_ticks - runtime_clock_start_ticks) : 0u;
-                    elapsed_sec = (uint32_t)(dt_ticks / s_timebase_hz);
-                    runtime_elapsed_ds = elapsed_sec * 10u;
+                    runtime_elapsed_ds = (uint32_t)((dt_ticks * 10ull) / s_timebase_hz);
                 }
                 else
                 {
                     runtime_elapsed_ds++;
-                    elapsed_sec = runtime_elapsed_ds / 10u;
                 }
 
-                if ((runtime_displayed_sec != UINT32_MAX) && (elapsed_sec < runtime_displayed_sec) &&
-                    ((runtime_displayed_sec - elapsed_sec) <= 3u))
+                if ((runtime_displayed_ds != UINT32_MAX) && (runtime_elapsed_ds < runtime_displayed_ds))
                 {
-                    /* Ignore small backward jitter from counter read/calibration noise. */
-                    elapsed_sec = runtime_displayed_sec;
+                    /* Enforce monotonic runtime display outside explicit mode resets. */
+                    runtime_elapsed_ds = runtime_displayed_ds;
                 }
-                if (elapsed_sec != runtime_displayed_sec)
+                if (runtime_elapsed_ds != runtime_displayed_ds)
                 {
                     uint16_t ch;
                     uint8_t cm, cs, cds;
-                    ClockFromDeciseconds(elapsed_sec * 10u, &ch, &cm, &cs, &cds);
-                    GaugeRender_SetRuntimeClock(ch, cm, cs, 0u, true);
-                    runtime_displayed_sec = elapsed_sec;
+                    ClockFromDeciseconds(runtime_elapsed_ds, &ch, &cm, &cs, &cds);
+                    GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
+                    runtime_displayed_ds = runtime_elapsed_ds;
                 }
             }
         }
@@ -4427,7 +4420,6 @@ int main(void)
                 int16_t rec_mx;
                 int16_t rec_my;
                 int16_t rec_mz;
-                uint32_t rec_sec;
                 uint16_t rec_score;
                 uint8_t rec_status;
                 uint8_t rec_reason;
@@ -4441,12 +4433,9 @@ int main(void)
                 {
                     rec_elapsed_ds++;
                 }
-                rec_sec = rec_elapsed_ds / 10u;
-                if ((runtime_displayed_sec != UINT32_MAX) && (rec_sec < runtime_displayed_sec) &&
-                    ((runtime_displayed_sec - rec_sec) <= 3u))
+                if ((runtime_displayed_ds != UINT32_MAX) && (rec_elapsed_ds < runtime_displayed_ds))
                 {
-                    rec_sec = runtime_displayed_sec;
-                    rec_elapsed_ds = rec_sec * 10u;
+                    rec_elapsed_ds = runtime_displayed_ds;
                 }
                 ConsumeCapturePeaks(&rec_ax_mg, &rec_ay_mg, &rec_az_mg, &rec_gx, &rec_gy, &rec_gz, &rec_mx, &rec_my, &rec_mz);
                 rec_score = (record_sample != NULL) ? record_sample->anomaly_score_pct : s_frame_sample.anomaly_score_pct;
@@ -4479,9 +4468,9 @@ int main(void)
                 {
                     uint16_t ch;
                     uint8_t cm, cs, cds;
-                    ClockFromDeciseconds(rec_sec * 10u, &ch, &cm, &cs, &cds);
-                    GaugeRender_SetRuntimeClock(ch, cm, cs, 0u, true);
-                    runtime_displayed_sec = rec_sec;
+                    ClockFromDeciseconds(rec_elapsed_ds, &ch, &cm, &cs, &cds);
+                    GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
+                    runtime_displayed_ds = rec_elapsed_ds;
                     GaugeRender_SetPlayhead(99u, true);
                 }
             }
@@ -4519,15 +4508,14 @@ int main(void)
                     {
                         uint16_t ch;
                         uint8_t cm, cs, cds;
-                        uint32_t play_sec = playback_sample.ts_ds / 10u;
-                        if ((runtime_displayed_sec != UINT32_MAX) && (play_sec < runtime_displayed_sec) &&
-                            ((runtime_displayed_sec - play_sec) <= 3u))
+                        uint32_t play_ds = playback_sample.ts_ds;
+                        if ((runtime_displayed_ds != UINT32_MAX) && (play_ds < runtime_displayed_ds))
                         {
-                            play_sec = runtime_displayed_sec;
+                            play_ds = runtime_displayed_ds;
                         }
-                        ClockFromDeciseconds(play_sec * 10u, &ch, &cm, &cs, &cds);
-                        GaugeRender_SetRuntimeClock(ch, cm, cs, 0u, true);
-                        runtime_displayed_sec = play_sec;
+                        ClockFromDeciseconds(play_ds, &ch, &cm, &cs, &cds);
+                        GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
+                        runtime_displayed_ds = play_ds;
                     }
                     if (ExtFlashRecorder_GetPlaybackInfo(&play_off, &play_cnt) && (play_cnt > 0u))
                     {

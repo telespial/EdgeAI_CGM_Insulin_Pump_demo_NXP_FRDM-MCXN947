@@ -5,13 +5,13 @@ Last updated: 2026-02-24
 ## CGM Alignment Steps
 
 0. [x] Promote current firmware/docs baseline as restore points:
-   - `GOLDEN-2026-02-24-R2`
-   - `FAILSAFE-2026-02-24-R2`
+   - `GOLDEN-2026-02-24-R3`
+   - `FAILSAFE-2026-02-24-R3`
    - artifacts staged in `failsafe/`
 
 1. [x] Create a traceability matrix mapping current runtime behavior to each stage in `docs/CGM_DERMAL_ALGORITHM_REVIEW.md` and tag each stage as implemented/simulated/missing.
    - completed in `docs/CGM_TRACEABILITY.md`
-2. [x] Define and document the runtime CGM tuple contract: `glucose_mgdl`, `trend_mgdl_min`, `sqi_pct`, `sensor_flags`, `prediction_15m`, `prediction_30m`.
+2. [x] Define and document the runtime CGM tuple contract: `glucose_mgdl`, `trend_mgdl_min_x100`, `sqi_pct`, `sensor_flags`, `prediction_15m`, `prediction_30m`.
    - completed in `docs/CGM_RUNTIME_CONTRACT.md`
 3. [x] Define and document sensor-status flag taxonomy and trigger logic: clipping/saturation, dropout, implausible rate-of-change, temperature out-of-range, calibration stale/drift warning.
    - completed in `docs/CGM_SENSOR_FLAGS.md`
@@ -31,4 +31,5 @@ Last updated: 2026-02-24
     - implemented in `src/gauge_render.c` (P15/P30 runtime model, SQI-gated hypo/hyper warning/fault logic, debounce+hysteresis, and prediction-driven alert/dose integration)
 11. [x] Align LCD/terminal semantics with CGM contract: show SQI/confidence and sensor flags on-screen, clearly mark simulated fields until live sensor path is active.
     - implemented in `src/gauge_render.c` (explicit `SIM` labeling, on-screen P15/P30 display, terminal SQI confidence code + sensor flags, and simulated-contract CGM summary lines)
-12. [ ] Define validation protocol and pass/fail thresholds for lag estimation, trend accuracy by range, alert false-positive/chatter rate, and replay robustness under dropout/noise/motion artifacts.
+12. [x] Define validation protocol and pass/fail thresholds for lag estimation, trend accuracy by range, alert false-positive/chatter rate, and replay robustness under dropout/noise/motion artifacts.
+    - completed in `docs/CGM_VALIDATION_PROTOCOL.md`
