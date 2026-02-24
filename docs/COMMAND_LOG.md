@@ -1499,3 +1499,8 @@ Format:
 [2026-02-24T07:25:02-08:00] Staged README/src/docs updates and forced-add R7 golden/failsafe binaries
 [2026-02-24T07:25:25-08:00] Ran git commit for R7 restore release; next command pushes both commits to origin/main
 [2026-02-24T07:25:43-08:00] Ran git push origin main (PASS)
+[2026-02-24T07:27:18-08:00] Read README.md for header and hardware section update request
+[2026-02-24T07:27:59-08:00] Ran rg scan in src/ and workspace paths to extract exact sensor/part identifiers used by firmware
+[2026-02-24T07:27:59-08:00] Edited README.md: removed Last updated line; added hardware/LCD/ST sensor BOM list and notes
+[2026-02-24T07:27:59-08:00] Ran ./scripts/update_state.sh for README hardware BOM update
+[2026-02-24T07:32:58-08:00] Ran git status --short before commit/push request

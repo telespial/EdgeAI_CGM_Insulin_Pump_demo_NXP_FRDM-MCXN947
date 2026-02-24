@@ -1,8 +1,29 @@
 # EdgeAI CGM Insulin Pump Demo (NXP FRDM-MCXN947)
 
-Last updated: 2026-02-24
-
 Firmware demo for an embedded CGM + insulin-pump UX on FRDM-MCXN947 with a model-assisted prediction layer, replay benchmarking, and safety-gated alerting.
+
+## Hardware Platform And Sensor BOM
+
+- Main board:
+  - `FRDM-MCXN947` (NXP Freedom development board)
+  - MCU: `MCXN947`
+- Display stack:
+  - 3.5-inch 320x480 parallel TFT module used by this project (`PAR-S035` integration path)
+  - LCD controller IC: `ST7796S`
+  - Touch controller IC: `GT911`
+- On-board/primary motion sensor:
+  - `FXLS8974CF` (NXP accelerometer)
+- ST sensor-shield path used by runtime auto-detect (optional, when connected):
+  - IMU: `LSM6DSO16IS` or `LSM6DSV16X`
+  - Magnetometer: `LIS2MDL`
+  - Barometric pressure: `LPS22DF`
+  - Temperature: `STTS22H`
+  - Humidity/temperature companion: `SHT40`
+  - Additional accel path support: `LIS2DUXS12`
+
+Notes:
+- The firmware auto-detects available shield sensors at runtime and uses whichever supported set is present.
+- For activity state and motion context, the main fusion path uses accelerometer + gyro + barometric trend signals.
 
 ## Safety Notice
 

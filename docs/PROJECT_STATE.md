@@ -2918,3 +2918,8 @@ Last updated: 2026-02-24
 - Binary: failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R7.bin ; failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin
 - Command: cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin -> failsafe/*R7.bin
 - Result: ok
+
+## Update 2026-02-24
+- Change: README cleanup: removed date stamp line and added hardware/sensor BOM section with FRDM-MCXN947, LCD controller, touch controller, and all runtime sensor part numbers used by firmware.
+- Command: edit README.md
+- Result: ok
