@@ -3,8 +3,8 @@
 Last updated: 2026-02-24
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R5`
-- Failsafe: `FAILSAFE-2026-02-24-R5`
+- Golden: `GOLDEN-2026-02-24-R6`
+- Failsafe: `FAILSAFE-2026-02-24-R6`
 - Status: active
 
 ## Current Status
@@ -15,8 +15,8 @@ Last updated: 2026-02-24
 ## Update 2026-02-24
 - Change: Promoted verified +15m-only `±10%` scoring policy build as active restore baseline `R5`.
   - tags:
-    - `GOLDEN-2026-02-24-R5`
-    - `FAILSAFE-2026-02-24-R5`
+    - `GOLDEN-2026-02-24-R6`
+    - `FAILSAFE-2026-02-24-R6`
   - artifacts:
     - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R5.bin`
     - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R5.bin`
@@ -2705,3 +2705,144 @@ Last updated: 2026-02-24
   - `./scripts/build.sh` PASS
   - `./scripts/flash.sh` PASS
 - Result: ok
+
+## Update 2026-02-24
+- Change: Ensured alert overlay always shows prediction state and upcoming values while preserving prediction-driven warning/fault behavior.
+  - `src/gauge_render.c`
+    - removed unused `BuildAnomalyReason(...)` helper after detail-line transition to prediction-centric text
+    - alert detail continues to render `NORMAL/HYPO/HYPER` with `P15` and `P30` values
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed current prediction-alert-overlay build to FRDM-MCXN947.
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added prediction visibility in elapsed-time area so upcoming values/states are always visible independent of activity headline.
+  - `src/gauge_render.c`
+    - clock area now includes second line under elapsed time:
+      - `PRED <NORMAL|HYPO|HYPER> P15 <mg/dL> P30 <mg/dL>`
+      - shows `PRED AI OFF` when AI is disabled
+    - static dashboard placeholder updated to include `PRED --`
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Increased prediction readability in elapsed-time area.
+  - `src/gauge_render.c`
+    - prediction line under clock now renders at scale-2 by default
+    - auto-falls back to scale-1 only when text would overflow available width
+    - compact format used for better legibility: `PRED <STATE> <P15>/<P30>`
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed build with enlarged elapsed-area prediction text.
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Moved prediction display from elapsed-time area to center CGM area below `mg/dL`.
+  - `src/gauge_render.c`
+    - elapsed-time band now shows clock only again
+    - center line directly under `mg/dL` now shows:
+      - `PRED <NORMAL|HYPO|HYPER> <P15>/<P30>`
+      - `PRED AI OFF` when AI is disabled
+    - quality line now includes source tag with SQI/flags (`DATA`/`SIM`)
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Simplified center CGM text per UI request.
+  - `src/gauge_render.c`
+    - removed extra text lines under center `mg/dL`
+    - line directly under `mg/dL` now shows predictions only, unlabeled format: `<P15>/<P30>` (example `160/170`)
+    - when AI is off, displays `--/--`
+    - removed prediction content from elapsed-time row
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed build with simplified unlabeled prediction line under center `mg/dL`.
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Increased center prediction line size and switched to explicit labeled format.
+  - `src/gauge_render.c`
+    - under center `mg/dL`, prediction text now renders as:
+      - `15M PRED: xxx 30M: xxx`
+    - text renders larger (scale-2) with auto-fallback to scale-1 if width exceeds available area
+    - AI-off placeholder: `15M PRED: --- 30M: ---`
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed build with large center prediction line (`15M PRED: xxx 30M: xxx`).
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Removed spaces after colons in center prediction text format.
+  - `src/gauge_render.c`
+    - from `15M PRED: xxx 30M: xxx`
+    - to `15M PRED:xxx 30M:xxx`
+    - AI-off placeholder now `15M PRED:--- 30M:---`
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed build with center prediction colon-spacing update (`15M PRED:xxx 30M:xxx`).
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Updated center prediction text format to requested ordering.
+  - `src/gauge_render.c`
+    - now: `PRED 15M:xxx 30M:xxx`
+    - AI-off placeholder: `PRED 15M:--- 30M:---`
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed build with center prediction text `PRED 15M:xxx 30M:xxx`.
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Promoted current firmware and documentation package as restore baseline `R6` and refreshed project documentation.
+  - restore tags:
+    - `GOLDEN-2026-02-24-R6`
+    - `FAILSAFE-2026-02-24-R6`
+  - staged artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R6.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R6.bin`
+  - documentation updates:
+    - rewritten `README.md` with Embedded Intelligence Layer architecture, host firmware safety separation, model behavior, and full ops guidance
+    - synchronized baseline references in `docs/START_HERE.md` and `docs/OPS_RUNBOOK.md` to `R6`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: active release package and restore points updated.

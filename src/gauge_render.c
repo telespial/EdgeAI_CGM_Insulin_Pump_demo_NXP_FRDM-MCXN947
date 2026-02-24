@@ -1839,14 +1839,12 @@ static void DrawGlucoseIndicator(void)
      * - publish processed glucose for display/dose logic */
     uint32_t now_ds = UiNowDs();
     char bg_text[20];
-    char cgm_meta[32];
-    char cgm_quality[32];
+    char cgm_meta[48];
     int32_t bg_x;
     int32_t meta_x;
-    int32_t quality_x;
     int32_t bg_w;
     int32_t meta_w;
-    int32_t quality_w;
+    int32_t meta_scale = 1;
     int32_t bg_y = 208; /* keep both lines above pump clear bands that start at y=240. */
     int32_t text_x0;
     int32_t text_y0;
@@ -1857,11 +1855,15 @@ static void DrawGlucoseIndicator(void)
     static uint16_t sLastBgMgdl = 0xFFFFu;
     static uint16_t sLastP15 = 0xFFFFu;
     static uint16_t sLastP30 = 0xFFFFu;
+    static uint8_t sLastPredStatus = 0xFFu;
+    static int8_t sLastPredDir = 127;
     static uint8_t sLastSqiPct = 0xFFu;
     static uint16_t sLastSensorFlags = 0xFFFFu;
     static int32_t sPrevTextW = 0;
     bool replay_cgm_mode = (gUiReplayCgmValid && gLiveBannerMode);
-    const char *cgm_conf = CgmConfidenceCode(gUiCgmSqiPct);
+    bool ai_enabled = gUiAiEnabled;
+    uint8_t pred_status = PredictionAlertStatus();
+    int8_t pred_dir = PredictionAlertDir();
     cgm_preprocess_output_t out;
 
     if (!replay_cgm_mode &&
@@ -1977,23 +1979,23 @@ static void DrawGlucoseIndicator(void)
     }
 
     snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseDisplayMgdl);
-    snprintf(cgm_meta,
-             sizeof(cgm_meta),
-             "%s P15 %3u P30 %3u",
-             replay_cgm_mode ? "DATA" : "SIM",
-             (unsigned int)gUiPred15DisplayMgdl,
-             (unsigned int)gUiPred30DisplayMgdl);
-    snprintf(cgm_quality, sizeof(cgm_quality), "SQI %3u %s F%04X",
-             (unsigned int)gUiCgmSqiPct,
-             cgm_conf,
-             (unsigned int)gUiCgmSensorFlags);
+    if (!ai_enabled)
+    {
+        snprintf(cgm_meta, sizeof(cgm_meta), "PRED 15M:--- 30M:---");
+    }
+    else
+    {
+        snprintf(cgm_meta,
+                 sizeof(cgm_meta),
+                 "PRED 15M:%u 30M:%u",
+                 (unsigned int)gUiPred15DisplayMgdl,
+                 (unsigned int)gUiPred30DisplayMgdl);
+    }
 
     bg_w = edgeai_text5x7_width(2, bg_text);
-    meta_w = edgeai_text5x7_width(1, cgm_meta);
-    quality_w = edgeai_text5x7_width(1, cgm_quality);
+    meta_w = edgeai_text5x7_width(meta_scale, cgm_meta) + 1; /* +1 for medium-weight double-draw */
     bg_x = SECTION2_CX - (bg_w / 2);
     meta_x = SECTION2_CX - (meta_w / 2);
-    quality_x = SECTION2_CX - (quality_w / 2);
 
     /* Clear center text band only when displayed values change; prevents smear without frame-by-frame flashing. */
     text_w = bg_w;
@@ -2001,14 +2003,12 @@ static void DrawGlucoseIndicator(void)
     {
         text_w = meta_w;
     }
-    if (quality_w > text_w)
-    {
-        text_w = quality_w;
-    }
     if ((!sTextBgPrimed) ||
         (sLastBgMgdl != gUiGlucoseDisplayMgdl) ||
         (sLastP15 != gUiPred15DisplayMgdl) ||
         (sLastP30 != gUiPred30DisplayMgdl) ||
+        (sLastPredStatus != pred_status) ||
+        (sLastPredDir != pred_dir) ||
         (sLastSqiPct != gUiCgmSqiPct) ||
         (sLastSensorFlags != gUiCgmSensorFlags))
     {
@@ -2016,11 +2016,13 @@ static void DrawGlucoseIndicator(void)
         text_x0 = SECTION2_CX - (clear_w / 2) - 3;
         text_y0 = bg_y - 2;
         text_x1 = SECTION2_CX + (clear_w / 2) + 3;
-        text_y1 = (bg_y + 24 + 7) + 1;
+        text_y1 = (bg_y + 16 + 7) + 1;
         BlitPumpBgRegion(text_x0, text_y0, text_x1, text_y1);
         sLastBgMgdl = gUiGlucoseDisplayMgdl;
         sLastP15 = gUiPred15DisplayMgdl;
         sLastP30 = gUiPred30DisplayMgdl;
+        sLastPredStatus = pred_status;
+        sLastPredDir = pred_dir;
         sLastSqiPct = gUiCgmSqiPct;
         sLastSensorFlags = gUiCgmSensorFlags;
         sPrevTextW = text_w;
@@ -2029,8 +2031,9 @@ static void DrawGlucoseIndicator(void)
 
     /* Final center overlay text. */
     DrawTextUiCrisp(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
-    DrawTextUiCrisp(meta_x, bg_y + 16, 1, cgm_meta, RGB565(166, 216, 244));
-    DrawTextUiCrisp(quality_x, bg_y + 24, 1, cgm_quality, RGB565(166, 216, 244));
+    /* Medium style: scale-1 text with a 1px overdraw for readability. */
+    DrawTextUiCrisp(meta_x, bg_y + 16, meta_scale, cgm_meta, RGB565(166, 216, 244));
+    DrawTextUiCrisp(meta_x + 1, bg_y + 16, meta_scale, cgm_meta, RGB565(166, 216, 244));
     gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 
@@ -3022,28 +3025,6 @@ static bool IsSevereAlertCondition(const power_sample_t *sample)
     return gActivityStage >= ACTIVITY_HEAVY;
 }
 
-static void BuildAnomalyReason(const power_sample_t *sample, char *out, size_t out_len)
-{
-    const char *baro_state = "FLAT";
-    const char *motion_state = ActivityStageText(gActivityStage);
-    const char *transport_state = TransportModeText(gTransportMode);
-    (void)sample;
-
-    if (gBaroValid)
-    {
-        if (gActivityBaroRateHpaS >= 0.03f)
-        {
-            baro_state = "DOWN";
-        }
-        else if (gActivityBaroRateHpaS <= -0.03f)
-        {
-            baro_state = "UP";
-        }
-    }
-    snprintf(out, out_len, "%s %s %s %s", ActivityCodeText(gActivityStage), motion_state, transport_state, baro_state);
-}
-
-
 static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
 {
     uint16_t color;
@@ -3057,6 +3038,7 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     char human_cache_key[48];
     char score_line[24];
     char mae_line[24];
+    const char *pred_state_txt = "NORMAL";
     int32_t label_scale = 2;
     int32_t label_width = 0;
     int32_t label_max_width = (ALERT_X1 - ALERT_X0 + 1) - 8;
@@ -3097,9 +3079,9 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
             status = pred_status;
             severe = (status == AI_STATUS_FAULT);
         }
-        BuildAnomalyReason(sample, detail, sizeof(detail));
         if (pred_status != AI_STATUS_NORMAL)
         {
+            pred_state_txt = (pred_dir < 0) ? "HYPO" : "HYPER";
             if (pred_dir < 0)
             {
                 snprintf(human_label, sizeof(human_label), "%s",
@@ -3110,15 +3092,16 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
                 snprintf(human_label, sizeof(human_label), "%s",
                          (status == AI_STATUS_FAULT) ? "PRED HYPER" : "HIGH GLUCOSE");
             }
-            snprintf(detail, sizeof(detail), "P15 %3u P30 %3u SQI %3u",
-                     (unsigned int)gUiPred15Mgdl,
-                     (unsigned int)gUiPred30Mgdl,
-                     (unsigned int)gUiCgmSqiPct);
         }
         else
         {
             snprintf(human_label, sizeof(human_label), "%s", ActivityHeadlineText(gActivityStage, gActivityPct));
         }
+        /* Always show upcoming prediction values + state (HYPO/HYPER/NORMAL). */
+        snprintf(detail, sizeof(detail), "%s P15 %3u P30 %3u",
+                 pred_state_txt,
+                 (unsigned int)gUiPred15Mgdl,
+                 (unsigned int)gUiPred30Mgdl);
     }
     if ((gUiPredEvalCount == 0u) && (gUiPredTolTotalCount == 0u))
     {
@@ -4178,6 +4161,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     {
         char rtc_line[20];
         int32_t rtc_x;
+
         if (gRtcValid)
         {
             snprintf(rtc_line, sizeof(rtc_line), "%04u:%02u:%02u",

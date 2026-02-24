@@ -1318,3 +1318,116 @@ Format:
 2026-02-24T06:35:08-08:00 | git add final R5 code/docs/model artifacts and force-add R5 failsafe binaries
 2026-02-24T06:35:13-08:00 | git commit final R5 baseline (+15m-only ±10%, model-compare tooling, restore artifacts)
 2026-02-24T06:35:33-08:00 | run git push for R5 final baseline commit (main -> origin/main)
+2026-02-24T06:35:47-08:00 | commit+push docs/COMMAND_LOG.md for R5 publish completion
+2026-02-24T06:38:53-08:00 | read docs/START_HERE.md
+2026-02-24T06:38:53-08:00 | read docs/OPS_RUNBOOK.md
+2026-02-24T06:38:53-08:00 | read docs/PROJECT_STATE.md
+2026-02-24T06:39:10-08:00 | set origin to git@github.com:telespial/EdgeAI_CGM_Insulin_Pump_demo_NXP_FRDM-MCXN947.git and push -u origin main
+2026-02-24T06:46:32-08:00 | inspect alert/prediction symbols in src/gauge_render.c
+2026-02-24T06:46:38-08:00 | inspect DrawAiAlertOverlay core branch before patch
+2026-02-24T06:47:08-08:00 | patch alert overlay to always show prediction state + P15/P30 values
+2026-02-24T06:47:13-08:00 | run ./scripts/build.sh after alert overlay prediction-state display patch
+2026-02-24T06:47:20-08:00 | remove stale mcuxsdk_ws/build after project folder rename (west source mismatch)
+
+[2026-02-24T06:47:59-08:00] Read START_HERE, PROJECT_STATE, OPS_RUNBOOK
+
+[2026-02-24T06:48:04-08:00] Inspected gauge_render alert/prediction symbols via rg
+
+[2026-02-24T06:48:07-08:00] Reviewed DrawAiAlertOverlay and BuildAnomalyReason implementation
+
+[2026-02-24T06:48:22-08:00] Ran ./scripts/build.sh after removing unused BuildAnomalyReason from src/gauge_render.c
+
+[2026-02-24T06:48:30-08:00] Updated docs/PROJECT_STATE.md for prediction alert overlay change and build verification
+
+[2026-02-24T06:48:34-08:00] Ran git status --short to confirm modified files
+
+[2026-02-24T06:49:04-08:00] Ran ./scripts/flash.sh
+
+[2026-02-24T06:49:09-08:00] Updated docs/PROJECT_STATE.md after successful flash
+
+[2026-02-24T06:51:17-08:00] Searched runtime clock and prediction render locations
+
+[2026-02-24T06:51:22-08:00] Reviewed runtime clock rendering and overlay draw order
+
+[2026-02-24T06:51:27-08:00] Located RTC geometry constants
+
+[2026-02-24T06:51:32-08:00] Reviewed alert overlay text lines and score placement
+
+[2026-02-24T06:52:04-08:00] Ran ./scripts/build.sh after adding prediction line to elapsed-time area
+
+[2026-02-24T06:52:09-08:00] Updated docs/PROJECT_STATE.md for elapsed-time prediction line change
+
+[2026-02-24T06:54:16-08:00] Ran ./scripts/build.sh after enlarging elapsed-area prediction text
+
+[2026-02-24T06:54:21-08:00] Updated docs/PROJECT_STATE.md for prediction text size increase
+
+[2026-02-24T06:54:48-08:00] Ran ./scripts/flash.sh after enlarging elapsed-area prediction text
+
+[2026-02-24T06:54:56-08:00] Updated docs/PROJECT_STATE.md after successful flash (elapsed prediction text size update)
+
+[2026-02-24T06:55:40-08:00] Reviewed DrawGlucoseIndicator region for placing prediction line below mg/dL
+
+[2026-02-24T06:56:28-08:00] Ran ./scripts/build.sh after moving prediction text from elapsed clock to below mg/dL
+
+[2026-02-24T06:56:34-08:00] Updated docs/PROJECT_STATE.md for moving prediction line below mg/dL
+
+[2026-02-24T06:57:31-08:00] ./scripts/build.sh FAILED after center text simplification: replay_cgm_mode undeclared in DrawGlucoseIndicator (src/gauge_render.c:1867)
+
+[2026-02-24T06:57:38-08:00] Inspected DrawGlucoseIndicator variable declarations to patch replay_cgm_mode
+
+[2026-02-24T06:57:52-08:00] Ran ./scripts/build.sh after restoring replay_cgm_mode declaration in DrawGlucoseIndicator
+
+[2026-02-24T06:57:58-08:00] Updated docs/PROJECT_STATE.md for simplified unlabeled prediction line under mg/dL
+
+[2026-02-24T06:58:28-08:00] Ran ./scripts/flash.sh after simplifying center prediction line to unlabeled P15/P30
+
+[2026-02-24T06:58:33-08:00] Updated docs/PROJECT_STATE.md after successful flash (unlabeled center prediction line)
+
+[2026-02-24T07:00:06-08:00] Ran ./scripts/build.sh after updating center prediction line format to 15M/30M labeled text with larger size
+
+[2026-02-24T07:00:14-08:00] Updated docs/PROJECT_STATE.md for larger labeled center prediction line
+
+[2026-02-24T07:00:45-08:00] Ran ./scripts/flash.sh after updating center prediction line to 15M PRED / 30M format
+
+[2026-02-24T07:00:50-08:00] Updated docs/PROJECT_STATE.md after successful flash (15M/30M labeled center line)
+
+[2026-02-24T07:01:47-08:00] Ran ./scripts/build.sh after changing center prediction line to medium-weight text (smaller than scale-2)
+
+[2026-02-24T07:02:04-08:00] Ran ./scripts/build.sh after removing spaces after colons in center prediction line
+
+[2026-02-24T07:02:11-08:00] Updated docs/PROJECT_STATE.md for colon-spacing tweak in center prediction line
+
+[2026-02-24T07:02:24-08:00] Ran ./scripts/flash.sh after center prediction colon-spacing update
+
+[2026-02-24T07:02:29-08:00] Updated docs/PROJECT_STATE.md after successful flash (colon-spacing update)
+
+[2026-02-24T07:03:19-08:00] Ran ./scripts/build.sh after changing center prediction format to PRED 15M:xxx 30M:xxx
+
+[2026-02-24T07:03:25-08:00] Updated docs/PROJECT_STATE.md for PRED 15M:xxx 30M:xxx format change
+
+[2026-02-24T07:03:47-08:00] Ran ./scripts/flash.sh after updating center text to PRED 15M:xxx 30M:xxx
+
+[2026-02-24T07:03:52-08:00] Updated docs/PROJECT_STATE.md after successful flash (PRED 15M:xxx 30M:xxx)
+
+[2026-02-24T07:06:02-08:00] Ran git status --short
+[2026-02-24T07:06:02-08:00] Ran rg file discovery for README/docs/failsafe paths
+
+[2026-02-24T07:06:11-08:00] Read README.md
+[2026-02-24T07:06:11-08:00] Read docs/TODO.md
+[2026-02-24T07:06:11-08:00] Read model/README.md
+
+[2026-02-24T07:06:15-08:00] Listed failsafe artifacts
+
+[2026-02-24T07:06:21-08:00] Created restore artifacts R6 from mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin -> failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R6.bin and failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R6.bin
+
+[2026-02-24T07:06:33-08:00] Read docs/START_HERE.md
+[2026-02-24T07:06:33-08:00] Read docs/OPS_RUNBOOK.md
+[2026-02-24T07:06:33-08:00] Read docs/PROJECT_STATE.md (header and recent entries)
+
+[2026-02-24T07:07:33-08:00] Inspected PROJECT_STATE header for restore baseline update
+
+[2026-02-24T07:07:44-08:00] Updated docs/PROJECT_STATE.md restore header to R6 and appended R6 release/docs update entry
+
+[2026-02-24T07:07:52-08:00] Ran git status --short before staging for commit
+
+[2026-02-24T07:08:00-08:00] Checked R6 artifacts and git ignore status
