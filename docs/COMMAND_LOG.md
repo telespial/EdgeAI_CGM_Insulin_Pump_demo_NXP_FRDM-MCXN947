@@ -710,3 +710,5 @@ Format:
 2026-02-24T00:05:36Z | cmd: apply_patch update active baseline refs in README.md STATUS.md docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md docs/PROJECT_STATE.md | result: ok
 2026-02-24T00:05:36Z | cmd: append docs/PROJECT_STATE.md with 2026-02-24 golden+failsafe R1 promotion/update summary | result: ok
 2026-02-24T00:05:49Z | cmd: git add docs/baseline updates + add -f failsafe R1 binaries + commit/push + create/push GOLDEN/FAILSAFE 2026-02-24-R1 tags | result: pending
+2026-02-24T00:06:10Z | cmd: git add/commit/push baseline promotion updates | result: ok (bda661f)
+2026-02-24T00:06:10Z | cmd: git tag -f GOLDEN-2026-02-24-R1 bda661f && git tag -f FAILSAFE-2026-02-24-R1 bda661f && git push origin GOLDEN-2026-02-24-R1 FAILSAFE-2026-02-24-R1 --force | result: ok
