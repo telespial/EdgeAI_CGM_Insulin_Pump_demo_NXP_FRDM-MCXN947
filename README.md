@@ -2,7 +2,12 @@
 
 Firmware demo for an embedded CGM + insulin-pump UX on FRDM-MCXN947 with a model-assisted prediction layer, replay benchmarking, and safety-gated alerting.
 
-This code uses a new method of AI model generation that is a Visual Studio Code extension. It builds and trains multiple model types and compares them before exporting the Embedded Intelligence Layer in C++. User simply has to wire inputs and output handshakes into existing host firmware. Contact me for more info at rmhaberkern@gmail.com
+This project introduces a new method of AI model generation delivered as a Visual Studio Code extension for embedded systems.
+
+The extension automatically builds, trains, and benchmarks multiple lightweight model typessuc h as anomaly detection, decision logic enhancement, and predictive models. It then compares performance metrics and exports the optimal solution as a compact Embedded Intelligence Layer in production-ready C++.
+The generated layer integrates cleanly into existing firmware. A firmware engineer simply connects system inputs and output handshakes to the intelligence layer without restructuring host firmware or altering core control logic.
+
+This architecture is designed to improve accuracy, prediction capability, and system-level decision making while preserving deterministic behavior and production stability. The AI layer operates as an isolated enhancement, reducing regression risk after deployment and protecting field reliability.
 
 ![insulin_pump](https://github.com/user-attachments/assets/1033010d-696f-45b3-b7d1-bed7aa6203d0)
 
