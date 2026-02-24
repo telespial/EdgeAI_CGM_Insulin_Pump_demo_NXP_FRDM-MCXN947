@@ -1,6 +1,6 @@
 # CGM Traceability Matrix
 
-Last updated: 2026-02-23
+Last updated: 2026-02-24
 
 ## Scope
 This matrix maps the current demo runtime to the algorithm stages in `docs/CGM_DERMAL_ALGORITHM_REVIEW.md`.
@@ -20,7 +20,7 @@ Status legend:
 | 4) Lag and kinetics handling | simulated | Conservative lag/kinetics block now implemented in preprocessing (`src/cgm_preprocess.c/.h`) with optional low-gain correction, SQI-adaptive gain, and bounded compensation; no aggressive look-forward extrapolation. | Validate lag constants and gain bounds against live dermal data and safety envelopes. |
 | 5) SQI and fault detection | simulated | Runtime now emits `sqi_pct` and `sensor_flags` from preprocessing (`src/cgm_preprocess.c/.h`), with prediction gating (`prediction_blocked`) and dropout fallback (`hold_last`) integrated into render/recommendation flow (`src/gauge_render.c`); upstream signal source remains simulated. | Replace synthetic raw source with live sensor signal and tune SQI/flag thresholds from captured dermal datasets. |
 | 6) Trend, prediction, and alert logic | simulated | Trend (`dBG`) plus short-horizon predictions (P15/P30), SQI-gated predictive hypo/hyper warning/fault checks, and debounce/hysteresis state machine are implemented in runtime logic (`src/gauge_render.c`), with predictive status wired into alert and dose paths; upstream glucose source remains synthetic. | Replace synthetic glucose source with live CGM stream and tune prediction/alert thresholds against captured dermal data. |
-| 7) Performance and validation metrics | missing | No validation protocol artifact or pass/fail metric table in docs/runtime. | Need defined metrics and thresholds (MARD/RMSE/lag/chatter/robustness) with replay test procedure. |
+| 7) Performance and validation metrics | implemented | Validation protocol is defined in `docs/CGM_VALIDATION_PROTOCOL.md` with explicit pass/fail thresholds for lag, trend accuracy, alert false positives/chatter, and replay robustness. Runtime UI exposes prediction score/evaluation count/MAE for live diagnostic visibility. | Execute protocol on replay/live datasets and publish measured pass/fail results for each metric partition. |
 | 8) Advanced/optional transforms | missing | No FFT/wavelet diagnostic path in current CGM implementation scope. | Optional; decide later based on compute budget after core path is stable. |
 
 ## Current Runtime Notes
@@ -30,4 +30,6 @@ Status legend:
 
 ## Immediate Follow-On
 
-Proceed with TODO step 12 to define validation protocol and quantitative pass/fail thresholds (lag, trend accuracy, alert chatter/false positives, replay robustness).
+- Replace synthetic glucose source with timestamp-aligned replay/live source.
+- Retrain prediction model with corrected feature/label alignment.
+- Re-run protocol and publish quantified outcomes by partition.

@@ -14,6 +14,7 @@
 #include "fsl_port.h"
 #include "gauge_render.h"
 #include "power_data_source.h"
+#include "replay_trace_generated.h"
 #include "anomaly_engine.h"
 #include "eil_profile.h"
 #include "accel4_click.h"
@@ -89,6 +90,11 @@
 #define POWER_TICK_PERIOD_US 1000000u
 #define DISPLAY_REFRESH_PERIOD_US 100000u
 #define RECPLAY_TICK_PERIOD_US 100000u
+#define RECPLAY_WARMUP_MULTIPLIER 120u
+#define RECPLAY_WARMUP_PRESEED_DS (2u * 60u * 60u * 10u)
+#define RECPLAY_WARMUP_SCORE_DS (2u * 60u * 60u * 10u)
+#define RECPLAY_WARMUP_TARGET_DS (RECPLAY_WARMUP_PRESEED_DS + RECPLAY_WARMUP_SCORE_DS)
+#define REPLAY_DEFAULT_STEP_DS 3000u /* 5 minutes between CGM points */
 #define ACCEL_BUFFER_SAMPLE_PERIOD_US 10000u
 #define GYRO_REFRESH_PERIOD_US 100000u
 #define ACCEL_LIVE_PERIOD_US 100000u
@@ -3382,6 +3388,7 @@ static void SaveUiSettingsIfReady(bool ext_flash_ok,
                                   anomaly_tune_t tune,
                                   bool run_live,
                                   bool ai_enabled,
+                                  bool ai_backend_npu,
                                   uint16_t g_warn_mg,
                                   uint16_t g_fail_mg,
                                   int16_t temp_low_c10,
@@ -3397,6 +3404,7 @@ static void SaveUiSettingsIfReady(bool ext_flash_ok,
                                          (uint8_t)tune,
                                          run_live,
                                          ai_enabled,
+                                         ai_backend_npu,
                                          g_warn_mg,
                                          g_fail_mg,
                                          temp_low_c10,
@@ -3406,6 +3414,104 @@ static void SaveUiSettingsIfReady(bool ext_flash_ok,
     {
         PRINTF("UI_CFG_SAVE: failed\r\n");
     }
+}
+
+static void ConfigurePlaybackWarmup(bool playback_active,
+                                    bool live_mode,
+                                    bool *warmup_active,
+                                    bool *warmup_complete)
+{
+    if ((warmup_active == NULL) || (warmup_complete == NULL))
+    {
+        return;
+    }
+
+    if (!playback_active)
+    {
+        *warmup_active = false;
+        GaugeRender_SetWarmupThinking(false);
+        return;
+    }
+
+    if (live_mode && !(*warmup_complete))
+    {
+        if (!(*warmup_active))
+        {
+            PRINTF("AI_WARMUP: start target=%u ds speed=%ux\r\n",
+                   (unsigned int)RECPLAY_WARMUP_TARGET_DS,
+                   (unsigned int)RECPLAY_WARMUP_MULTIPLIER);
+            PRINTF("AI_WARMUP: phases preseed=%u ds score=%u ds\r\n",
+                   (unsigned int)RECPLAY_WARMUP_PRESEED_DS,
+                   (unsigned int)RECPLAY_WARMUP_SCORE_DS);
+        }
+        *warmup_active = true;
+        GaugeRender_SetWarmupThinking(true);
+    }
+    else
+    {
+        *warmup_active = false;
+        GaugeRender_SetWarmupThinking(false);
+    }
+}
+
+static bool PreloadDefaultReplayToExtFlash(bool ext_flash_ok)
+{
+    uint32_t i;
+    uint32_t ts_ds = 0u;
+
+    if (!ext_flash_ok)
+    {
+        return false;
+    }
+
+    PRINTF("EXT_FLASH_PRELOAD: start count=%u step_ds=%u\r\n",
+           (unsigned int)REPLAY_TRACE_DEFAULT_LEN,
+           (unsigned int)REPLAY_DEFAULT_STEP_DS);
+
+    if (!ExtFlashRecorder_ClearAll())
+    {
+        PRINTF("EXT_FLASH_PRELOAD: clear_failed\r\n");
+        return false;
+    }
+
+    for (i = 0u; i < REPLAY_TRACE_DEFAULT_LEN; i++)
+    {
+        const replay_trace_point_t *p = &kReplayTrace_Default[i];
+        int16_t ax = (int16_t)((int32_t)p->current_mA / 20);
+        int16_t ay = (int16_t)((int32_t)p->power_mW / 5);
+        int16_t az = (int16_t)(((int32_t)p->voltage_mV - 24000) / 2);
+        int16_t temp_c10 = (int16_t)((int16_t)p->temp_c * 10);
+        uint16_t score = (uint16_t)((int32_t)p->soc_pct * 100 / 100);
+
+        if (!ExtFlashRecorder_AppendSampleEx(ax,
+                                             ay,
+                                             az,
+                                             0,
+                                             0,
+                                             0,
+                                             temp_c10,
+                                             0,
+                                             0,
+                                             0,
+                                             10130,
+                                             temp_c10,
+                                             450,
+                                             temp_c10,
+                                             score,
+                                             AI_STATUS_NORMAL,
+                                             ALERT_REASON_NORMAL,
+                                             ts_ds))
+        {
+            PRINTF("EXT_FLASH_PRELOAD: append_failed idx=%u\r\n", (unsigned int)i);
+            return false;
+        }
+        ts_ds += REPLAY_DEFAULT_STEP_DS;
+    }
+
+    PRINTF("EXT_FLASH_PRELOAD: done count=%u duration_ds=%u\r\n",
+           (unsigned int)REPLAY_TRACE_DEFAULT_LEN,
+           (unsigned int)((REPLAY_TRACE_DEFAULT_LEN > 0u) ? ((REPLAY_TRACE_DEFAULT_LEN - 1u) * REPLAY_DEFAULT_STEP_DS) : 0u));
+    return true;
 }
 
 static void ApplyLimitAdjustment(uint8_t lim_idx, bool increase)
@@ -3504,6 +3610,7 @@ int main(void)
     return SensorScanModeMain();
 #else
     bool ai_enabled = true;
+    bool ai_use_npu = true;
     bool lcd_ok;
     bool ext_flash_ok;
     bool help_visible = false;
@@ -3515,6 +3622,13 @@ int main(void)
     bool prev_record_mode;
     bool prev_trained_ready;
     bool playback_active = false;
+    bool playback_warmup_active = false;
+    bool playback_warmup_complete = false;
+    bool playback_prev_ts_valid = false;
+    uint32_t playback_prev_ts_ds = 0u;
+    uint32_t playback_period_us = RECPLAY_TICK_PERIOD_US;
+    uint32_t playback_rt_anchor_ds = 0u;
+    uint64_t playback_rt_anchor_ticks = 0u;
     ext_flash_sample_t playback_sample;
     uint32_t data_tick_accum_us = 0u;
     uint32_t recplay_tick_accum_us = 0u;
@@ -3540,6 +3654,7 @@ int main(void)
     uint8_t saved_tune = 0u;
     bool saved_run_live = true;
     bool saved_ai = true;
+    bool saved_ai_backend_npu = true;
     uint16_t saved_g_warn_mg = 12000u;
     uint16_t saved_g_fail_mg = 15000u;
     int16_t saved_temp_lo_c10 = 0;
@@ -3566,6 +3681,7 @@ int main(void)
                                        &saved_tune,
                                        &saved_run_live,
                                        &saved_ai,
+                                       &saved_ai_backend_npu,
                                        &saved_g_warn_mg,
                                        &saved_g_fail_mg,
                                        &saved_temp_lo_c10,
@@ -3629,6 +3745,7 @@ int main(void)
         }
         saved_log_rate_hz = ClampLogRateHz(saved_log_rate_hz);
         ai_enabled = saved_ai;
+        ai_use_npu = saved_ai_backend_npu;
         s_limit_g_warn_mg = saved_g_warn_mg;
         s_limit_g_fail_mg = saved_g_fail_mg;
         s_limit_temp_lo_c10 = saved_temp_lo_c10;
@@ -3638,11 +3755,12 @@ int main(void)
         AnomalyEngine_SetMode((anomaly_mode_t)saved_mode);
         AnomalyEngine_SetTune((anomaly_tune_t)saved_tune);
         GaugeRender_SetLiveBannerMode(saved_run_live);
-        PRINTF("UI_CFG_LOAD: mode=%u tune=%u run=%u ai=%u gw=%u gf=%u tl=%d th=%d gy=%u log=%uHz\r\n",
+        PRINTF("UI_CFG_LOAD: mode=%u tune=%u run=%u ai=%u backend=%s gw=%u gf=%u tl=%d th=%d gy=%u log=%uHz\r\n",
                (unsigned int)saved_mode,
                (unsigned int)saved_tune,
                saved_run_live ? 1u : 0u,
                saved_ai ? 1u : 0u,
+               saved_ai_backend_npu ? "NPU" : "MCU",
                (unsigned int)s_limit_g_warn_mg,
                (unsigned int)s_limit_g_fail_mg,
                (int)(s_limit_temp_lo_c10 / 10),
@@ -3654,6 +3772,27 @@ int main(void)
     PowerData_SetAiAssistEnabled(ai_enabled);
     anom_mode = AnomalyEngine_GetMode();
     anom_tune = AnomalyEngine_GetTune();
+
+    if (ext_flash_ok)
+    {
+        bool preloaded = PreloadDefaultReplayToExtFlash(ext_flash_ok);
+        if (preloaded)
+        {
+            SaveUiSettingsIfReady(ext_flash_ok,
+                                  anom_mode,
+                                  anom_tune,
+                                  GaugeRender_IsLiveBannerMode(),
+                                  ai_enabled,
+                                  ai_use_npu,
+                                  s_limit_g_warn_mg,
+                                  s_limit_g_fail_mg,
+                                  s_limit_temp_lo_c10,
+                                  s_limit_temp_hi_c10,
+                                  s_limit_gyro_dps,
+                                  s_log_rate_hz);
+        }
+    }
+
     ShieldGyroInit();
     ShieldRunDatastreamDiagnostics();
     ShieldSensorScanLog();
@@ -3669,7 +3808,9 @@ int main(void)
     GaugeRender_SetHelpVisible(false);
     GaugeRender_SetSettingsVisible(false);
     GaugeRender_SetLimitsVisible(false);
+    GaugeRender_SetWarmupThinking(false);
     GaugeRender_SetLiveBannerMode(saved_valid ? saved_run_live : true);
+    GaugeRender_SetAiBackendNpu(ai_use_npu);
     GaugeRender_SetLimitInfo(s_limit_g_warn_mg,
                              s_limit_g_fail_mg,
                              s_limit_temp_lo_c10,
@@ -3694,9 +3835,12 @@ int main(void)
     }
     prev_record_mode = GaugeRender_IsRecordMode();
     prev_trained_ready = s_anom_out.trained_ready;
-    if (!prev_record_mode && !GaugeRender_IsLiveBannerMode())
+    if (!prev_record_mode)
     {
         playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+        ConfigurePlaybackWarmup(playback_active, GaugeRender_IsLiveBannerMode(), &playback_warmup_active, &playback_warmup_complete);
+        playback_prev_ts_valid = false;
+        playback_period_us = RECPLAY_TICK_PERIOD_US;
         runtime_elapsed_ds = 0u;
         runtime_displayed_ds = UINT32_MAX;
         runtime_clock_start_ticks = TimebaseNowTicks();
@@ -3728,6 +3872,14 @@ int main(void)
         if (recplay_hz > 0u)
         {
             recplay_period_us = 1000000u / recplay_hz;
+            if (recplay_period_us == 0u)
+            {
+                recplay_period_us = RECPLAY_TICK_PERIOD_US;
+            }
+        }
+        if (playback_active && GaugeRender_IsLiveBannerMode() && !playback_warmup_active)
+        {
+            recplay_period_us = playback_period_us;
             if (recplay_period_us == 0u)
             {
                 recplay_period_us = RECPLAY_TICK_PERIOD_US;
@@ -3799,6 +3951,7 @@ int main(void)
                                           AnomalyEngine_GetTune(),
                                           GaugeRender_IsLiveBannerMode(),
                                           ai_enabled,
+                                          ai_use_npu,
                                           s_limit_g_warn_mg,
                                           s_limit_g_fail_mg,
                                           s_limit_temp_lo_c10,
@@ -3832,18 +3985,17 @@ int main(void)
                 {
                     if (!handled_setting && TouchInSettingsModeIndex(tx, ty, i))
                     {
-                        anom_mode = (anomaly_mode_t)i;
-                        AnomalyEngine_SetMode(anom_mode);
-                        train_armed_idle = (anom_mode == ANOMALY_MODE_TRAINED_MONITOR);
-                        AnomalyEngine_StopTraining();
+                        ai_enabled = (i == 1u);
+                        PowerData_SetAiAssistEnabled(ai_enabled);
                         handled_setting = true;
                         redraw_ui = true;
-                        PRINTF("ANOM_MODE,%u\r\n", (unsigned int)anom_mode);
+                        PRINTF("AI_ENABLE,%s\r\n", ai_enabled ? "ON" : "OFF");
                         SaveUiSettingsIfReady(ext_flash_ok,
                                               anom_mode,
                                               AnomalyEngine_GetTune(),
                                               GaugeRender_IsLiveBannerMode(),
                                               ai_enabled,
+                                              ai_use_npu,
                                               s_limit_g_warn_mg,
                                               s_limit_g_fail_mg,
                                               s_limit_temp_lo_c10,
@@ -3867,10 +4019,18 @@ int main(void)
                                 GaugeRender_SetRecordMode(false);
                                 AnomalyEngine_StopTraining();
                                 train_armed_idle = false;
+                                playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                                ConfigurePlaybackWarmup(playback_active, true, &playback_warmup_active, &playback_warmup_complete);
+                                playback_prev_ts_valid = false;
+                                playback_period_us = RECPLAY_TICK_PERIOD_US;
                             }
                             else
                             {
                                 train_armed_idle = (anom_mode == ANOMALY_MODE_TRAINED_MONITOR);
+                                playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                                ConfigurePlaybackWarmup(playback_active, false, &playback_warmup_active, &playback_warmup_complete);
+                                playback_prev_ts_valid = false;
+                                playback_period_us = RECPLAY_TICK_PERIOD_US;
                             }
                             handled_setting = true;
                             redraw_ui = true;
@@ -3880,6 +4040,7 @@ int main(void)
                                                   AnomalyEngine_GetTune(),
                                                   run_live,
                                                   ai_enabled,
+                                                  ai_use_npu,
                                                   s_limit_g_warn_mg,
                                                   s_limit_g_fail_mg,
                                                   s_limit_temp_lo_c10,
@@ -3907,6 +4068,7 @@ int main(void)
                                                   anom_tune,
                                                   GaugeRender_IsLiveBannerMode(),
                                                   ai_enabled,
+                                                  ai_use_npu,
                                                   s_limit_g_warn_mg,
                                                   s_limit_g_fail_mg,
                                                   s_limit_temp_lo_c10,
@@ -3933,6 +4095,7 @@ int main(void)
                                               AnomalyEngine_GetTune(),
                                               GaugeRender_IsLiveBannerMode(),
                                               ai_enabled,
+                                              ai_use_npu,
                                               s_limit_g_warn_mg,
                                               s_limit_g_fail_mg,
                                               s_limit_temp_lo_c10,
@@ -3946,8 +4109,8 @@ int main(void)
                 {
                     if (TouchInSettingsAiIndex(tx, ty, 0u))
                     {
-                        ai_enabled = false;
-                        PowerData_SetAiAssistEnabled(ai_enabled);
+                        ai_use_npu = false;
+                        GaugeRender_SetAiBackendNpu(ai_use_npu);
                         settings_visible = false;
                         GaugeRender_SetSettingsVisible(false);
                         handled_setting = true;
@@ -3958,6 +4121,7 @@ int main(void)
                                               AnomalyEngine_GetTune(),
                                               GaugeRender_IsLiveBannerMode(),
                                               ai_enabled,
+                                              ai_use_npu,
                                               s_limit_g_warn_mg,
                                               s_limit_g_fail_mg,
                                               s_limit_temp_lo_c10,
@@ -3967,8 +4131,8 @@ int main(void)
                     }
                     else if (TouchInSettingsAiIndex(tx, ty, 1u))
                     {
-                        ai_enabled = true;
-                        PowerData_SetAiAssistEnabled(ai_enabled);
+                        ai_use_npu = true;
+                        GaugeRender_SetAiBackendNpu(ai_use_npu);
                         settings_visible = false;
                         GaugeRender_SetSettingsVisible(false);
                         handled_setting = true;
@@ -3979,6 +4143,7 @@ int main(void)
                                               AnomalyEngine_GetTune(),
                                               GaugeRender_IsLiveBannerMode(),
                                               ai_enabled,
+                                              ai_use_npu,
                                               s_limit_g_warn_mg,
                                               s_limit_g_fail_mg,
                                               s_limit_temp_lo_c10,
@@ -4074,10 +4239,15 @@ int main(void)
         {
             GaugeRender_DrawFrame(GetFrameSample(), ai_enabled, PowerData_GetReplayProfile());
         }
-        if (timeline_changed && !GaugeRender_IsRecordMode() && !GaugeRender_IsRecordConfirmActive() &&
-            !GaugeRender_IsLiveBannerMode() && !train_armed_idle)
+        if (timeline_changed && !GaugeRender_IsRecordMode() && !GaugeRender_IsRecordConfirmActive() && !train_armed_idle)
         {
             playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+            ConfigurePlaybackWarmup(playback_active,
+                                    GaugeRender_IsLiveBannerMode(),
+                                    &playback_warmup_active,
+                                    &playback_warmup_complete);
+            playback_prev_ts_valid = false;
+            playback_period_us = RECPLAY_TICK_PERIOD_US;
             runtime_elapsed_ds = 0u;
             runtime_displayed_ds = UINT32_MAX;
             runtime_clock_start_ticks = TimebaseNowTicks();
@@ -4097,6 +4267,9 @@ int main(void)
                 GaugeRender_SetLiveBannerMode(false);
                 GaugeRender_SetRecordMode(true);
                 playback_active = false;
+                ConfigurePlaybackWarmup(false, false, &playback_warmup_active, &playback_warmup_complete);
+                playback_prev_ts_valid = false;
+                playback_period_us = RECPLAY_TICK_PERIOD_US;
                 train_armed_idle = false;
                 runtime_elapsed_ds = 0u;
                 rec_elapsed_ds = 0u;
@@ -4114,7 +4287,13 @@ int main(void)
             else
             {
                 GaugeRender_SetRecordMode(false);
-                playback_active = (!GaugeRender_IsLiveBannerMode()) && ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                ConfigurePlaybackWarmup(playback_active,
+                                        GaugeRender_IsLiveBannerMode(),
+                                        &playback_warmup_active,
+                                        &playback_warmup_complete);
+                playback_prev_ts_valid = false;
+                playback_period_us = RECPLAY_TICK_PERIOD_US;
                 train_armed_idle = (anom_mode == ANOMALY_MODE_TRAINED_MONITOR);
                 runtime_elapsed_ds = 0u;
                 ResetSignalPeakWindows();
@@ -4148,6 +4327,9 @@ int main(void)
         {
             bool cleared = ext_flash_ok && ExtFlashRecorder_ClearAll();
             playback_active = false;
+            ConfigurePlaybackWarmup(false, false, &playback_warmup_active, &playback_warmup_complete);
+            playback_prev_ts_valid = false;
+            playback_period_us = RECPLAY_TICK_PERIOD_US;
             GaugeRender_SetPlayhead(99u, false);
             runtime_elapsed_ds = 0u;
             rec_elapsed_ds = 0u;
@@ -4163,10 +4345,6 @@ int main(void)
         s_touch_was_down = pressed;
         modal_active_now = GaugeRender_IsRecordConfirmActive() || help_visible || settings_visible || limits_visible;
         record_mode = GaugeRender_IsRecordMode();
-        if (GaugeRender_IsLiveBannerMode())
-        {
-            playback_active = false;
-        }
         if (record_mode != prev_record_mode)
         {
             if (!record_mode)
@@ -4178,7 +4356,13 @@ int main(void)
                         AnomalyEngine_StopTraining();
                     }
                 }
-                playback_active = (!GaugeRender_IsLiveBannerMode()) && ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                ConfigurePlaybackWarmup(playback_active,
+                                        GaugeRender_IsLiveBannerMode(),
+                                        &playback_warmup_active,
+                                        &playback_warmup_complete);
+                playback_prev_ts_valid = false;
+                playback_period_us = RECPLAY_TICK_PERIOD_US;
                 runtime_elapsed_ds = 0u;
                 runtime_displayed_ds = UINT32_MAX;
                 runtime_clock_start_ticks = TimebaseNowTicks();
@@ -4197,6 +4381,9 @@ int main(void)
                     AnomalyEngine_StartTraining();
                 }
                 playback_active = false;
+                ConfigurePlaybackWarmup(false, false, &playback_warmup_active, &playback_warmup_complete);
+                playback_prev_ts_valid = false;
+                playback_period_us = RECPLAY_TICK_PERIOD_US;
                 runtime_elapsed_ds = 0u;
                 rec_elapsed_ds = 0u;
                 ResetSignalPeakWindows();
@@ -4287,7 +4474,7 @@ int main(void)
         while (accel_sample_tick_accum_us >= ACCEL_BUFFER_SAMPLE_PERIOD_US)
         {
             accel_sample_tick_accum_us -= ACCEL_BUFFER_SAMPLE_PERIOD_US;
-            if (!train_armed_idle && !playback_active)
+            if (!train_armed_idle)
             {
                 ShieldGyroUpdate();
                 UpdateSignalPeakWindows();
@@ -4327,6 +4514,19 @@ int main(void)
         while (runtime_clock_tick_accum_us >= RUNTIME_CLOCK_PERIOD_US)
         {
             runtime_clock_tick_accum_us -= RUNTIME_CLOCK_PERIOD_US;
+            if (playback_warmup_active &&
+                (runtime_displayed_ds != UINT32_MAX) &&
+                (runtime_displayed_ds >= RECPLAY_WARMUP_TARGET_DS))
+            {
+                playback_warmup_active = false;
+                playback_warmup_complete = true;
+                GaugeRender_SetWarmupThinking(false);
+                GaugeRender_PrimePredictionScore();
+                playback_prev_ts_valid = false;
+                playback_period_us = RECPLAY_TICK_PERIOD_US;
+                PRINTF("AI_WARMUP: force_complete at %u ds from display timeline\r\n",
+                       (unsigned int)runtime_displayed_ds);
+            }
             if (!record_mode && !playback_active)
             {
                 if (s_timebase_ready && (s_timebase_hz != 0u))
@@ -4352,6 +4552,32 @@ int main(void)
                     ClockFromDeciseconds(runtime_elapsed_ds, &ch, &cm, &cs, &cds);
                     GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
                     runtime_displayed_ds = runtime_elapsed_ds;
+                }
+            }
+            else if (playback_active && GaugeRender_IsLiveBannerMode() && !playback_warmup_active && playback_prev_ts_valid)
+            {
+                uint32_t rt_ds = playback_rt_anchor_ds;
+                if (s_timebase_ready && (s_timebase_hz != 0u))
+                {
+                    uint64_t now_ticks = TimebaseNowTicks();
+                    uint64_t dt_ticks = (now_ticks >= playback_rt_anchor_ticks) ? (now_ticks - playback_rt_anchor_ticks) : 0u;
+                    rt_ds += (uint32_t)((dt_ticks * 10ull) / s_timebase_hz);
+                }
+                else
+                {
+                    rt_ds += 1u;
+                }
+                if ((runtime_displayed_ds != UINT32_MAX) && (rt_ds < runtime_displayed_ds))
+                {
+                    rt_ds = runtime_displayed_ds;
+                }
+                if (rt_ds != runtime_displayed_ds)
+                {
+                    uint16_t ch;
+                    uint8_t cm, cs, cds;
+                    ClockFromDeciseconds(rt_ds, &ch, &cm, &cs, &cds);
+                    GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
+                    runtime_displayed_ds = rt_ds;
                 }
             }
         }
@@ -4476,77 +4702,120 @@ int main(void)
             }
             else if (playback_active)
             {
-                if (ExtFlashRecorder_ReadNextSample(&playback_sample))
+                uint32_t replay_steps = playback_warmup_active ? RECPLAY_WARMUP_MULTIPLIER : 1u;
+                if (replay_steps == 0u)
                 {
-                    s_accel_x_mg = playback_sample.ax_mg;
-                    s_accel_y_mg = playback_sample.ay_mg;
-                    s_accel_z_mg = playback_sample.az_mg;
-                    s_accel_raw_x_mg = playback_sample.ax_mg;
-                    s_accel_raw_y_mg = playback_sample.ay_mg;
-                    s_accel_raw_z_mg = playback_sample.az_mg;
-                    GaugeRender_SetLinearAccel(s_accel_raw_x_mg, s_accel_raw_y_mg, s_accel_raw_z_mg, true);
-                    GaugeRender_SetAccel(s_accel_y_mg, s_accel_x_mg, s_accel_z_mg, true);
-                    GaugeRender_SetGyro((int16_t)(playback_sample.gx_mdps * 10),
-                                        (int16_t)(playback_sample.gy_mdps * 10),
-                                        (int16_t)(playback_sample.gz_mdps * 10),
-                                        true);
-                    s_mag_x_mgauss = playback_sample.mag_x_mgauss;
-                    s_mag_y_mgauss = playback_sample.mag_y_mgauss;
-                    s_mag_z_mgauss = playback_sample.mag_z_mgauss;
-                    s_baro_dhpa = playback_sample.baro_dhpa;
-                    s_sht_temp_c10 = playback_sample.sht_temp_c10;
-                    s_sht_rh_dpct = playback_sample.sht_rh_dpct;
-                    s_stts_temp_c10 = playback_sample.stts_temp_c10;
-                    GaugeRender_SetMag(s_mag_x_mgauss, s_mag_y_mgauss, s_mag_z_mgauss, true);
-                    GaugeRender_SetBaro(s_baro_dhpa, true);
-                    GaugeRender_SetSht(s_sht_temp_c10, s_sht_rh_dpct, true);
-                    GaugeRender_SetStts(s_stts_temp_c10, true);
-                    s_temp_c10 = playback_sample.temp_c10;
-                    s_temp_c = playback_sample.temp_c;
-                    s_temp_ready = true;
-                    GaugeRender_SetBoardTempC10(s_temp_c10, true);
-                    {
-                        uint16_t ch;
-                        uint8_t cm, cs, cds;
-                        uint32_t play_ds = playback_sample.ts_ds;
-                        if ((runtime_displayed_ds != UINT32_MAX) && (play_ds < runtime_displayed_ds))
-                        {
-                            play_ds = runtime_displayed_ds;
-                        }
-                        ClockFromDeciseconds(play_ds, &ch, &cm, &cs, &cds);
-                        GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
-                        runtime_displayed_ds = play_ds;
-                    }
-                    if (ExtFlashRecorder_GetPlaybackInfo(&play_off, &play_cnt) && (play_cnt > 0u))
-                    {
-                        uint32_t pos = (play_off * 100u) / play_cnt;
-                        if (pos > 99u)
-                        {
-                            pos = 99u;
-                        }
-                        GaugeRender_SetPlayhead((uint8_t)pos, true);
-                    }
+                    replay_steps = 1u;
                 }
-                else
+                for (uint32_t replay_step = 0u; replay_step < replay_steps; replay_step++)
                 {
-                    playback_active = false;
-                    if ((anom_mode == ANOMALY_MODE_TRAINED_MONITOR) && s_anom_out.training_active && !s_anom_out.trained_ready)
+                    if (ExtFlashRecorder_ReadNextSample(&playback_sample))
                     {
-                        playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
-                        if (playback_active)
+                        /* In LIVE playback mode, replay drives timeline only.
+                         * Sensor visuals (ball/activity/IMU traces) remain live from actual device sensors. */
                         {
-                            PRINTF("AI_TRAIN: replay_restart\r\n");
+                            uint16_t ch;
+                            uint8_t cm, cs, cds;
+                            uint32_t play_ds = playback_sample.ts_ds;
+                            if ((runtime_displayed_ds != UINT32_MAX) && (play_ds < runtime_displayed_ds))
+                            {
+                                /* Avoid display-clock stalls on duplicate/non-monotonic replay timestamps. */
+                                play_ds = runtime_displayed_ds + 1u;
+                            }
+                            ClockFromDeciseconds(play_ds, &ch, &cm, &cs, &cds);
+                            GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
+                            runtime_displayed_ds = play_ds;
+                            if (playback_warmup_active && (play_ds >= RECPLAY_WARMUP_TARGET_DS))
+                            {
+                                playback_warmup_active = false;
+                                playback_warmup_complete = true;
+                                GaugeRender_SetWarmupThinking(false);
+                                GaugeRender_PrimePredictionScore();
+                                PRINTF("AI_WARMUP: complete at %u ds, switching to realtime\r\n",
+                                       (unsigned int)play_ds);
+                                playback_prev_ts_valid = false;
+                                playback_period_us = RECPLAY_TICK_PERIOD_US;
+                                break;
+                            }
+                            if (GaugeRender_IsLiveBannerMode() && !playback_warmup_active)
+                            {
+                                if (playback_prev_ts_valid && (play_ds > playback_prev_ts_ds))
+                                {
+                                    uint32_t ds_delta = play_ds - playback_prev_ts_ds;
+                                    uint64_t period64 = (uint64_t)ds_delta * 100000ull;
+                                    if (period64 < 100000ull)
+                                    {
+                                        period64 = 100000ull;
+                                    }
+                                    if (period64 > 600000000ull)
+                                    {
+                                        period64 = 600000000ull;
+                                    }
+                                    playback_period_us = (uint32_t)period64;
+                                }
+                                playback_prev_ts_ds = play_ds;
+                                playback_prev_ts_valid = true;
+                                playback_rt_anchor_ds = play_ds;
+                                playback_rt_anchor_ticks = TimebaseNowTicks();
+                            }
                         }
-                        else
+                        if (ExtFlashRecorder_GetPlaybackInfo(&play_off, &play_cnt) && (play_cnt > 0u))
                         {
-                            AnomalyEngine_StopTraining();
-                            PRINTF("AI_TRAIN: replay_unavailable\r\n");
+                            uint32_t pos = (play_off * 100u) / play_cnt;
+                            if (pos > 99u)
+                            {
+                                pos = 99u;
+                            }
+                            GaugeRender_SetPlayhead((uint8_t)pos, true);
                         }
                     }
                     else
                     {
-                        PRINTF("EXT_FLASH_PLAY: read_failed\r\n");
+                        playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                        ConfigurePlaybackWarmup(playback_active,
+                                                GaugeRender_IsLiveBannerMode(),
+                                                &playback_warmup_active,
+                                                &playback_warmup_complete);
+                        if (playback_active)
+                        {
+                            runtime_displayed_ds = UINT32_MAX;
+                            GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
+                            playback_prev_ts_valid = false;
+                            playback_period_us = RECPLAY_TICK_PERIOD_US;
+                            PRINTF("EXT_FLASH_PLAY: loop_restart\r\n");
+                        }
+                        else
+                        {
+                            if ((anom_mode == ANOMALY_MODE_TRAINED_MONITOR) && s_anom_out.training_active &&
+                                !s_anom_out.trained_ready)
+                            {
+                                AnomalyEngine_StopTraining();
+                                PRINTF("AI_TRAIN: replay_unavailable\r\n");
+                            }
+                            else
+                            {
+                                PRINTF("EXT_FLASH_PLAY: read_failed\r\n");
+                            }
+                        }
+                        break;
                     }
+                }
+            }
+            else if (ext_flash_ok && !record_mode && GaugeRender_IsLiveBannerMode())
+            {
+                /* If playback dropped out, keep trying to restart in LIVE mode. */
+                playback_active = ExtFlashRecorder_StartPlayback();
+                ConfigurePlaybackWarmup(playback_active,
+                                        GaugeRender_IsLiveBannerMode(),
+                                        &playback_warmup_active,
+                                        &playback_warmup_complete);
+                if (playback_active)
+                {
+                    runtime_displayed_ds = UINT32_MAX;
+                    GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
+                    playback_prev_ts_valid = false;
+                    playback_period_us = RECPLAY_TICK_PERIOD_US;
+                    PRINTF("EXT_FLASH_PLAY: retry_restart\r\n");
                 }
             }
 
@@ -4557,13 +4826,17 @@ int main(void)
                 /* Automatically promote to LIVE once model fit is complete on-board. */
                 GaugeRender_SetLiveBannerMode(true);
                 GaugeRender_SetRecordMode(false);
-                playback_active = false;
+                playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                ConfigurePlaybackWarmup(playback_active, true, &playback_warmup_active, &playback_warmup_complete);
+                playback_prev_ts_valid = false;
+                playback_period_us = RECPLAY_TICK_PERIOD_US;
                 AnomalyEngine_StopTraining();
                 SaveUiSettingsIfReady(ext_flash_ok,
                                       anom_mode,
                                       AnomalyEngine_GetTune(),
                                       true,
                                       ai_enabled,
+                                      ai_use_npu,
                                       s_limit_g_warn_mg,
                                       s_limit_g_fail_mg,
                                       s_limit_temp_lo_c10,

@@ -115,6 +115,14 @@ typedef struct
     float prev_kinetic_mgdl;
 } cgm_preprocess_t;
 
+typedef struct
+{
+    uint16_t glucose_mgdl;
+    int16_t trend_mgdl_min_x100;
+    uint8_t sqi_pct;
+    uint16_t sensor_flags;
+} cgm_model_features_t;
+
 void CgmPreprocess_Init(cgm_preprocess_t *st, const cgm_preprocess_config_t *cfg);
 void CgmPreprocess_InitDefault(cgm_preprocess_t *st);
 void CgmPreprocess_SetCalibration(cgm_preprocess_t *st, float gain_mgdl_per_na, float offset_mgdl);
@@ -122,5 +130,13 @@ void CgmPreprocess_ResetCalibrationAge(cgm_preprocess_t *st);
 void CgmPreprocess_Push(cgm_preprocess_t *st,
                         const cgm_raw_sample_t *sample,
                         cgm_preprocess_output_t *out);
+
+void CgmModel_Reset(void);
+void CgmModel_SetEnabled(bool enabled);
+bool CgmModel_IsEnabled(void);
+bool CgmModel_Predict(const cgm_model_features_t *in,
+                      uint16_t *pred_15m_mgdl,
+                      uint16_t *pred_30m_mgdl,
+                      uint8_t *confidence_pct);
 
 #endif /* CGM_PREPROCESS_H */

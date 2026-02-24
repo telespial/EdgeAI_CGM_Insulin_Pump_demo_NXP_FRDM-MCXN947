@@ -3,6 +3,20 @@
 #include <math.h>
 #include <string.h>
 
+#define CGM_MODEL_HIST_LEN 8u
+
+typedef struct
+{
+    bool enabled;
+    bool primed;
+    uint16_t glucose_hist[CGM_MODEL_HIST_LEN];
+    int16_t trend_hist_x100[CGM_MODEL_HIST_LEN];
+    uint8_t sqi_hist[CGM_MODEL_HIST_LEN];
+    uint8_t wr;
+} cgm_model_state_t;
+
+static cgm_model_state_t gCgmModel;
+
 static float ClampF32(float v, float lo, float hi)
 {
     if (v < lo)
@@ -14,6 +28,88 @@ static float ClampF32(float v, float lo, float hi)
         return hi;
     }
     return v;
+}
+
+static int32_t ClampI32(int32_t v, int32_t lo, int32_t hi)
+{
+    if (v < lo)
+    {
+        return lo;
+    }
+    if (v > hi)
+    {
+        return hi;
+    }
+    return v;
+}
+
+void CgmModel_Reset(void)
+{
+    memset(&gCgmModel, 0, sizeof(gCgmModel));
+}
+
+void CgmModel_SetEnabled(bool enabled)
+{
+    gCgmModel.enabled = enabled;
+}
+
+bool CgmModel_IsEnabled(void)
+{
+    return gCgmModel.enabled;
+}
+
+bool CgmModel_Predict(const cgm_model_features_t *in,
+                      uint16_t *pred_15m_mgdl,
+                      uint16_t *pred_30m_mgdl,
+                      uint8_t *confidence_pct)
+{
+    int32_t trend_x100;
+    int32_t pred15;
+    int32_t pred30;
+    uint8_t q;
+    uint8_t prev = (uint8_t)((gCgmModel.wr + CGM_MODEL_HIST_LEN - 1u) % CGM_MODEL_HIST_LEN);
+    int32_t smooth_glucose_x10;
+
+    if ((in == NULL) || (pred_15m_mgdl == NULL) || (pred_30m_mgdl == NULL) || (confidence_pct == NULL))
+    {
+        return false;
+    }
+
+    gCgmModel.glucose_hist[gCgmModel.wr] = in->glucose_mgdl;
+    gCgmModel.trend_hist_x100[gCgmModel.wr] = in->trend_mgdl_min_x100;
+    gCgmModel.sqi_hist[gCgmModel.wr] = in->sqi_pct;
+    gCgmModel.wr = (uint8_t)((gCgmModel.wr + 1u) % CGM_MODEL_HIST_LEN);
+    if (gCgmModel.wr == 0u)
+    {
+        gCgmModel.primed = true;
+    }
+
+    if (!gCgmModel.enabled)
+    {
+        return false;
+    }
+
+    trend_x100 = (int32_t)in->trend_mgdl_min_x100;
+    if (gCgmModel.primed)
+    {
+        /* Lightweight temporal smoothing placeholder until a trained model is embedded. */
+        trend_x100 = (trend_x100 + (int32_t)gCgmModel.trend_hist_x100[prev]) / 2;
+    }
+    smooth_glucose_x10 = ((int32_t)in->glucose_mgdl * 10) + (trend_x100 / 3);
+    pred15 = (smooth_glucose_x10 / 10) + ((trend_x100 * 15) / 100);
+    pred30 = (smooth_glucose_x10 / 10) + ((trend_x100 * 30) / 100);
+    pred15 = ClampI32(pred15, 40, 400);
+    pred30 = ClampI32(pred30, 40, 400);
+
+    q = in->sqi_pct;
+    if ((in->sensor_flags & (CGM_FLAG_DROPOUT | CGM_FLAG_IMPLAUSIBLE_ROC | CGM_FLAG_TEMP_OUT_OF_RANGE)) != 0u)
+    {
+        q = (uint8_t)((q > 40u) ? (q - 40u) : 0u);
+    }
+    *pred_15m_mgdl = (uint16_t)pred15;
+    *pred_30m_mgdl = (uint16_t)pred30;
+    *confidence_pct = q;
+    return true;
 }
 
 static float Median3(float a, float b, float c)

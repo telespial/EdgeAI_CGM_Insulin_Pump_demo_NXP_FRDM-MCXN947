@@ -1,6 +1,6 @@
 # CGM Runtime Tuple Contract
 
-Last updated: 2026-02-23
+Last updated: 2026-02-24
 
 ## Purpose
 Define the canonical CGM runtime tuple for this demo so UI, control logic, logging, and later sensor integration all use the same data contract.
@@ -66,7 +66,16 @@ Detailed taxonomy and trigger logic:
   - show SQI and active sensor flags
   - visually mark tuple as simulated until live CGM source is integrated
 
+## Runtime Status (Current Firmware)
+
+- Tuple fields above are actively produced/consumed in the runtime CGM path.
+- Upstream signal source is still synthetic/demo preprocessing input, not a live dermal CGM sensor feed.
+- Prediction quality diagnostics are now exposed in UI:
+  - `PRED SCORE` (tolerance hit-rate based)
+  - `E#` (matured prediction evaluations consumed)
+  - `MAE x.y mg/dL` (blended 15m/30m absolute error magnitude)
+
 ## Integration Notes
 
-- This contract is documentation-only at this stage; runtime struct wiring is pending implementation.
-- Current demo behavior still uses simulated glucose/trend logic and should be mapped onto this tuple as an adapter layer in a later step.
+- Contract wiring is implemented in firmware, but model quality remains under active tuning.
+- This demo remains an advisory simulation and is not an autonomous therapy controller.

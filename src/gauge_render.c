@@ -37,6 +37,7 @@ static uint32_t gFrameCounter = 0u;
 static uint8_t gPrevBarLevel = 255u;
 static uint8_t gPrevFillPct = 255u;
 static bool gPrevAiEnabled = false;
+static bool gPrevAiBackendNpu = true;
 static uint8_t gPrevAiStatus = 255u;
 static uint8_t gPrevAiFaultFlags = 255u;
 static uint16_t gPrevThermalRisk = 65535u;
@@ -184,6 +185,32 @@ static uint8_t gUiPredHypoWarnDebounce = 0u;
 static uint8_t gUiPredHypoFaultDebounce = 0u;
 static uint8_t gUiPredHyperWarnDebounce = 0u;
 static uint8_t gUiPredHyperFaultDebounce = 0u;
+static bool gUiAiEnabled = true;
+static bool gUiAiBackendNpu = true;
+static bool gUiWarmupThinking = false;
+static uint8_t gUiPredAccuracyPct = 0u;
+static float gUiPredMae15 = 15.0f;
+static float gUiPredMae30 = 18.0f;
+static bool gUiPredMaePrimed = false;
+static uint32_t gUiPredEvalCount = 0u;
+static uint32_t gUiPredTolHitCount = 0u;
+static uint32_t gUiPredTolTotalCount = 0u;
+static uint32_t gUiPredAccuracyNextIssueDs = 0u;
+
+typedef struct
+{
+    uint32_t due_ds;
+    uint16_t pred_mgdl;
+    bool valid;
+} prediction_eval_slot_t;
+
+#define PRED_EVAL_RING_LEN 256u
+static prediction_eval_slot_t gPredEval15[PRED_EVAL_RING_LEN];
+static prediction_eval_slot_t gPredEval30[PRED_EVAL_RING_LEN];
+static uint16_t gPredEval15Head = 0u;
+static uint16_t gPredEval15Tail = 0u;
+static uint16_t gPredEval30Head = 0u;
+static uint16_t gPredEval30Tail = 0u;
 
 enum
 {
@@ -280,6 +307,101 @@ static int8_t PredictionAlertDir(void)
     return gUiPredAlertDir;
 }
 
+static uint16_t AbsDiffU16(uint16_t a, uint16_t b)
+{
+    return (a > b) ? (uint16_t)(a - b) : (uint16_t)(b - a);
+}
+
+static uint16_t PredTolerance10PctMgdl(uint16_t ref_mgdl)
+{
+    uint16_t tol = (uint16_t)((ref_mgdl + 5u) / 10u); /* rounded 10% */
+    return (tol == 0u) ? 1u : tol;
+}
+
+static void PredEvalPush(prediction_eval_slot_t *ring, uint16_t *head, uint16_t *tail, uint32_t due_ds, uint16_t pred_mgdl)
+{
+    uint16_t next = (uint16_t)((*head + 1u) % PRED_EVAL_RING_LEN);
+    if (next == *tail)
+    {
+        *tail = (uint16_t)((*tail + 1u) % PRED_EVAL_RING_LEN);
+    }
+    ring[*head].due_ds = due_ds;
+    ring[*head].pred_mgdl = pred_mgdl;
+    ring[*head].valid = true;
+    *head = next;
+}
+
+static void PredEvalConsumeDue(prediction_eval_slot_t *ring, uint16_t *tail, uint16_t head, uint32_t now_ds, uint16_t actual_mgdl, float *mae)
+{
+    while (*tail != head)
+    {
+        prediction_eval_slot_t *slot = &ring[*tail];
+        if (!slot->valid)
+        {
+            *tail = (uint16_t)((*tail + 1u) % PRED_EVAL_RING_LEN);
+            continue;
+        }
+        if ((int32_t)(now_ds - slot->due_ds) < 0)
+        {
+            break;
+        }
+
+        {
+            float err = (float)AbsDiffU16(actual_mgdl, slot->pred_mgdl);
+            uint16_t tol = PredTolerance10PctMgdl(slot->pred_mgdl);
+            uint16_t abs_err = AbsDiffU16(actual_mgdl, slot->pred_mgdl);
+            if (!gUiPredMaePrimed)
+            {
+                *mae = err;
+            }
+            else
+            {
+                *mae = (*mae * 0.85f) + (err * 0.15f);
+            }
+            gUiPredTolTotalCount++;
+            if (abs_err <= tol)
+            {
+                gUiPredTolHitCount++;
+            }
+        }
+        gUiPredEvalCount++;
+        slot->valid = false;
+        *tail = (uint16_t)((*tail + 1u) % PRED_EVAL_RING_LEN);
+    }
+}
+
+static void UpdatePredictionAccuracy(uint32_t now_ds)
+{
+    if ((gUiPredAccuracyNextIssueDs == 0u) || ((int32_t)(now_ds - gUiPredAccuracyNextIssueDs) >= 0))
+    {
+        PredEvalPush(gPredEval15, &gPredEval15Head, &gPredEval15Tail, now_ds + 9000u, gUiPred15Mgdl);
+        PredEvalPush(gPredEval30, &gPredEval30Head, &gPredEval30Tail, now_ds + 18000u, gUiPred30Mgdl);
+        gUiPredAccuracyNextIssueDs = now_ds + 100u; /* issue every 10s */
+    }
+
+    PredEvalConsumeDue(gPredEval15, &gPredEval15Tail, gPredEval15Head, now_ds, gUiGlucoseMgdl, &gUiPredMae15);
+    PredEvalConsumeDue(gPredEval30, &gPredEval30Tail, gPredEval30Head, now_ds, gUiGlucoseMgdl, &gUiPredMae30);
+
+    if (!gUiPredMaePrimed && ((gUiPredEvalCount >= 1u) || (gUiPredTolTotalCount >= 1u)))
+    {
+        gUiPredMaePrimed = true;
+    }
+
+    if (gUiPredMaePrimed)
+    {
+        float tol_pct = 0.0f;
+        if (gUiPredTolTotalCount > 0u)
+        {
+            tol_pct = ((float)gUiPredTolHitCount * 100.0f) / (float)gUiPredTolTotalCount;
+        }
+        gUiPredAccuracyPct = (uint8_t)ClampF32(tol_pct, 0.0f, 99.0f);
+    }
+    else
+    {
+        gUiPredAccuracyPct = 0u;
+    }
+}
+
 static const char *CgmConfidenceCode(uint8_t sqi_pct)
 {
     if (sqi_pct >= 80u)
@@ -297,10 +419,15 @@ static const char *CgmConfidenceCode(uint8_t sqi_pct)
     return "BAD";
 }
 
-static void UpdatePredictionModelAndAlerts(void)
+static void UpdatePredictionModelAndAlerts(uint32_t now_ds)
 {
     float pred15_f = (float)gUiGlucoseMgdl + (gUiGlucoseTrendMgDlPerMin * 15.0f);
     float pred30_f = (float)gUiGlucoseMgdl + (gUiGlucoseTrendMgDlPerMin * 30.0f);
+    cgm_model_features_t in;
+    uint16_t model_pred15 = 0u;
+    uint16_t model_pred30 = 0u;
+    uint8_t model_conf = 0u;
+    bool model_ok;
     float trend = gUiGlucoseTrendMgDlPerMin;
     bool trend_hypo_warn_ok = (trend <= -0.12f);
     bool trend_hypo_fault_ok = (trend <= -0.20f);
@@ -317,10 +444,41 @@ static void UpdatePredictionModelAndAlerts(void)
     bool hyper_warn_clear;
     bool hyper_fault_clear;
 
-    pred15_f = ClampF32(pred15_f, 40.0f, 400.0f);
-    pred30_f = ClampF32(pred30_f, 40.0f, 400.0f);
-    gUiPred15Mgdl = (uint16_t)(pred15_f + 0.5f);
-    gUiPred30Mgdl = (uint16_t)(pred30_f + 0.5f);
+    if (!gUiAiEnabled)
+    {
+        gUiPredHypoWarnDebounce = 0u;
+        gUiPredHypoFaultDebounce = 0u;
+        gUiPredHyperWarnDebounce = 0u;
+        gUiPredHyperFaultDebounce = 0u;
+        gUiPredHypoWarnActive = false;
+        gUiPredHypoFaultActive = false;
+        gUiPredHyperWarnActive = false;
+        gUiPredHyperFaultActive = false;
+        gUiPredAlertStatus = AI_STATUS_NORMAL;
+        gUiPredAlertDir = 0;
+        return;
+    }
+
+    in.glucose_mgdl = gUiGlucoseMgdl;
+    in.trend_mgdl_min_x100 = (int16_t)ClampF32(gUiGlucoseTrendMgDlPerMin * 100.0f, -500.0f, 500.0f);
+    in.sqi_pct = gUiCgmSqiPct;
+    in.sensor_flags = gUiCgmSensorFlags;
+    model_ok = CgmModel_Predict(&in, &model_pred15, &model_pred30, &model_conf);
+
+    if (model_ok && (model_conf >= 45u))
+    {
+        gUiPred15Mgdl = model_pred15;
+        gUiPred30Mgdl = model_pred30;
+    }
+    else
+    {
+        pred15_f = ClampF32(pred15_f, 40.0f, 400.0f);
+        pred30_f = ClampF32(pred30_f, 40.0f, 400.0f);
+        gUiPred15Mgdl = (uint16_t)(pred15_f + 0.5f);
+        gUiPred30Mgdl = (uint16_t)(pred30_f + 0.5f);
+    }
+
+    UpdatePredictionAccuracy(now_ds);
 
     if (!gating_ok || roc_implausible)
     {
@@ -1603,6 +1761,13 @@ static void DrawGlucoseIndicator(void)
     if (!gCgmPreprocessInit)
     {
         CgmPreprocess_InitDefault(&gCgmPreprocess);
+        CgmModel_Reset();
+        CgmModel_SetEnabled(true);
+        gUiPredEvalCount = 0u;
+        gUiPredTolHitCount = 0u;
+        gUiPredTolTotalCount = 0u;
+        gUiPredMaePrimed = false;
+        gUiPredAccuracyPct = 0u;
         gCgmNextRawSampleDs = now_ds;
         gCgmPreprocessInit = true;
     }
@@ -1652,7 +1817,7 @@ static void DrawGlucoseIndicator(void)
                 gUiGlucoseMgdl = (uint16_t)g;
                 gUiGlucoseTrendMgDlPerMin = out.trend_mgdl_min;
             }
-            UpdatePredictionModelAndAlerts();
+            UpdatePredictionModelAndAlerts(gCgmNextRawSampleDs);
         }
         gCgmNextRawSampleDs += 10u; /* 1 Hz synthetic raw sample cadence. */
     }
@@ -2179,11 +2344,11 @@ static void DrawRecordConfirmOverlay(void)
 
 static void DrawAiPill(const gauge_style_preset_t *style, bool ai_enabled)
 {
-    uint16_t fill = ai_enabled ? RGB565(22, 80, 28) : RGB565(45, 20, 18);
-    uint16_t txt = ai_enabled ? RGB565(180, 255, 170) : RGB565(255, 210, 180);
+    uint16_t fill = ai_enabled ? RGB565(22, 92, 30) : RGB565(24, 28, 34);
+    uint16_t txt = ai_enabled ? RGB565(200, 255, 196) : RGB565(156, 168, 180);
     int32_t x0 = AI_SET_X1 + 1;
     int32_t x1 = AI_HELP_X0 - 1;
-    const char *label = ai_enabled ? "AI NPU" : "AI MCU";
+    const char *label = gUiAiBackendNpu ? "AI NPU" : "AI MCU";
     int32_t scale = 2;
     int32_t tw = edgeai_text5x7_width(scale, label);
     int32_t th = 7 * scale;
@@ -2337,7 +2502,7 @@ static void DrawSettingsPopup(void)
     DrawLine(x1, y0, x1, y1, 2, edge);
     DrawTextUi(x0 + 10, y0 + 10, 1, "SETTINGS", body);
     DrawPopupCloseButton(x1, y0);
-    DrawTextUi(label_col_right - edgeai_text5x7_width(1, "MODE"), mode_label_y, 1, "MODE", body);
+    DrawTextUi(label_col_right - edgeai_text5x7_width(1, "AI"), mode_label_y, 1, "AI", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "RUN"), run_label_y, 1, "RUN", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "SENS"), tune_label_y, 1, "SENS", body);
     DrawTextUi(label_col_right - edgeai_text5x7_width(1, "AI"), ai_label_y, 1, "AI", body);
@@ -2352,8 +2517,8 @@ static void DrawSettingsPopup(void)
         int32_t by0 = GAUGE_RENDER_SET_MODE_Y0;
         int32_t bx1 = bx0 + GAUGE_RENDER_SET_MODE_W - 1;
         int32_t by1 = by0 + GAUGE_RENDER_SET_MODE_H - 1;
-        bool sel = ((uint8_t)i == gAnomMode);
-        const char *t = (i == 0) ? "ADAPT" : "TRAINED";
+        bool sel = (i == 0) ? !gPrevAiEnabled : gPrevAiEnabled;
+        const char *t = (i == 0) ? "OFF" : "ON";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
         DrawPillRect(bx0, by0, bx1, by1, f, edge);
@@ -2406,7 +2571,7 @@ static void DrawSettingsPopup(void)
         int32_t by0 = GAUGE_RENDER_SET_AI_Y0;
         int32_t bx1 = bx0 + GAUGE_RENDER_SET_AI_W - 1;
         int32_t by1 = by0 + GAUGE_RENDER_SET_AI_H - 1;
-        bool sel = (i == 0) ? !gPrevAiEnabled : gPrevAiEnabled;
+        bool sel = (i == 0) ? !gPrevAiBackendNpu : gPrevAiBackendNpu;
         const char *t = (i == 0) ? "MCU" : "NPU";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
@@ -2743,6 +2908,8 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     char detail[30];
     char human_label[24];
     char human_cache_key[48];
+    char score_line[24];
+    char mae_line[24];
     int32_t label_scale = 2;
     int32_t label_width = 0;
     int32_t label_max_width = (ALERT_X1 - ALERT_X0 + 1) - 8;
@@ -2757,44 +2924,70 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     }
 
     severe = IsSevereAlertCondition(sample);
-    if (gActivityStage >= ACTIVITY_HEAVY)
+    if (!ai_enabled)
     {
-        status = AI_STATUS_FAULT;
-    }
-    else if (gActivityStage >= ACTIVITY_ACTIVE)
-    {
-        status = AI_STATUS_WARNING;
+        status = AI_STATUS_NORMAL;
+        severe = false;
+        snprintf(human_label, sizeof(human_label), "%s", "AI OFF");
+        snprintf(detail, sizeof(detail), "%s", "AI OFF");
     }
     else
     {
-        status = AI_STATUS_NORMAL;
-    }
-    if (pred_status > status)
-    {
-        status = pred_status;
-        severe = (status == AI_STATUS_FAULT);
-    }
-    BuildAnomalyReason(sample, detail, sizeof(detail));
-    if (pred_status != AI_STATUS_NORMAL)
-    {
-        if (pred_dir < 0)
+        if (gActivityStage >= ACTIVITY_HEAVY)
         {
-            snprintf(human_label, sizeof(human_label), "%s",
-                     (status == AI_STATUS_FAULT) ? "PRED HYPO" : "LOW GLUCOSE");
+            status = AI_STATUS_FAULT;
+        }
+        else if (gActivityStage >= ACTIVITY_ACTIVE)
+        {
+            status = AI_STATUS_WARNING;
         }
         else
         {
-            snprintf(human_label, sizeof(human_label), "%s",
-                     (status == AI_STATUS_FAULT) ? "PRED HYPER" : "HIGH GLUCOSE");
+            status = AI_STATUS_NORMAL;
         }
-        snprintf(detail, sizeof(detail), "P15 %3u P30 %3u SQI %3u",
-                 (unsigned int)gUiPred15Mgdl,
-                 (unsigned int)gUiPred30Mgdl,
-                 (unsigned int)gUiCgmSqiPct);
+        if (pred_status > status)
+        {
+            status = pred_status;
+            severe = (status == AI_STATUS_FAULT);
+        }
+        BuildAnomalyReason(sample, detail, sizeof(detail));
+        if (pred_status != AI_STATUS_NORMAL)
+        {
+            if (pred_dir < 0)
+            {
+                snprintf(human_label, sizeof(human_label), "%s",
+                         (status == AI_STATUS_FAULT) ? "PRED HYPO" : "LOW GLUCOSE");
+            }
+            else
+            {
+                snprintf(human_label, sizeof(human_label), "%s",
+                         (status == AI_STATUS_FAULT) ? "PRED HYPER" : "HIGH GLUCOSE");
+            }
+            snprintf(detail, sizeof(detail), "P15 %3u P30 %3u SQI %3u",
+                     (unsigned int)gUiPred15Mgdl,
+                     (unsigned int)gUiPred30Mgdl,
+                     (unsigned int)gUiCgmSqiPct);
+        }
+        else
+        {
+            snprintf(human_label, sizeof(human_label), "%s", ActivityHeadlineText(gActivityStage, gActivityPct));
+        }
+    }
+    if ((gUiPredEvalCount == 0u) && (gUiPredTolTotalCount == 0u))
+    {
+        snprintf(score_line, sizeof(score_line), "PRED SCORE -- E0");
+        snprintf(mae_line, sizeof(mae_line), "MAE --.- mg/dL");
     }
     else
     {
-        snprintf(human_label, sizeof(human_label), "%s", ActivityHeadlineText(gActivityStage, gActivityPct));
+        float mae_blend = (0.6f * gUiPredMae15) + (0.4f * gUiPredMae30);
+        uint16_t mae_tenths = (uint16_t)ClampF32((mae_blend * 10.0f) + 0.5f, 0.0f, 9999.0f);
+        snprintf(score_line, sizeof(score_line), "PRED SCORE %2u%% E%lu",
+                 (unsigned int)gUiPredAccuracyPct,
+                 (unsigned long)gUiPredEvalCount);
+        snprintf(mae_line, sizeof(mae_line), "MAE %u.%u mg/dL",
+                 (unsigned int)(mae_tenths / 10u),
+                 (unsigned int)(mae_tenths % 10u));
     }
     snprintf(human_cache_key, sizeof(human_cache_key), "%s", human_label);
     label_width = edgeai_text5x7_width(2, human_label);
@@ -2848,6 +3041,28 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         return;
     }
 
+    if (ai_enabled && gUiWarmupThinking)
+    {
+        if (gAlertVisualValid &&
+            !gAlertVisualRecording &&
+            (strcmp(gAlertVisualDetail, "THINKING") == 0))
+        {
+            return;
+        }
+
+        par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
+        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(3, "THINKING")) / 2;
+        DrawTextUi(tx, ALERT_Y0 + 10, 3, "THINKING", WARN_YELLOW);
+        gAlertVisualValid = true;
+        gAlertVisualStatus = AI_STATUS_WARNING;
+        gAlertVisualSevere = false;
+        gAlertVisualAiEnabled = ai_enabled;
+        gAlertVisualRecording = false;
+        snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", "THINKING");
+        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", "THINKING");
+        return;
+    }
+
     if (gAlertVisualValid &&
         (gAlertVisualStatus == status) &&
         (gAlertVisualSevere == severe) &&
@@ -2856,40 +3071,55 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         (strcmp(gAlertVisualHeadline, human_cache_key) == 0) &&
         (strcmp(gAlertVisualDetail, detail) == 0))
     {
-        return;
-    }
-
-    par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
-    if (status == AI_STATUS_NORMAL)
-    {
-        color = ActivityColor(style, gActivityStage);
-        par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(6, 16, 10));
-        DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
-        DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
-        DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
-        DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
-        DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, RGB565(220, 255, 220));
+        /* score line can change independently; still refresh score strip. */
     }
     else
     {
-        color = severe ? ALERT_RED : AiStatusColor(style, status);
-        par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(18, 3, 7));
-        DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
-        DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
-        DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
-        DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
-        DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, color);
+        par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
+        if (status == AI_STATUS_NORMAL)
+        {
+            color = ActivityColor(style, gActivityStage);
+            par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(6, 16, 10));
+            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
+            DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
+            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
+            DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
+            tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
+            DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, RGB565(220, 255, 220));
+        }
+        else
+        {
+            color = severe ? ALERT_RED : AiStatusColor(style, status);
+            par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(18, 3, 7));
+            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
+            DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
+            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
+            DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
+            tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
+            DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, color);
+        }
+
+        gAlertVisualValid = true;
+        gAlertVisualStatus = status;
+        gAlertVisualSevere = severe;
+        gAlertVisualAiEnabled = ai_enabled;
+        gAlertVisualRecording = recording;
+        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", human_cache_key);
+        snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", detail);
     }
 
-    gAlertVisualValid = true;
-    gAlertVisualStatus = status;
-    gAlertVisualSevere = severe;
-    gAlertVisualAiEnabled = ai_enabled;
-    gAlertVisualRecording = recording;
-    snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", human_cache_key);
-    snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", detail);
+    /* Score strip below activity/warning box. */
+    par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y1 + 2, ALERT_X1, ALERT_Y1 + 22, RGB565(2, 3, 5));
+    DrawTextUi(ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1 - edgeai_text5x7_width(1, score_line)) / 2),
+               ALERT_Y1 + 5,
+               1,
+               score_line,
+               ai_enabled ? RGB565(178, 240, 198) : RGB565(140, 154, 160));
+    DrawTextUi(ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1 - edgeai_text5x7_width(1, mae_line)) / 2),
+               ALERT_Y1 + 13,
+               1,
+               mae_line,
+               ai_enabled ? RGB565(190, 210, 255) : RGB565(128, 138, 148));
 }
 
 static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_sample_t *sample, uint16_t cpu_pct, bool ai_enabled)
@@ -3599,6 +3829,35 @@ bool GaugeRender_IsLiveBannerMode(void)
     return gLiveBannerMode;
 }
 
+void GaugeRender_SetAiBackendNpu(bool use_npu)
+{
+    gUiAiBackendNpu = use_npu;
+}
+
+void GaugeRender_SetWarmupThinking(bool enabled)
+{
+    gUiWarmupThinking = enabled;
+}
+
+void GaugeRender_PrimePredictionScore(void)
+{
+    if (gUiPredEvalCount < 1u)
+    {
+        /* Do not synthesize an accuracy score from default MAE seeds. */
+        gUiPredMaePrimed = false;
+        gUiPredAccuracyPct = 0u;
+        return;
+    }
+
+    float tol_pct = 0.0f;
+    if (gUiPredTolTotalCount > 0u)
+    {
+        tol_pct = ((float)gUiPredTolHitCount * 100.0f) / (float)gUiPredTolTotalCount;
+    }
+    gUiPredMaePrimed = true;
+    gUiPredAccuracyPct = (uint8_t)ClampF32(tol_pct, 0.0f, 99.0f);
+}
+
 void GaugeRender_DrawGyroFast(void)
 {
     if (!gLcdReady || !gStaticReady)
@@ -3625,6 +3884,8 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         return;
     }
 
+    gUiAiEnabled = ai_enabled;
+
     style = GaugeStyle_GetCockpitPreset();
     power_w = DisplayPowerW(sample);
     modal_active = (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive);
@@ -3642,6 +3903,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gUiGlucoseTextValid = false;
         gUiGlucoseTextNextRedrawDs = 0u;
         gPrevAiEnabled = !ai_enabled;
+        gPrevAiBackendNpu = gUiAiBackendNpu;
         gAlertVisualValid = false;
     }
 
@@ -3658,6 +3920,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevAnomaly = 0u;
         gPrevWear = 0u;
         gPrevAiEnabled = false;
+        gPrevAiBackendNpu = gUiAiBackendNpu;
         gPrevAiStatus = 255u;
         gPrevAiFaultFlags = 255u;
         gPrevThermalRisk = 65535u;
@@ -3791,6 +4054,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     gPrevThermalRisk = sample->thermal_risk_s;
     gPrevDrift = sample->degradation_drift_pct;
     gPrevAiEnabled = ai_enabled;
+    gPrevAiBackendNpu = gUiAiBackendNpu;
     (void)gTraceReady;
 }
 

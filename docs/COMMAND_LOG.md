@@ -943,3 +943,241 @@ Format:
 2026-02-24T00:00:00Z | cmd: apply_patch docs/TODO.md docs/PROJECT_STATE.md | result: ok | note: Updated restore-point references to GOLDEN/FAILSAFE 2026-02-24-R3 and recorded promotion entry.
 2026-02-24T00:00:00Z | cmd: git status --short --branch && git status --short failsafe | result: ok | note: Verified tracked/untracked scope before commit.
 2026-02-24T00:00:00Z | cmd: git add docs/COMMAND_LOG.md docs/PROJECT_STATE.md docs/TODO.md docs/CGM_VALIDATION_PROTOCOL.md src/edgeai_medical_device_demo.c src/gauge_render.c && git commit -m "Promote R3 restore points and finalize OSTIMER elapsed-time fixes" && git push origin main | result: ok | note: Pushed release baseline update commit 760e1bd to origin/main.
+2026-02-24T00:00:00Z | cmd: mkdir -p data && curl -fL -I https://cgmdb.stanford.edu/data/data_cgm.csv | result: fail (404) | note: Initial URL path not valid on cgmdb host.
+2026-02-24T00:00:00Z | cmd: curl -fL "https://web.stanford.edu/group/genetics/cgmdb/data/data_cgm.csv" -o data/data_cgm.csv && ls -lh data/data_cgm.csv && wc -l data/data_cgm.csv | result: ok | note: Downloaded Stanford CGM dataset file (1.2M, 23521 rows).
+2026-02-24T00:00:00Z | cmd: python3 inspect headers for data/data_cgm.csv | result: ok | note: Columns are glucose/subject/foods/mitigator/food/rep/mins_since_start (no insulin dosing fields).
+2026-02-24T00:00:00Z | cmd: curl direct Stanford data_cgm CSV URL (cgmdb host then web.stanford host), file inspect with wc/header parse | result: ok | note: Downloaded data/data_cgm.csv; contains CGM-only fields.
+2026-02-24T00:00:00Z | cmd: curl/download OhioT1DM zip and inspect archive/content/page | result: partial | note: data/OhioT1DM_dataset.zip downloaded but protected; official page requires signed DUA before release.
+2026-02-24T00:00:00Z | cmd: query Mendeley direct/public API links for alternative insulin+carb datasets | result: fail | note: endpoints tested returned 403/404 from this environment.
+| 2026-02-24T03:41:26Z | read bootstrap docs (head) | ok |
+| 2026-02-24T03:41:42Z | inspect failed wiki API payload | ok |
+| 2026-02-24T03:41:49Z | scrape wiki page links | ok |
+| 2026-02-24T03:42:18Z | extract dataset links from Awesome-CGM pages | ok |
+| 2026-02-24T03:42:34Z | validate Zenodo dataset DOI target | ok |
+| 2026-02-24T03:42:41Z | list Zenodo record files | ok |
+| 2026-02-24T03:43:39Z | download D1NAMO diabetes pictures+glucose+food+insulin zip | ok |
+| 2026-02-24T03:43:44Z | inspect downloaded D1NAMO zip contents | ok |
+| 2026-02-24T03:43:58Z | append PROJECT_STATE with D1NAMO dataset update | ok |
+| 2026-02-24T03:44:07Z | (retroactive) inspect tail of PROJECT_STATE.md | ok |
+| 2026-02-24T03:44:30Z | start D1NAMO extract+replay conversion task | ok |
+| 2026-02-24T03:44:41Z | rg scan for replay format + list data dir | ok |
+| 2026-02-24T03:44:48Z | inspect trace_csv_to_header.py and replay_trace_generated.h | ok |
+| 2026-02-24T03:44:58Z | inspect D1NAMO sample glucose.csv and insulin.csv headers | ok |
+| 2026-02-24T03:45:06Z | scan for replay CSV schema usage in code/tools | ok |
+| 2026-02-24T03:45:48Z | add tools/d1namo_extract_replay.py converter | ok |
+| 2026-02-24T03:46:00Z | run d1namo converter + regenerate src/replay_trace_generated.h | ok |
+| 2026-02-24T03:46:15Z | append PROJECT_STATE with D1NAMO replay conversion artifacts | ok |
+| 2026-02-24T03:46:29Z | build debug after D1NAMO replay generation | ok |
+| 2026-02-24T03:46:37Z | git status --short after replay conversion | ok |
+| 2026-02-24T03:47:28Z | ./tools/flash_frdmmcxn947.sh | ok |
+| 2026-02-24T03:47:28Z | append PROJECT_STATE flash update | ok |
+| 2026-02-24T03:47:55Z | verify live vs replay wiring for generated trace | ok |
+| 2026-02-24T03:48:01Z | inspect power_data_source mode handling (live vs replay) | ok |
+| 2026-02-24T03:51:58Z | count D1NAMO subjects/rows/span for split viability | ok |
+| 2026-02-24T03:53:18Z | generate D1NAMO split CSVs with subject001 held out | ok |
+| 2026-02-24T03:53:26Z | append PROJECT_STATE with subject001 holdout split | ok |
+| 2026-02-24T03:53:31Z | verify split CSV line counts | ok |
+
+[2026-02-24T05:03:20Z] imported cgm best model artifacts into model/ from EIL compare run
+
+[2026-02-24T05:03:33Z] tail docs/PROJECT_STATE.md before append model import entry
+
+[2026-02-24T05:03:45Z] append PROJECT_STATE with imported cgm best model artifacts entry
+
+[2026-02-24T05:03:50Z] ls -l model after import
+
+[2026-02-24T05:13:22Z] read docs/START_HERE.md
+
+[2026-02-24T05:13:22Z] read docs/PROJECT_STATE.md
+
+[2026-02-24T05:13:22Z] read docs/OPS_RUNBOOK.md
+
+[2026-02-24T05:13:29Z] rg for adapt/trained/settings/activity/warning/score strings
+
+[2026-02-24T05:13:29Z] rg for render functions in src
+[2026-02-24T05:14:02Z] rg/sed scan of src for live/playback/test-data flow (power_data_source.c, edgeai_medical_device_demo.c, gauge_render.c)
+[2026-02-24T05:14:31Z] apply_patch src/edgeai_medical_device_demo.c: make LIVE mode start ext-flash playback and auto-loop at end-of-playback
+[2026-02-24T05:14:52Z] apply_patch src/edgeai_medical_device_demo.c: allow startup playback init regardless of LIVE/TRAIN banner mode
+[2026-02-24T05:15:10Z] ./scripts/build.sh (debug) after live-loop playback change -> PASS
+[2026-02-24T05:15:34Z] date -u for state/log timestamp capture
+[2026-02-24T05:15:45Z] tail docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for format/context before appending updates
+[2026-02-24T05:15:55Z] append docs/PROJECT_STATE.md with LIVE-mode test-data loop behavior update
+[2026-02-24T05:16:22Z] ./scripts/flash.sh -> PASS (linkserver, probe #1, MCXN947 target matched)
+[2026-02-24T05:16:29Z] date -u timestamp capture for flash/state update
+[2026-02-24T05:16:37Z] append docs/PROJECT_STATE.md with flash success update
+[2026-02-24T05:18:12Z] inspect settings UI/touch handling for MODE row and AI row labels/actions in src/gauge_render.c and src/edgeai_medical_device_demo.c
+[2026-02-24T05:18:31Z] apply_patch src/gauge_render.c: MODE row label/options changed from ADAPT/TRAINED to AI OFF/ON (MCU/NPU row retained)
+[2026-02-24T05:18:44Z] apply_patch src/edgeai_medical_device_demo.c: MODE-row touch now toggles ai_enabled OFF/ON and logs AI_ENABLE
+[2026-02-24T05:18:58Z] ./scripts/build.sh after settings OFF/ON row change -> PASS
+[2026-02-24T05:19:02Z] date -u timestamp capture for state update
+[2026-02-24T05:19:10Z] append docs/PROJECT_STATE.md with settings MODE->AI OFF/ON update and verification status
+[2026-02-24T05:20:37Z] ./scripts/flash.sh -> PASS (linkserver, probe #1, MCXN947 target matched)
+[2026-02-24T05:20:45Z] date -u timestamp capture for flash/state update
+[2026-02-24T05:21:19Z] inspect AI pill/alert overlay/runtime ai gating paths in src/gauge_render.c (DrawAiPill, DrawAiAlertOverlay, GaugeRender_DrawFrame)
+[2026-02-24T05:21:47Z] inspect prediction model update path and globals in src/gauge_render.c (UpdatePredictionModelAndAlerts, gUiPred* fields)
+[2026-02-24T05:22:11Z] inspect activity score model section in src/gauge_render.c for score rendering context
+[2026-02-24T05:22:24Z] inspect alert/terminal layout coordinates (ALERT_Y1, TERM_Y) for safe score strip placement
+[2026-02-24T05:24:02Z] apply_patch src/gauge_render.c: add runtime ai gate, prediction-accuracy evaluator/ring buffer, score strip below alert box, and green AI MCU/NPU pill styling
+[2026-02-24T05:24:23Z] ./scripts/build.sh after AI gating/score/banner updates -> PASS
+[2026-02-24T05:25:18Z] rg verify AI_ENABLE/PRED SCORE/AI OFF hooks and flash latest build via ./scripts/flash.sh -> PASS
+[2026-02-24T05:25:39Z] date -u timestamp capture for state update
+[2026-02-24T05:25:49Z] append docs/PROJECT_STATE.md with AI OFF/ON behavior fix, score strip, green AI pill, build+flash verification
+[2026-02-24T05:26:32Z] check test dataset length and endpoints (wc/head/tail on data/d1namo_test_subject001.csv)
+[2026-02-24T05:26:37Z] compute epoch-based duration for data/d1namo_test_subject001.csv with awk -> 423602s (117.67h, 4.90d)
+[2026-02-24T05:27:36Z] inspect mode/ai touch handling and DrawFrame ai state propagation in src/edgeai_medical_device_demo.c + src/gauge_render.c
+[2026-02-24T05:27:48Z] inspect gauge_render public header for adding AI backend setter
+[2026-02-24T05:28:22Z] apply_patch src/gauge_render.h add GaugeRender_SetAiBackendNpu(bool)
+[2026-02-24T05:28:49Z] apply_patch src/gauge_render.c decouple backend label from ai enable, make pill dark when AI off, track MCU/NPU selection independently
+[2026-02-24T05:29:10Z] apply_patch src/edgeai_medical_device_demo.c keep AI OFF/ON as enable control and make MCU/NPU row backend-only selector
+[2026-02-24T05:29:27Z] ./scripts/build.sh after ai-enable/backend decoupling -> PASS
+[2026-02-24T05:29:46Z] ./scripts/flash.sh after ai-enable/backend decoupling -> PASS
+[2026-02-24T05:29:52Z] date -u timestamp capture for state update
+[2026-02-24T05:30:03Z] append docs/PROJECT_STATE.md with AI control decoupling + banner color behavior update and verification
+[2026-02-24T05:33:56Z] apply_patch src/gauge_render.c: render THINKING in warning box while prediction score is unprimed
+[2026-02-24T05:34:31Z] ./scripts/build.sh after THINKING overlay update -> PASS
+[2026-02-24T05:34:44Z] ./scripts/flash.sh after THINKING overlay update -> PASS
+[2026-02-24T05:34:47Z] date -u timestamp capture for state update
+[2026-02-24T05:34:58Z] append docs/PROJECT_STATE.md with THINKING warning-box status update and build/flash verification
+[2026-02-24T05:35:10Z] apply_patch src/gauge_render.c: prediction score priming now requires consumed due-evaluations (gUiPredEvalCount>=6) and resets eval/score state at CGM preprocess init
+[2026-02-24T05:35:42Z] ./scripts/build.sh after score priming fix -> PASS
+[2026-02-24T05:35:57Z] ./scripts/flash.sh after score priming fix -> PASS
+[2026-02-24T05:36:04Z] date -u timestamp capture for state update
+[2026-02-24T05:36:14Z] append docs/PROJECT_STATE.md with score-priming correction update and verification
+[2026-02-24T05:37:42Z] inspect playback clock update branch in src/edgeai_medical_device_demo.c around ExtFlashRecorder_ReadNextSample/loop_restart
+[2026-02-24T05:38:03Z] inspect main-loop variable declarations for playback clock state
+[2026-02-24T05:38:19Z] apply_patch src/edgeai_medical_device_demo.c: reset runtime_displayed_ds and runtime clock on playback loop restart
+[2026-02-24T05:38:52Z] ./scripts/build.sh after playback clock loop-restart fix -> PASS
+[2026-02-24T05:39:05Z] ./scripts/flash.sh after playback clock loop-restart fix -> PASS
+[2026-02-24T05:45:57Z] date -u timestamp capture for state update
+[2026-02-24T05:48:14Z] inspect current docs/TODO.md contents before reset
+[2026-02-24T05:48:14Z] capture UTC timestamp for TODO reset update
+[2026-02-24T05:48:23Z] replace docs/TODO.md with new next-phase roadmap and cleared prior completed checklist
+[2026-02-24T05:48:27Z] capture UTC timestamp for state/log updates
+[2026-02-24T05:48:33Z] append docs/PROJECT_STATE.md with TODO reset/change summary
+2026-02-23T21:49:47-08:00 | read project docs/START_HERE.md + docs/PROJECT_STATE.md + docs/OPS_RUNBOOK.md
+2026-02-23T21:49:53-08:00 | inspect persistence and AI backend wiring in src/ext_flash_recorder.* and src/edgeai_medical_device_demo.c
+2026-02-23T21:49:58-08:00 | inspect exact signatures and metadata bit packing for UI settings persistence
+2026-02-23T21:50:01-08:00 | inspect pack/unpack and ui save/get functions for editing
+2026-02-23T21:50:05-08:00 | inspect remainder of ExtFlashRecorder_UnpackUiSettings
+2026-02-23T21:50:09-08:00 | inspect SaveUiSettingsIfReady signature and all callsites
+2026-02-23T21:50:12-08:00 | inspect startup UI settings load variables and backend defaults
+2026-02-23T21:50:15-08:00 | inspect touch handlers for AI MCU/NPU and save call arguments
+2026-02-23T21:50:19-08:00 | inspect full AI backend touch block with line numbers
+2026-02-23T21:50:30-08:00 | inspect secondary UI default initialization in ext_flash_recorder init path
+2026-02-23T21:50:46-08:00 | edit src/ext_flash_recorder.h: add ai_backend_npu to save/get UI settings API
+2026-02-23T21:51:05-08:00 | edit src/ext_flash_recorder.c: persist ai_backend_npu in UI metadata pack/unpack/save/get
+2026-02-23T21:51:23-08:00 | inspect all SaveUiSettingsIfReady callsites after signature change
+2026-02-23T21:51:44-08:00 | edit src/edgeai_medical_device_demo.c: add ai_backend_npu load/save wiring and pass ai_use_npu at all save callsites
+2026-02-23T21:51:48-08:00 | verify signature/callsite consistency via rg for UI settings APIs
+2026-02-23T21:51:57-08:00 | run ./scripts/build.sh after backend persistence changes
+2026-02-23T21:52:10-08:00 | run ./scripts/flash.sh for backend persistence firmware update
+2026-02-23T21:52:16-08:00 | inspect docs/PROJECT_STATE.md header for adding persistence update
+2026-02-23T21:52:24-08:00 | update docs/PROJECT_STATE.md with AI backend persistence change and build/flash verification
+2026-02-23T21:52:28-08:00 | review git status and diff for persistence fix
+2026-02-23T21:52:34-08:00 | final sanity check for backend persistence symbols and logs
+2026-02-23T21:55:06-08:00 | inspect warmup/score/playback timing paths for THINKING and replay cadence
+2026-02-23T21:55:11-08:00 | inspect playback processing loop and timing constants
+2026-02-23T21:55:14-08:00 | inspect replay branch where playback samples are consumed
+2026-02-23T21:55:17-08:00 | inspect recplay_period_us calculation and runtime clock update loop
+2026-02-23T21:55:21-08:00 | inspect recplay period setup per loop iteration
+2026-02-23T21:55:58-08:00 | inspect gauge_render API and warmup-related globals for THINKING gating update
+2026-02-23T21:56:02-08:00 | inspect gauge render CGM init reset block
+2026-02-23T21:56:05-08:00 | inspect timing defines near top of edgeai_medical_device_demo.c
+2026-02-23T21:56:19-08:00 | edit src/gauge_render.h/.c to add GaugeRender_SetWarmupThinking and THINKING gating by warmup flag
+2026-02-23T21:56:43-08:00 | locate all playback_active assignments for warmup wiring
+2026-02-23T21:56:50-08:00 | inspect playback assignment contexts before warmup ConfigurePlaybackWarmup insertion
+2026-02-23T21:57:39-08:00 | re-open exact playback_active branch for precise patching
+2026-02-23T21:57:42-08:00 | inspect continuation of playback branch to include full replacement range
+2026-02-23T21:58:19-08:00 | edit src/edgeai_medical_device_demo.c: add 2h startup warmup (120x replay) and auto-switch to realtime with THINKING warmup control
+2026-02-23T21:58:27-08:00 | run ./scripts/build.sh after warmup fast-forward implementation
+2026-02-23T21:58:42-08:00 | run ./scripts/flash.sh after adding startup warmup fast-forward/live realtime handoff
+2026-02-23T21:58:56-08:00 | update docs/PROJECT_STATE.md with startup fast-warmup (2h preseed then realtime) and THINKING gating changes
+2026-02-23T21:58:56-08:00 | verify warmup symbols and logs present in source
+2026-02-23T22:00:00-08:00 | inspect replay dataset length and replay source metadata for 07:47 freeze triage
+2026-02-23T22:00:28-08:00 | retry with python3 and compute D1NAMO subject001 time span
+2026-02-23T22:00:28-08:00 | note prior python command failed: python not found
+2026-02-23T22:00:58-08:00 | edit playback clock monotonic clamp (add +1 ds) and LIVE auto-retry restart when playback inactive
+2026-02-23T22:01:15-08:00 | run build+flash after timeline freeze fix at ~07:47 (monotonic + restart retry)
+2026-02-23T22:01:26-08:00 | update docs/PROJECT_STATE.md with 07:47 freeze fix details and verification
+2026-02-23T22:01:26-08:00 | verify freeze-fix symbols/logs present in source
+2026-02-23T22:02:34-08:00 | inspect ext flash recorder capacity and region config
+2026-02-23T22:02:55-08:00 | retry inspect power replay source APIs after prior rg path miss
+2026-02-23T22:03:00-08:00 | inspect replay_trace_generated.h struct and array symbols for preload
+2026-02-23T22:03:36-08:00 | edit edgeai_medical_device_demo.c: add boot preload function writing full replay trace to ext flash with 5-min timestamps
+2026-02-23T22:03:41-08:00 | inspect startup sequence insertion point for preload + settings restore save
+2026-02-23T22:03:50-08:00 | edit main startup flow: call PreloadDefaultReplayToExtFlash on boot and restore UI settings metadata afterward
+2026-02-23T22:04:02-08:00 | run ./scripts/build.sh after boot-time full replay preload implementation
+2026-02-23T22:04:14-08:00 | run ./scripts/flash.sh after boot preload of full 4+ day replay trace
+2026-02-23T22:04:26-08:00 | update docs/PROJECT_STATE.md with full 4+ day replay preload-to-ext-flash implementation and verification
+2026-02-23T22:04:26-08:00 | verify preload symbols/log markers present in source
+2026-02-23T22:06:43-08:00 | inspect signal routing from replay sample to UI ball/activity/graph data paths
+2026-02-23T22:07:06-08:00 | edit playback path: stop overriding IMU/env channels from replay samples; keep replay timeline-only and allow live sensor updates during playback
+2026-02-23T22:07:25-08:00 | run build+flash after separating replay timeline from live sensor visualization channels
+2026-02-23T22:07:34-08:00 | update docs/PROJECT_STATE.md: decouple live sensor visuals from replay sample payload in LIVE playback
+2026-02-23T22:08:29-08:00 | inspect declaration/timing/playback blocks for realtime playback cadence switch implementation
+2026-02-23T22:09:07-08:00 | edit playback cadence: after warmup in LIVE, switch to timestamp-delta real-time period; reset cadence state on playback restarts/mode changes
+2026-02-23T22:09:25-08:00 | run build+flash after timestamp-delta realtime playback handoff implementation
+2026-02-23T22:09:35-08:00 | update docs/PROJECT_STATE.md with realtime playback handoff based on replay timestamp deltas
+2026-02-23T22:10:28-08:00 | inspect runtime clock update path and playback timing state for interpolation fix
+2026-02-23T22:10:56-08:00 | edit runtime clock: add realtime interpolation between replay samples after warmup using playback anchor ticks/ds
+2026-02-23T22:11:14-08:00 | run build+flash after realtime timeline interpolation fix for post-warmup playback
+2026-02-23T22:11:25-08:00 | update docs/PROJECT_STATE.md with post-warmup realtime interpolation fix for visible timeline freeze
+2026-02-23T22:12:34-08:00 | inspect warmup completion gates before adding fail-safe unlatch
+2026-02-23T22:12:48-08:00 | edit warmup gate: add force_complete unlatch when runtime_displayed_ds >= 2h target to clear THINKING latch
+2026-02-23T22:13:06-08:00 | run build+flash after warmup THINKING force-unlatch fix
+2026-02-23T22:14:02-08:00 | edit gauge_render THINKING gate: use warmup flag only, remove !gUiPredMaePrimed latch
+2026-02-23T22:14:19-08:00 | run build+flash after THINKING gate simplification (warmup-only)
+2026-02-23T22:14:33-08:00 | update docs/PROJECT_STATE.md with THINKING warmup-only overlay gate change
+2026-02-23T22:16:55-08:00 | inspect warmup target macros/usages before extending fast preroll to 4h total
+2026-02-23T22:17:16-08:00 | edit warmup policy: extend fast window to 4h total (2h preseed + 2h scoring) and log phase durations
+2026-02-23T22:17:34-08:00 | run build+flash after extending warmup fast-run to 4h total for scoring before LIVE realtime handoff
+2026-02-23T22:17:45-08:00 | update docs/PROJECT_STATE.md with 4h warmup (2h preseed + 2h scoring) and THINKING warmup-only gate verification
+2026-02-23T22:18:23-08:00 | inspect CGM prediction scoring pipeline internals in gauge_render.c for 0% score issue
+2026-02-23T22:18:29-08:00 | check whether CGM preprocess/scoring state gets reset unexpectedly
+2026-02-23T22:19:34-08:00 | edit warmup completion paths: call GaugeRender_PrimePredictionScore() on normal/forced warmup completion
+2026-02-23T22:19:51-08:00 | run build+flash after warmup completion score-prime hook addition
+2026-02-23T22:20:01-08:00 | update docs/PROJECT_STATE.md with warmup completion score priming hook and verification
+2026-02-23T22:20:53-08:00 | edit GaugeRender_PrimePredictionScore: require >=6 real evals before priming; prevent synthetic 67% startup score
+2026-02-23T22:21:11-08:00 | run build+flash after removing synthetic 67% prime score behavior
+2026-02-23T22:21:20-08:00 | update docs/PROJECT_STATE.md with fix for synthetic 67% startup score by requiring >=6 evals before priming
+2026-02-24T06:23:02Z | read START_HERE/PROJECT_STATE/OPS_RUNBOOK for score debugging
+2026-02-24T06:23:08Z | rg scoring/warmup symbols in gauge_render and app
+2026-02-24T06:23:18Z | inspect warmup/playback loop and warmup completion paths
+2026-02-24T06:23:21Z | inspect warmup and replay constants
+2026-02-24T06:23:51Z | locate UpdatePredictionModelAndAlerts callsites
+2026-02-24T06:24:05Z | read project docs/OPS_RUNBOOK.md before build
+2026-02-24T06:24:13Z | ./scripts/build.sh (post-fix prediction score timeline)
+2026-02-24T06:24:19Z | ./scripts/update_state.sh (record score timeline fix)
+2026-02-24T06:24:23Z | git status and line refs for score timeline fix
+2026-02-24T06:24:58Z | ./scripts/flash.sh (deploy score-timeline fix build)
+2026-02-24T06:28:20Z | ./scripts/build.sh (add ±1% prediction tolerance + earlier score priming)
+2026-02-24T06:28:26Z | ./scripts/update_state.sh (record tolerance-based score update)
+2026-02-24T06:29:42Z | ./scripts/flash.sh (deploy ±1% tolerance scoring build)
+2026-02-24T06:31:44Z | ./scripts/build.sh (show eval counter in score strip; ungate score after first eval)
+2026-02-24T06:31:48Z | ./scripts/update_state.sh (record eval-counter score-strip diagnostic update)
+2026-02-24T06:32:01Z | ./scripts/flash.sh (deploy eval-counter score-strip diagnostic build)
+2026-02-24T06:33:30Z | ./scripts/build.sh (change prediction tolerance from ±1% to ±10%)
+2026-02-24T06:33:39Z | ./scripts/flash.sh (deploy ±10% tolerance scoring build)
+2026-02-24T06:33:43Z | ./scripts/update_state.sh (record ±10% tolerance change + flash)
+2026-02-24T06:34:55Z | ./scripts/build.sh (diagnostic tolerance change to ±100%)
+2026-02-24T06:35:10Z | ./scripts/flash.sh (deploy diagnostic ±100% tolerance build)
+2026-02-24T06:35:15Z | ./scripts/update_state.sh (record ±100% tolerance diagnostic flash)
+2026-02-24T06:36:29Z | ./scripts/build.sh (score= pure tolerance hit rate diagnostic)
+2026-02-24T06:36:42Z | ./scripts/flash.sh (deploy pure-tolerance scoring diagnostic build)
+2026-02-24T06:36:46Z | ./scripts/update_state.sh (record pure-tolerance scoring diagnostic flash)
+2026-02-24T06:38:15Z | ./scripts/build.sh (set pred tolerance back to ±10%; keep E# visible)
+2026-02-24T06:38:27Z | ./scripts/flash.sh (deploy ±10% tolerance + E# visible build)
+2026-02-24T06:38:31Z | ./scripts/update_state.sh (record profile 1+2 scoring config)
+2026-02-24T06:40:17Z | ./scripts/build.sh (add MAE mg/dL line below PRED SCORE strip)
+2026-02-24T06:40:30Z | ./scripts/flash.sh (deploy MAE line enhancement build)
+2026-02-24T06:40:34Z | ./scripts/update_state.sh (record MAE display enhancement)
+2026-02-24T06:41:18Z | inspect alert/terminal layout constants for MAE visibility issue
+2026-02-24T06:41:35Z | ./scripts/build.sh (fix MAE line formatting without float printf)
+2026-02-24T06:41:51Z | ./scripts/flash.sh (deploy MAE non-float formatting fix)
+2026-02-24T06:41:56Z | ./scripts/update_state.sh (record MAE formatting fix)
+2026-02-24T06:44:21Z | ./scripts/update_state.sh (docs synchronization pass)
+2026-02-24T06:44:24Z | git status --short docs after documentation refresh
+2026-02-24T06:45:03Z | git status --short && git branch --show-current && git remote -v before commit/push
+2026-02-24T06:45:08Z | inspect untracked data/model/tools files before staging
+2026-02-24T06:45:20Z | git add tracked updates + model artifacts + tools/d1namo_extract_replay.py
+2026-02-24T06:45:31Z | git add docs/COMMAND_LOG.md (restage after log append)

@@ -121,3 +121,15 @@ Fail:
   - robustness event pass counts
 - Overall result: `PASS` or `FAIL`
 - If fail: corrective action and re-test target date
+
+## Current Baseline Snapshot (2026-02-24)
+
+Observed during live replay diagnostic runs:
+- evaluator is active with high consumed count (`E#` in thousands), confirming prediction-vs-actual comparison is wired end-to-end
+- prediction score remains low under current model quality (observed single-digit percent with `+-10%` tolerance mode)
+- blended MAE observed around `115..120 mg/dL` in current run state
+
+Interpretation:
+- pipeline wiring is functioning
+- current trained model is not yet acceptable for dosing-oriented advisory quality
+- primary next action is model/data alignment and retraining, not UI plumbing changes

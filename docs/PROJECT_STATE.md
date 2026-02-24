@@ -13,6 +13,183 @@ Last updated: 2026-02-24
 - Git repository initialized locally.
 
 ## Update 2026-02-24
+- Change: Removed synthetic startup accuracy by requiring real evaluation evidence before score priming.
+  - `src/gauge_render.c`
+    - `GaugeRender_PrimePredictionScore()` now requires `gUiPredEvalCount >= 6` before priming
+    - if evaluations are insufficient, score remains unprimed at `0%` (no fallback 67% baseline)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added explicit score priming at warmup completion so post-preroll score does not remain at 0 due to priming lag.
+  - `src/gauge_render.h/.c`
+    - added `GaugeRender_PrimePredictionScore()` to force score primed state from current MAE blend
+  - `src/edgeai_medical_device_demo.c`
+    - call prime hook on both warmup completion paths:
+      - normal completion (`AI_WARMUP: complete ...`)
+      - forced completion (`AI_WARMUP: force_complete ...`)
+- Effect:
+  - score is initialized immediately after warmup handoff instead of waiting for additional real-time priming cycles
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Extended fast warmup window to include additional scoring runway before LIVE realtime handoff.
+  - `src/edgeai_medical_device_demo.c`
+    - replaced single warmup target with phased durations:
+      - preseed: `RECPLAY_WARMUP_PRESEED_DS = 2h`
+      - score: `RECPLAY_WARMUP_SCORE_DS = 2h`
+      - total fast window: `RECPLAY_WARMUP_TARGET_DS = 4h`
+    - startup log now prints both phase durations
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed lingering `THINKING` after warmup by making warning-overlay thinking gate warmup-flag only.
+  - `src/gauge_render.c`
+    - `THINKING` display condition changed from:
+      - `ai_enabled && (gUiWarmupThinking || !gUiPredMaePrimed)`
+      - to `ai_enabled && gUiWarmupThinking`
+  - effect: once warmup clears (normal or forced), warning box will not remain in `THINKING` due to MAE priming lag.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Eliminated persistent `THINKING` latch after warmup by making warning-box `THINKING` state warmup-only.
+  - `src/gauge_render.c`
+    - `DrawAiAlertOverlay(...)` now enters `THINKING` only when explicit warmup flag is true (`gUiWarmupThinking`)
+    - removed additional `!gUiPredMaePrimed` condition from warning overlay gating
+- Effect:
+  - after warmup clear (or force-complete), warning box exits `THINKING` even if prediction MAE priming is still catching up
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed stuck `THINKING` state after 2h by adding a display-timeline fail-safe unlatch for warmup completion.
+  - `src/edgeai_medical_device_demo.c`
+    - in runtime-clock update loop, if warmup is still active but `runtime_displayed_ds >= RECPLAY_WARMUP_TARGET_DS`:
+      - force warmup complete
+      - clear `THINKING`
+      - reset playback cadence state
+      - emit `AI_WARMUP: force_complete ...`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed apparent freeze after LIVE warmup by interpolating runtime clock continuously between real-time replay samples.
+  - `src/edgeai_medical_device_demo.c`
+    - added replay realtime anchor state:
+      - `playback_rt_anchor_ds`
+      - `playback_rt_anchor_ticks`
+    - when LIVE + post-warmup replay is active, runtime clock now advances from anchor using elapsed wall time until next replay sample arrives
+    - anchor updates on each replay sample; anchor-based interpolation coexists with timestamp-delta sample cadence
+- Effect:
+  - timeline no longer appears stuck at sample boundaries (e.g. `02:15:00`) while running true real-time playback with sparse (5-minute) samples
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: After LIVE warmup completes, replay now switches to real-time playback cadence driven by replay timestamp deltas.
+  - `src/edgeai_medical_device_demo.c`
+    - added playback cadence state (`playback_period_us`, `playback_prev_ts_ds`, `playback_prev_ts_valid`)
+    - when `LIVE` and warmup is complete, recplay period is taken from `ts_ds` delta between consecutive replay samples (`ds * 100000us`)
+    - clamps real-time period range to `0.1s .. 600s`
+    - resets cadence state on mode changes, restart/retry, and loop boundary to avoid stale timing
+  - effect:
+    - warmup still fast-forwards
+    - post-warmup playback follows dataset timing instead of fixed log-rate stepping
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Decoupled LIVE sensor visualization channels from replay payload so ball/activity/IMU visuals are no longer driven by preloaded test replay samples.
+  - `src/edgeai_medical_device_demo.c`
+    - restored live sensor updates during playback by removing `!playback_active` gate in accel/gyro update loop
+    - playback branch now treats ext-flash samples as timeline/playhead input only (no direct overwrite of accel/gyro/mag/baro/temp render channels)
+  - intent:
+    - keep long replay timeline behavior for CGM/timing demo
+    - keep movement/activity visuals tied to real board sensors instead of synthetic replay-mapped values
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added boot-time preload of full default replay dataset into ext flash to test 4+ day playback timeline capacity.
+  - `src/edgeai_medical_device_demo.c`
+    - added `PreloadDefaultReplayToExtFlash(...)`:
+      - clears ext flash sample ring
+      - writes all `REPLAY_TRACE_DEFAULT_LEN` samples from `kReplayTrace_Default`
+      - assigns timeline spacing `REPLAY_DEFAULT_STEP_DS=3000` (5-minute intervals)
+    - startup now runs preload when ext flash is ready, then rewrites UI settings metadata so saved UI config remains valid
+  - expected replay timeline span from preloaded trace:
+    - `(REPLAY_TRACE_DEFAULT_LEN - 1) * 3000 ds` (about 4.99 days with current 1438 samples)
+  - UART markers added:
+    - `EXT_FLASH_PRELOAD: start ...`
+    - `EXT_FLASH_PRELOAD: done ...`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed LIVE replay timeline freeze around `07:47` by hardening runtime clock progression and playback restart behavior.
+  - `src/edgeai_medical_device_demo.c`
+    - playback timestamp clamp now advances by `+1 ds` on non-monotonic sample times instead of pinning to a fixed value
+    - added LIVE-mode auto-retry restart path when playback becomes inactive (`EXT_FLASH_PLAY: retry_restart`)
+  - intent: prevent timeline lock at a fixed time when replay timestamps repeat or when restart fails once at trace boundary
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added startup fast-warmup flow for LIVE replay so UI stays in `THINKING` until 2 hours of replay timeline are preseeded, then automatically switches to realtime replay speed.
+  - `src/edgeai_medical_device_demo.c`
+    - added warmup constants:
+      - `RECPLAY_WARMUP_MULTIPLIER=120`
+      - `RECPLAY_WARMUP_TARGET_DS=72000` (2h)
+    - added warmup state machine (`ConfigurePlaybackWarmup(...)`) and applied it to all playback start/restart paths
+    - during playback, consumes accelerated replay steps during warmup and auto-handoffs to realtime once target timeline reached
+    - emits UART markers:
+      - `AI_WARMUP: start ...`
+      - `AI_WARMUP: complete ... switching to realtime`
+  - `src/gauge_render.c/.h`
+    - added `GaugeRender_SetWarmupThinking(bool)` so warning box `THINKING` can be explicitly held during warmup phase
+    - `THINKING` now stays active while warmup flag is set (or prediction scoring is unprimed)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Persisted AI backend selection (`AI MCU` / `AI NPU`) across reboot so settings no longer reset to NPU on boot.
+  - updated UI settings metadata schema in `src/ext_flash_recorder.c/.h` to store backend selection with backward-compatible decode
+  - wired backend field through save/load APIs and app startup restore in `src/edgeai_medical_device_demo.c`
+  - updated settings save callsites to include `ai_use_npu`
+  - startup log now prints backend in `UI_CFG_LOAD` line
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
 - Change: Promoted latest verified firmware/docs baseline to new restore points and staged artifacts.
   - restore tags:
     - `GOLDEN-2026-02-24-R3`
@@ -2071,4 +2248,239 @@ Last updated: 2026-02-24
 - Verification:
   - `./tools/build_frdmmcxn947.sh debug` PASS
   - `./tools/flash_frdmmcxn947.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added local dataset artifact for CGM model prototyping.
+  - downloaded `data/data_cgm.csv` from Stanford CGMDB host (`web.stanford.edu/group/genetics/cgmdb/data/`)
+  - file shape: 7 columns (`glucose, subject, foods, mitigator, food, rep, mins_since_start`), 23521 rows
+  - note: dataset does not contain insulin dosing fields
+- Result: ok
+
+## Update 2026-02-24
+- Change: Downloaded an openly accessible diabetes dataset artifact from an Awesome-CGM linked source for CGM+dosing workflow development.
+  - source DOI: `https://doi.org/10.5281/zenodo.1421615` (Zenodo record `5651217`, D1NAMO)
+  - downloaded file: `data/d1namo_diabetes_pictures_glucose_food_insulin.zip` (~241 MB)
+  - contains per-subject `glucose.csv`, `insulin.csv`, and `food.csv` (plus meal photos)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added D1NAMO replay conversion pipeline and generated subject-001 replay artifacts.
+  - new converter: `tools/d1namo_extract_replay.py`
+  - generated normalized CGM+insulin replay: `data/d1namo_subject001_cgm_insulin_replay.csv` (1438 rows)
+    - columns: `ts_iso, epoch_s, glucose_mgdl, glucose_mmol_l, glucose_type, insulin_fast_u, insulin_slow_u, insulin_total_u`
+  - generated firmware replay-trace CSV: `data/replay_trace_d1namo_subject001.csv` (1438 rows)
+    - columns: `current_mA, power_mW, voltage_mV, soc_pct, temp_c`
+    - note: this trace is a deterministic compatibility mapping from CGM rows for replay-path testing only.
+  - regenerated `src/replay_trace_generated.h` from `data/replay_trace_d1namo_subject001.csv`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed latest debug build to FRDM-MCXN947.
+  - command: `./tools/flash_frdmmcxn947.sh`
+  - runner: `linkserver`
+  - target detected: `MCXN947:FRDM-MCXN947`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Created train/test split with subject `001` held out for long demo/test playback.
+  - train split: `data/d1namo_train_excl001.csv` (`6783` rows, subjects `002..009`)
+  - test split: `data/d1namo_test_subject001.csv` (`1438` rows)
+  - demo alias: `data/d1namo_demo_subject001.csv` (`1438` rows)
+- Notes:
+  - split is subject-aware and time-series safe (no random row shuffling)
+  - held-out subject `001` remains the long replay candidate for demos
+- Result: ok
+
+## Update 2026-02-24
+- Change: Imported best C++-exportable CGM model artifacts into project-local `model/` folder from extension compare run.
+  - source compare run: `projects/microsoft/visual-studio/embedded-intelligence-layer/training_output/model_compare_smoke_20260224T045444Z`
+  - selected model: `ridge` (best deployable among export-supported models by holdout MAE)
+  - files added:
+    - `model/cgm_best_model.hpp`
+    - `model/cgm_best_model.cpp`
+    - `model/cgm_best_model_metrics.json`
+    - `model/cgm_best_model_training_report.md`
+    - `model/README.md`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Updated run/playback behavior so `LIVE` mode loops test playback data from ext flash instead of disabling playback.
+  - `src/edgeai_medical_device_demo.c`
+    - selecting `LIVE` or `TRAIN` in settings now attempts `ExtFlashRecorder_StartPlayback()` immediately
+    - removed live-banner gating that previously stopped playback while in `LIVE`
+    - playback end-of-data now restarts playback (`EXT_FLASH_PLAY: loop_restart`) for continuous looping
+    - startup and post-record transitions now initialize playback without requiring non-live banner state
+    - when on-board training completes and app promotes to `LIVE`, playback is started instead of being forced off
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed latest debug build after LIVE-mode test-data loop update.
+  - command: `./scripts/flash.sh`
+  - runner: `linkserver`
+  - target detected: `MCXN947:FRDM-MCXN947`
+  - probe: `#1 UYLKOJI11H2B3`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Updated Settings so prior `MODE` row no longer shows `ADAPT/TRAINED`; it now shows `AI OFF/ON`.
+  - `src/gauge_render.c`
+    - row label changed from `MODE` to `AI`
+    - mode-row option text changed from `ADAPT`/`TRAINED` to `OFF`/`ON`
+    - selection state bound to `ai_enabled` state (`gPrevAiEnabled`)
+  - `src/edgeai_medical_device_demo.c`
+    - mode-row touch handler now toggles `ai_enabled` OFF/ON and calls `PowerData_SetAiAssistEnabled(...)`
+    - UART log updated for this row to `AI_ENABLE,OFF|ON`
+- Note: Existing `MCU/NPU` settings row was intentionally kept as requested.
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed latest debug build after Settings update (`MODE` row -> `AI OFF/ON`, `MCU/NPU` retained).
+  - command: `./scripts/flash.sh`
+  - runner: `linkserver`
+  - target detected: `MCXN947:FRDM-MCXN947`
+  - probe: `#1 UYLKOJI11H2B3`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed AI toggle behavior and alert-panel UX issues.
+  - `src/gauge_render.c`
+    - added runtime AI enable gate (`gUiAiEnabled`) so prediction alert logic is disabled when AI is OFF
+    - `DrawAiAlertOverlay(...)` now shows `AI OFF` state when disabled instead of continuing alert severity flow
+    - added prediction accuracy scoreboard line below activity/warning box: `PRED SCORE xx%`
+      - score is computed from delayed 15m/30m prediction error tracking using ring-buffered due-evaluation
+    - updated AI pill styling so both `AI MCU` and `AI NPU` render as green banners
+  - retained settings behavior from prior update:
+    - mode-row (`AI OFF/ON`) toggles AI enable state
+    - existing `MCU/NPU` row remains present
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed AI control semantics and banner coloring to match runtime intent.
+  - `src/edgeai_medical_device_demo.c`
+    - `AI OFF/ON` row remains the sole AI enable switch (`ai_enabled` + `PowerData_SetAiAssistEnabled`)
+    - `MCU/NPU` row no longer toggles AI enable; it now selects backend label only
+  - `src/gauge_render.h`
+    - added `GaugeRender_SetAiBackendNpu(bool use_npu)`
+  - `src/gauge_render.c`
+    - added independent backend state tracking for `MCU/NPU` selection (`gUiAiBackendNpu`)
+    - top AI pill label now follows backend selection (`AI MCU` / `AI NPU`)
+    - top AI pill color now follows enable state:
+      - AI ON -> green
+      - AI OFF -> dark background
+    - settings `MCU/NPU` selection highlight now follows backend selection (independent of enable)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added boot/warmup `THINKING` status in the warning/activity box.
+  - `src/gauge_render.c`
+    - `DrawAiAlertOverlay(...)` now renders `THINKING` (yellow) while prediction score is not yet primed (`!gUiPredMaePrimed`), provided AI is enabled and not in record/training overlays
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Corrected prediction-score priming so startup no longer reports synthetic baseline (~67%) as a real accuracy value.
+  - `src/gauge_render.c`
+    - added `gUiPredEvalCount` and increment on each consumed due-time prediction evaluation
+    - score priming now requires at least 6 consumed evaluations (`gUiPredEvalCount >= 6`)
+    - reset prediction-eval/priming/score state at CGM preprocess initialization
+- Effect:
+  - warning box stays `THINKING` until real 15m/30m evaluations have actually completed
+  - score transitions from thinking state only after enough real evidence exists
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed playback runtime clock freeze at replay-loop boundary.
+  - Root cause: playback timestamp monotonic clamp prevented `ts_ds` from decreasing when replay restarted, so display clock stuck at last sample time (e.g., `07:47`).
+  - `src/edgeai_medical_device_demo.c`
+    - on successful `ExtFlashRecorder_StartPlayback()` in loop-restart path, reset clock state:
+      - `runtime_displayed_ds = UINT32_MAX`
+      - `GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true)`
+- Effect:
+  - playback/live-loop clock now resets and advances again each replay cycle instead of freezing at end-of-trace.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reset `docs/TODO.md` to a new roadmap and cleared prior completed checklist from active TODO view.
+  - new TODO now focuses on next-phase realism/validation items:
+    - true timestamp-driven live replay
+    - startup warm-up/preseed and readiness UX
+    - pump/motor realism and safety interlocks
+    - outcome metrics and release/restore steps
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed warmup score timeline: prediction accuracy now advances on per-sample decisecond timeline during catch-up to prevent stuck 0% after primer.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Prediction score now uses per-prediction evaluation with ±1% tolerance hit tracking plus MAE blend; score priming starts after first matured prediction (no 6-sample gate).
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Score strip now shows evaluation count (E#) and no longer hides score behind primed gate after evaluations start; aids runtime diagnosis of 0% issues.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Adjusted prediction scoring tolerance from ±1% to ±10% per user request; rebuilt and flashed.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh && ./scripts/flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Diagnostic scoring test: prediction tolerance temporarily set to ±100% and flashed to validate score pipeline responsiveness.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh && ./scripts/flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Diagnostic scoring now uses pure tolerance-hit rate (no MAE blend) to verify score pipeline behavior; rebuilt and flashed.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh && ./scripts/flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Applied user-selected scoring profile items 1+2: tolerance set to ±10% and evaluation counter E# retained in score strip; rebuilt and flashed.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh && ./scripts/flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added MAE (mg/dL) line below PRED SCORE in alert strip for interpretable model quality; rebuilt and flashed.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh && ./scripts/flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed MAE label rendering on embedded target by removing float printf dependency; MAE now formatted with integer tenths and flashed.
+- Binary: mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin
+- Command: ./scripts/build.sh && ./scripts/flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Documentation refresh: synchronized TODO, runtime contract, traceability, and validation docs with current prediction-score/E#/MAE behavior and latest baseline findings.
 - Result: ok

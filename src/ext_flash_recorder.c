@@ -71,6 +71,7 @@ static uint8_t s_ui_mode;
 static uint8_t s_ui_tune;
 static bool s_ui_run_live;
 static bool s_ui_ai_enabled;
+static bool s_ui_ai_backend_npu;
 static uint16_t s_ui_g_warn_mg;
 static uint16_t s_ui_g_fail_mg;
 static int16_t s_ui_temp_low_c10;
@@ -94,6 +95,8 @@ static uint32_t ExtFlashRecorder_PackUiSettingsCore(void)
     return ((uint32_t)EDGEAI_UICFG_TAG << 24) |
            (gw_d10 << 16) |
            (gf_d10 << 8) |
+           ((uint32_t)1u << 7) |
+           ((s_ui_ai_backend_npu ? 1u : 0u) << 6) |
            (((uint32_t)s_ui_tune & 0x3u) << 4) |
            (((uint32_t)s_ui_mode & 0x3u) << 2) |
            ((s_ui_run_live ? 1u : 0u) << 1) |
@@ -139,6 +142,7 @@ static void ExtFlashRecorder_UnpackUiSettings(uint32_t packed_core, uint32_t pac
         s_ui_tune = 1u;
         s_ui_run_live = true;
         s_ui_ai_enabled = true;
+        s_ui_ai_backend_npu = true;
         s_ui_g_warn_mg = 12000u;
         s_ui_g_fail_mg = 15000u;
         s_ui_temp_low_c10 = 0;
@@ -153,6 +157,8 @@ static void ExtFlashRecorder_UnpackUiSettings(uint32_t packed_core, uint32_t pac
     s_ui_tune = (uint8_t)((packed_core >> 4) & 0x3u);
     s_ui_run_live = (((packed_core >> 1) & 0x1u) != 0u);
     s_ui_ai_enabled = ((packed_core & 0x1u) != 0u);
+    /* Bit7 marks schema with persisted backend bit6. Fall back to NPU for legacy records. */
+    s_ui_ai_backend_npu = (((packed_core >> 7) & 0x1u) != 0u) ? ((((packed_core >> 6) & 0x1u) != 0u)) : true;
     s_ui_g_warn_mg = 12000u;
     s_ui_g_fail_mg = 15000u;
     s_ui_temp_low_c10 = 0;
@@ -348,6 +354,7 @@ bool ExtFlashRecorder_Init(void)
     s_ui_tune = 1u;
     s_ui_run_live = true;
     s_ui_ai_enabled = true;
+    s_ui_ai_backend_npu = true;
     s_ui_g_warn_mg = 12000u;
     s_ui_g_fail_mg = 15000u;
     s_ui_temp_low_c10 = 0;
@@ -669,6 +676,7 @@ bool ExtFlashRecorder_SaveUiSettings(uint8_t mode,
                                      uint8_t tune,
                                      bool run_live,
                                      bool ai_enabled,
+                                     bool ai_backend_npu,
                                      uint16_t g_warn_mg,
                                      uint16_t g_fail_mg,
                                      int16_t temp_low_c10,
@@ -685,6 +693,7 @@ bool ExtFlashRecorder_SaveUiSettings(uint8_t mode,
     s_ui_tune = tune & 0x3u;
     s_ui_run_live = run_live;
     s_ui_ai_enabled = ai_enabled;
+    s_ui_ai_backend_npu = ai_backend_npu;
     s_ui_g_warn_mg = g_warn_mg;
     s_ui_g_fail_mg = g_fail_mg;
     s_ui_temp_low_c10 = temp_low_c10;
@@ -699,6 +708,7 @@ bool ExtFlashRecorder_GetUiSettings(uint8_t *mode,
                                     uint8_t *tune,
                                     bool *run_live,
                                     bool *ai_enabled,
+                                    bool *ai_backend_npu,
                                     uint16_t *g_warn_mg,
                                     uint16_t *g_fail_mg,
                                     int16_t *temp_low_c10,
@@ -707,7 +717,8 @@ bool ExtFlashRecorder_GetUiSettings(uint8_t *mode,
                                     uint8_t *log_rate_hz,
                                     bool *valid)
 {
-    if ((mode == NULL) || (tune == NULL) || (run_live == NULL) || (ai_enabled == NULL) || (g_warn_mg == NULL) ||
+    if ((mode == NULL) || (tune == NULL) || (run_live == NULL) || (ai_enabled == NULL) || (ai_backend_npu == NULL) ||
+        (g_warn_mg == NULL) ||
         (g_fail_mg == NULL) ||
         (temp_low_c10 == NULL) || (temp_high_c10 == NULL) || (gyro_limit_dps == NULL) || (log_rate_hz == NULL) ||
         (valid == NULL))
@@ -723,6 +734,7 @@ bool ExtFlashRecorder_GetUiSettings(uint8_t *mode,
     *tune = s_ui_tune;
     *run_live = s_ui_run_live;
     *ai_enabled = s_ui_ai_enabled;
+    *ai_backend_npu = s_ui_ai_backend_npu;
     *g_warn_mg = s_ui_g_warn_mg;
     *g_fail_mg = s_ui_g_fail_mg;
     *temp_low_c10 = s_ui_temp_low_c10;
