@@ -1257,3 +1257,9 @@ Format:
 2026-02-24T06:18:33-08:00 | apply_patch docs/PROJECT_STATE.md set restore header to R4 and append restore promotion update
 2026-02-24T06:18:42-08:00 | apply_patch docs/TODO.md mark items 5/11/12 complete
 2026-02-24T06:18:53-08:00 | git add selected files failed because failsafe/*.bin ignored by .gitignore
+2026-02-24T06:18:59-08:00 | git add selected files and force-add R4 failsafe binaries; show status
+2026-02-24T06:19:03-08:00 | git commit: CGM replay subject001 wiring + score alignment + R4 restore point
+2026-02-24T06:19:12-08:00 | run git status --short after commit
+2026-02-24T06:19:27-08:00 | run git push (main -> origin/main)
+2026-02-24T06:19:37-08:00 | apply_patch docs/PROJECT_STATE.md append commit/push publication update (commit 0b11472)
+2026-02-24T06:19:43-08:00 | run git status --short before final docs/log commit

@@ -26,6 +26,13 @@ Last updated: 2026-02-24
 - Result: active restore points staged and ready.
 
 ## Update 2026-02-24
+- Change: Published current `R4` dataset-driven CGM replay baseline to project remote.
+  - branch: `main`
+  - commit: `0b11472`
+  - push target: `origin/main`
+- Result: GitHub now contains the active restore-point firmware/docs state.
+
+## Update 2026-02-24
 - Change: LIVE replay CGM path now ingests real `subject001` glucose samples instead of synthetic glucose generation during playback.
   - Added generated glucose replay header from holdout dataset:
     - `src/cgm_replay_subject001.h` (`CGM_REPLAY_SUBJECT001_LEN=1438`, sourced from `data/d1namo_test_subject001.csv`)
