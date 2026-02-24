@@ -701,3 +701,12 @@ Format:
 2026-02-23T22:19:33Z | cmd: apply_patch docs/TODO.md docs/CGM_TRACEABILITY.md and append docs/PROJECT_STATE.md for step-10 completion | result: ok
 2026-02-23T22:20:03Z | cmd: git add step-10 code/docs + git commit + git push origin main | result: pending
 2026-02-23T22:20:13Z | cmd: git add/commit/push step-10 updates | result: ok (5f3487b)
+2026-02-23T22:24:30Z | cmd: read CGM contract/flags/pipeline docs and inspect runtime code paths in src/gauge_render.c and src/cgm_preprocess.c/.h for threshold/gating details | result: ok
+2026-02-23T22:24:30Z | cmd: apply_patch add docs/CGM_AI_ALGORITHM_EXPLAINER.md with detailed AI/prediction/medical+math explanation | result: ok
+2026-02-23T22:24:45Z | cmd: apply_patch docs/PROJECT_STATE.md fix escaped path in new-doc field for CGM_AI_ALGORITHM_EXPLAINER entry | result: ok
+2026-02-24T00:05:36Z | cmd: read root start/state/runbook and inspect project baseline refs via git status/rg/ls | result: ok
+2026-02-24T00:05:36Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass for 2026-02-24 restore promotion)
+2026-02-24T00:05:36Z | cmd: cp build output to failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin and failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin | result: ok
+2026-02-24T00:05:36Z | cmd: apply_patch update active baseline refs in README.md STATUS.md docs/START_HERE.md docs/OPS_RUNBOOK.md docs/HARDWARE_SETUP.md docs/TODO.md docs/PROJECT_STATE.md | result: ok
+2026-02-24T00:05:36Z | cmd: append docs/PROJECT_STATE.md with 2026-02-24 golden+failsafe R1 promotion/update summary | result: ok
+2026-02-24T00:05:49Z | cmd: git add docs/baseline updates + add -f failsafe R1 binaries + commit/push + create/push GOLDEN/FAILSAFE 2026-02-24-R1 tags | result: pending

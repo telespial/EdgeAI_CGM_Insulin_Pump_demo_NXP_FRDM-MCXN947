@@ -106,17 +106,17 @@ Alternative wrapper scripts:
 ## Restore Baseline
 
 Current restore points:
-- `GOLDEN-2026-02-23-R5`
-- `FAILSAFE-2026-02-23-R3`
+- `GOLDEN-2026-02-24-R1`
+- `FAILSAFE-2026-02-24-R1`
 
 Staged restore artifacts:
-- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
-- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin`
 
 Failsafe restore command:
 
 ```bash
-./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin
+./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin
 ```
 
 ## Controls

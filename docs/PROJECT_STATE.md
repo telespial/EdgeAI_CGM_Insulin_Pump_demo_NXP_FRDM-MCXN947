@@ -1,10 +1,10 @@
 # Project State
 
-Last updated: 2026-02-23
+Last updated: 2026-02-24
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-23-R5`
-- Failsafe: `FAILSAFE-2026-02-23-R3`
+- Golden: `GOLDEN-2026-02-24-R1`
+- Failsafe: `FAILSAFE-2026-02-24-R1`
 - Status: active
 
 ## Current Status
@@ -1619,6 +1619,37 @@ Last updated: 2026-02-23
     - implemented debounce and hysteresis for both hypo and hyper paths to reduce alert chatter
     - integrated predictive alert state into overlay/terminal AI status selection
     - integrated predictive alert direction/severity into dose recommendation scaling
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-23
+- Change: Added detailed CGM AI explainer documentation for runtime behavior and industry-standard methods.
+  - new doc: `docs/CGM_AI_ALGORITHM_EXPLAINER.md`
+  - includes:
+    - end-to-end runtime pipeline explanation from preprocessing to alerting
+    - exact current prediction equations/thresholds/debounce/hysteresis from firmware
+    - UI/alert semantics and dose interaction behavior
+    - common CGM-market medical concepts and software/math patterns
+    - clear separation between demo-specific behavior and production-grade expectations
+- Result: ok
+
+## Update 2026-02-24
+- Change: Built/flashed current firmware and promoted both golden and failsafe restore baselines to `R1` for 2026-02-24.
+  - built and flashed via `./scripts/build_and_flash.sh`
+  - staged restore artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin`
+  - active restore points:
+    - `GOLDEN-2026-02-24-R1`
+    - `FAILSAFE-2026-02-24-R1`
+  - synchronized active baseline references in:
+    - `README.md`, `STATUS.md`
+    - `docs/START_HERE.md`, `docs/OPS_RUNBOOK.md`, `docs/HARDWARE_SETUP.md`, `docs/TODO.md`
+  - included CGM documentation update:
+    - `docs/CGM_AI_ALGORITHM_EXPLAINER.md`
 - Verification:
   - `./scripts/build_and_flash.sh` PASS
   - target: `MCXN947:FRDM-MCXN947`
