@@ -2928,3 +2928,8 @@ Last updated: 2026-02-24
 - Change: README: added Vehicle And Non-Human Motion Filtering section describing transport-context suppression of false high-speed movement effects; aligned restore baseline references to R7.
 - Command: edit README.md
 - Result: ok
+
+## Update 2026-02-24
+- Change: Synchronized local README.md to latest remote version from origin/main via checkout of tracked file.
+- Command: git fetch origin main && git checkout origin/main -- README.md
+- Result: ok
