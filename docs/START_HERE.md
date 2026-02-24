@@ -13,8 +13,8 @@ Current docs baseline:
 - Settings row format: `AI MCU NPU`.
 - Latest runtime/flash history: `docs/PROJECT_STATE.md` and `docs/COMMAND_LOG.md`.
 - Active restore baseline:
-  - Golden: `GOLDEN-2026-02-24-R1`
-  - Failsafe: `FAILSAFE-2026-02-24-R1`
+  - Golden: `GOLDEN-2026-02-24-R2`
+  - Failsafe: `FAILSAFE-2026-02-24-R2`
   - artifacts:
-    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
-    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R2.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R2.bin`

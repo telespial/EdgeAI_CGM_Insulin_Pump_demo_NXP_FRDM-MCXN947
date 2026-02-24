@@ -5,8 +5,8 @@ Last updated: 2026-02-24
 ## CGM Alignment Steps
 
 0. [x] Promote current firmware/docs baseline as restore points:
-   - `GOLDEN-2026-02-24-R1`
-   - `FAILSAFE-2026-02-24-R1`
+   - `GOLDEN-2026-02-24-R2`
+   - `FAILSAFE-2026-02-24-R2`
    - artifacts staged in `failsafe/`
 
 1. [x] Create a traceability matrix mapping current runtime behavior to each stage in `docs/CGM_DERMAL_ALGORITHM_REVIEW.md` and tag each stage as implemented/simulated/missing.

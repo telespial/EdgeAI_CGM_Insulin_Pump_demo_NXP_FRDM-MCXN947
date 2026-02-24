@@ -8,4 +8,9 @@
 
 int32_t edgeai_text5x7_width(int32_t scale, const char *s);
 void edgeai_text5x7_draw_scaled(int32_t x, int32_t y, int32_t scale, const char *s, uint16_t rgb565);
-
+void edgeai_text5x7_draw_scaled_opaque(int32_t x,
+                                       int32_t y,
+                                       int32_t scale,
+                                       const char *s,
+                                       uint16_t fg_rgb565,
+                                       uint16_t bg_rgb565);

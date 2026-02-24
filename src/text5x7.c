@@ -152,3 +152,30 @@ void edgeai_text5x7_draw_scaled(int32_t x, int32_t y, int32_t scale, const char 
         s++;
     }
 }
+
+void edgeai_text5x7_draw_scaled_opaque(int32_t x,
+                                       int32_t y,
+                                       int32_t scale,
+                                       const char *s,
+                                       uint16_t fg_rgb565,
+                                       uint16_t bg_rgb565)
+{
+    if (!s) return;
+    if (scale < 1) scale = 1;
+
+    {
+        int32_t cx = x;
+        while (*s)
+        {
+            /* Fill the full 6x7 cell (5 glyph cols + 1 spacing col). */
+            par_lcd_s035_fill_rect(cx,
+                                   y,
+                                   cx + (6 * scale) - 1,
+                                   y + (7 * scale) - 1,
+                                   bg_rgb565);
+            edgeai_draw_char5x7_scaled(cx, y, scale, *s, fg_rgb565);
+            cx += (6 * scale);
+            s++;
+        }
+    }
+}

@@ -3,8 +3,8 @@
 Last updated: 2026-02-24
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R1`
-- Failsafe: `FAILSAFE-2026-02-24-R1`
+- Golden: `GOLDEN-2026-02-24-R2`
+- Failsafe: `FAILSAFE-2026-02-24-R2`
 - Status: active
 
 ## Current Status
@@ -1669,4 +1669,291 @@ Last updated: 2026-02-24
   - `./scripts/build_and_flash.sh` PASS
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Increased on-screen simulated CGM summary text size in glucose panel.
+  - `src/gauge_render.c`:
+    - changed glucose-panel simulated summary text from scale `1` to scale `2`
+    - updated label string from `SIM CGM ...` to `SIM ...` to preserve fit at larger size
+    - build fix: marked `FormatDewAltCompact()` as `__attribute__((unused))` after prior line replacement to satisfy `-Werror`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Adjusted simulated CGM summary text to fit within middle LCD segment.
+  - `src/gauge_render.c`:
+    - set center-panel `SIM P15/P30` summary render scale from `2` back to `1` to prevent overflow in middle segment
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Increased simulated CGM summary text slightly while preserving middle-segment fit.
+  - `src/gauge_render.c`:
+    - center `SIM P15/P30` line now uses scale-1 pseudo-1.25x render (double-draw with +1px offset)
+    - keeps horizontal fit in the middle segment while improving readability
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Increased center simulated CGM summary text a little more while preserving middle-segment fit.
+  - `src/gauge_render.c`:
+    - `SIM P15/P30` line now uses 3-pass pseudo-scale render (base + x+1 + y+1 at scale-1)
+    - improves readability relative to single-pass scale-1 without full scale-2 overflow
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Improved center simulated CGM text appearance with cleaner font rendering.
+  - `src/gauge_render.c`:
+    - switched `SIM P15/P30` line from pseudo-thick multi-pass draw to `DrawTextUiCrisp(...)`
+    - keeps same size/fit but improves legibility and visual cleanliness
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reduced center mg/dL + SIM flicker by throttling redraw to 5-second cadence with cache invalidation on static/dashboard refresh paths.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed center-text blanking: mg/dL and SIM lines now stay visible continuously while displayed values refresh every 5 seconds.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed center mg/dL/SIM overdraw artifacts by restoring the center text strip every frame before drawing the two lines; retained 5-second value refresh cadence.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Moved center mg/dL + SIM lines upward to keep them fully outside the pump/elapsed clear bands; this isolates center text from y=240 region wipes.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Enabled deterministic full-frame redraw compositing each refresh to eliminate section overdraw/dirty-region flicker; center CGM text remains final overlay.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reverted full-frame redraw mode due to whole-screen flashing and missing fields; restored incremental rendering while keeping center CGM text protections.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Adjusted center CGM text rendering to remove black bars/boxes: switched strip clear to background blit and mg/dL text to crisp draw (no shadow).
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Refined center CGM redraw to professional minimal dirty-rect behavior: only clears a few pixels around old/new text bounds before redraw; removed wide strip clearing.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Isolated center mg/dL/SIM region from activity/ball renderer by adding a protected guard rectangle in orientation ring background restore and segment draw paths.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Cleared residual ball/activity artifacts in center text zone by forcing per-frame background restore of the protected guard rectangle before overlay text redraw.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Updated rendering strategy per request: ball/ring redraws normally, and center CGM text is re-drawn as final persistent overlay each frame with minimal dirty-clear only when text changes.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Adopted permanent center-text overlay strategy: render ball/ring normally, then every frame restore a tight text-width background box and redraw mg/dL+SIM immediately (no broad clears, no guard carveouts).
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Replaced center text clear+draw flow with masked opaque glyph redraw (fg+bg per character cell) to avoid broad clears and reduce flicker/tearing.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Implemented true masked center text redraw using pump-background-per-glyph cells (no black fill box) and fixed declaration-order compile issue.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Removed center-text background-cell rewrite path; mg/dL and SIM now render as transparent final overlay only to avoid black box and bargraph masking.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Test mode: removed all center-text background restoration/masking; mg/dL and SIM are now pure transparent final overlays to isolate remaining 1 Hz flicker source.
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Removed activity bargraph/orientation ring draw from the runtime frame path for test isolation.
+  - disabled activity renderer invocation in `GaugeRender_DrawFrame()`
+  - retained renderer function source but marked `DrawHumanOrientationPointer()` as intentionally unused for clean `-Werror` builds
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored activity ball/orientation ring rendering in runtime frame path.
+  - re-enabled `DrawHumanOrientationPointer(style)` in `GaugeRender_DrawFrame()`
+  - removed temporary `__attribute__((unused))` from `DrawHumanOrientationPointer()`
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored orientation ball marker rendering inside `DrawHumanOrientationPointer()`.
+  - removed temporary test-disable block that suppressed `ball_x/ball_y/ball_color`
+  - ball now draws as a filled marker with outline + highlight on top of the activity arc
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Stabilized MG/DL + SIM rendering with activity ball/bargraph active.
+  - `DrawGlucoseIndicator()` now restores only a tight background band behind center text before redraw (prevents text smearing)
+  - `DrawHumanOrientationPointer()` now skips arc segments and ball draw that intersect the center text guard zone (prevents overdraw/flicker in text rows)
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Adjusted center-text/ball interaction to address disappearing ball and persistent flashing.
+  - removed orientation-layer center guard clipping so ball never disappears when crossing text region
+  - changed `DrawGlucoseIndicator()` band clear policy to clear only when displayed values change (still redraws text each frame)
+  - outcome goal: no text smear on value updates and reduced frame-to-frame flash in center text rows
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Switched elapsed runtime clock source to MCU hardware RTC (IRTC).
+  - added `fsl_irtc` driver integration to project build
+  - initialized IRTC at boot and captured RTC epoch on each elapsed-clock reset event
+  - runtime elapsed display now computes `elapsed_sec` from RTC wall-time delta; timebase path remains fallback if RTC read fails
+  - retained existing UI reset semantics for playback/record transitions
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Rolled back the recent MCU IRTC integration due to boot freeze and restored prior runtime/elapsed clock implementation.
+  - restored `src/edgeai_medical_device_demo.c` to HEAD baseline (pre-IRTC integration)
+  - restored `sdk_example/mcuxsdk_examples_overlay/demo_apps/edgeai_medical_device_demo/CMakeLists.txt` to HEAD baseline (removed explicit IRTC driver add)
+  - this returns elapsed/logging flow to the previous known-good logic path
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored the previously working counter-read elapsed-time path (for runtime clock + logging cohesion).
+  - reintroduced OSTIMER source calibration against delay window for both raw and decoded counters
+  - runtime now selects the closer source (`OSTIMER_GetCurrentTimerRawValue` vs `OSTIMER_GetCurrentTimerValue`) and uses matched `s_timebase_hz`
+  - no MCU IRTC integration in this change; existing runtime/logging architecture preserved
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Prevented elapsed clock display from counting up/down due small timing jitter.
+  - added bounded anti-backstep guard (<=3 s) in normal, record, and playback display update paths
+  - keeps existing mode-reset behavior intact (`runtime_displayed_sec = UINT32_MAX` still allows intentional resets)
+- Command: ./scripts/build_and_flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored device firmware to active Golden restore point.
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored one step back to previous Golden firmware image.
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored one more step back to earlier Golden firmware image.
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored one more step back to failsafe firmware baseline.
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Returned from failsafe baseline back to Golden restore track (latest Golden).
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Rolled back two more Golden restore points.
+  - step 1 flashed: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
+  - step 2 flashed: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R4.bin`
+  - commands:
+    - `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
+    - `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R4.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Rolled back three more restore points.
+  - step 1 flashed: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin`
+  - step 2 flashed: `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R4.bin`
+  - step 3 flashed: `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+  - commands:
+    - `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin`
+    - `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R4.bin`
+    - `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Moved forward to most recent Golden restore point.
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored firmware to Golden point `R5` (pre-rollback stable target).
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed most recent failsafe restore image for validation.
+  - flashed artifact: `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin`
+  - command: `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Promoted current source-built runtime as new restore baseline `R2` and flashed active Golden `R2`.
+  - built+flashed current source: `./scripts/build_and_flash.sh`
+  - staged artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R2.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R2.bin`
+  - activated on hardware:
+    - `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R2.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Restored runtime behavior path where center `mg/dL` + `SIM` lines are present while activity ball/bargraph are active by rebuilding/flashing from current source (not a saved restore artifact).
+  - note: the exact historical point before ball-removal tests was a runtime iteration and was not captured as a standalone failsafe/golden `.bin`.
+  - command: `./scripts/build_and_flash.sh`
 - Result: ok

@@ -144,6 +144,11 @@ static int8_t gUiGlucoseDir = 1;
 static uint32_t gUiGlucoseNextStepDs = 0u;
 static bool gUiGlucoseSchedPrimed = false;
 static uint16_t gPrevGlucoseMgdl = 65535u;
+static uint32_t gUiGlucoseTextNextRedrawDs = 0u;
+static bool gUiGlucoseTextValid = false;
+static uint16_t gUiGlucoseDisplayMgdl = 98u;
+static uint16_t gUiPred15DisplayMgdl = 98u;
+static uint16_t gUiPred30DisplayMgdl = 98u;
 static cgm_preprocess_t gCgmPreprocess;
 static bool gCgmPreprocessInit = false;
 static uint32_t gCgmNextRawSampleDs = 0u;
@@ -1533,7 +1538,20 @@ static void DrawGlucoseIndicator(void)
     char bg_text[20];
     char cgm_meta[32];
     int32_t bg_x;
-    int32_t bg_y = 224; /* moved up by two scale-2 row heights (2*14 px). */
+    int32_t meta_x;
+    int32_t bg_w;
+    int32_t meta_w;
+    int32_t bg_y = 208; /* keep both lines above pump clear bands that start at y=240. */
+    int32_t text_x0;
+    int32_t text_y0;
+    int32_t text_x1;
+    int32_t text_y1;
+    int32_t text_w;
+    static bool sTextBgPrimed = false;
+    static uint16_t sLastBgMgdl = 0xFFFFu;
+    static uint16_t sLastP15 = 0xFFFFu;
+    static uint16_t sLastP30 = 0xFFFFu;
+    static int32_t sPrevTextW = 0;
     cgm_preprocess_output_t out;
 
     if ((!gUiGlucoseSchedPrimed) || ((int32_t)(now_ds - gUiGlucoseNextStepDs) >= 0))
@@ -1623,13 +1641,49 @@ static void DrawGlucoseIndicator(void)
         gCgmNextRawSampleDs += 10u; /* 1 Hz synthetic raw sample cadence. */
     }
 
-    snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseMgdl);
-    bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
-    DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
-    snprintf(cgm_meta, sizeof(cgm_meta), "SIM CGM P15 %3u P30 %3u",
-             (unsigned int)gUiPred15Mgdl,
-             (unsigned int)gUiPred30Mgdl);
-    DrawTextUi(SECTION2_CX - (edgeai_text5x7_width(1, cgm_meta) / 2), bg_y + 16, 1, cgm_meta, RGB565(166, 216, 244));
+    if ((!gUiGlucoseTextValid) || ((int32_t)(now_ds - gUiGlucoseTextNextRedrawDs) >= 0))
+    {
+        /* Refresh displayed values at 5-second cadence to reduce visible churn. */
+        gUiGlucoseDisplayMgdl = gUiGlucoseMgdl;
+        gUiPred15DisplayMgdl = gUiPred15Mgdl;
+        gUiPred30DisplayMgdl = gUiPred30Mgdl;
+        gUiGlucoseTextValid = true;
+        gUiGlucoseTextNextRedrawDs = now_ds + 50u;
+    }
+
+    snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseDisplayMgdl);
+    snprintf(cgm_meta, sizeof(cgm_meta), "SIM P15 %3u P30 %3u",
+             (unsigned int)gUiPred15DisplayMgdl,
+             (unsigned int)gUiPred30DisplayMgdl);
+
+    bg_w = edgeai_text5x7_width(2, bg_text);
+    meta_w = edgeai_text5x7_width(1, cgm_meta);
+    bg_x = SECTION2_CX - (bg_w / 2);
+    meta_x = SECTION2_CX - (meta_w / 2);
+
+    /* Clear center text band only when displayed values change; prevents smear without frame-by-frame flashing. */
+    text_w = (bg_w > meta_w) ? bg_w : meta_w;
+    if ((!sTextBgPrimed) ||
+        (sLastBgMgdl != gUiGlucoseDisplayMgdl) ||
+        (sLastP15 != gUiPred15DisplayMgdl) ||
+        (sLastP30 != gUiPred30DisplayMgdl))
+    {
+        int32_t clear_w = (text_w > sPrevTextW) ? text_w : sPrevTextW;
+        text_x0 = SECTION2_CX - (clear_w / 2) - 3;
+        text_y0 = bg_y - 2;
+        text_x1 = SECTION2_CX + (clear_w / 2) + 3;
+        text_y1 = (bg_y + 16 + 7) + 2;
+        BlitPumpBgRegion(text_x0, text_y0, text_x1, text_y1);
+        sLastBgMgdl = gUiGlucoseDisplayMgdl;
+        sLastP15 = gUiPred15DisplayMgdl;
+        sLastP30 = gUiPred30DisplayMgdl;
+        sPrevTextW = text_w;
+        sTextBgPrimed = true;
+    }
+
+    /* Final center overlay text. */
+    DrawTextUiCrisp(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
+    DrawTextUiCrisp(meta_x, bg_y + 16, 1, cgm_meta, RGB565(166, 216, 244));
     gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 
@@ -2043,21 +2097,10 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
         DrawLine(x0, y0, x1, y1, 3, draw_color);
     }
 
-    /* ~14x14 filled circle (line-filled) for the rolling marker (2x larger). */
-    DrawLine(ball_x - 2, ball_y - 6, ball_x + 2, ball_y - 6, 1, ball_color);
-    DrawLine(ball_x - 4, ball_y - 5, ball_x + 4, ball_y - 5, 1, ball_color);
-    DrawLine(ball_x - 5, ball_y - 4, ball_x + 5, ball_y - 4, 1, ball_color);
-    DrawLine(ball_x - 6, ball_y - 3, ball_x + 6, ball_y - 3, 1, ball_color);
-    DrawLine(ball_x - 6, ball_y - 2, ball_x + 6, ball_y - 2, 1, ball_color);
-    DrawLine(ball_x - 6, ball_y - 1, ball_x + 6, ball_y - 1, 1, ball_color);
-    DrawLine(ball_x - 6, ball_y, ball_x + 6, ball_y, 1, ball_color);
-    DrawLine(ball_x - 6, ball_y + 1, ball_x + 6, ball_y + 1, 1, ball_color);
-    DrawLine(ball_x - 6, ball_y + 2, ball_x + 6, ball_y + 2, 1, ball_color);
-    DrawLine(ball_x - 6, ball_y + 3, ball_x + 6, ball_y + 3, 1, ball_color);
-    DrawLine(ball_x - 5, ball_y + 4, ball_x + 5, ball_y + 4, 1, ball_color);
-    DrawLine(ball_x - 4, ball_y + 5, ball_x + 4, ball_y + 5, 1, ball_color);
-    DrawLine(ball_x - 2, ball_y + 6, ball_x + 2, ball_y + 6, 1, ball_color);
-    DrawLine(ball_x - 5, ball_y - 2, ball_x - 5, ball_y + 2, 1, RGB565(220, 255, 230));
+    /* Draw the orientation ball marker on top of the activity arc. */
+    par_lcd_s035_draw_filled_circle(ball_x, ball_y, 6, RGB565(8, 12, 20));
+    par_lcd_s035_draw_filled_circle(ball_x, ball_y, 5, ball_color);
+    par_lcd_s035_draw_filled_circle(ball_x, ball_y, 2, RGB565(232, 242, 255));
 
 }
 
@@ -3314,6 +3357,8 @@ bool GaugeRender_Init(void)
         gPrevBarLevel = 255u;
         gPrevFillPct = 255u;
         gPrevGlucoseMgdl = 255u;
+        gUiGlucoseTextValid = false;
+        gUiGlucoseTextNextRedrawDs = 0u;
         gPrevAnomaly = 0u;
         gPrevWear = 0u;
         gPrevAiEnabled = false;
@@ -3559,6 +3604,8 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevBarLevel = 255u;
         gPrevFillPct = 255u;
         gPrevGlucoseMgdl = 255u;
+        gUiGlucoseTextValid = false;
+        gUiGlucoseTextNextRedrawDs = 0u;
         gPrevAiEnabled = !ai_enabled;
         gAlertVisualValid = false;
     }
@@ -3571,6 +3618,8 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevBarLevel = 255u;
         gPrevFillPct = 255u;
         gPrevGlucoseMgdl = 255u;
+        gUiGlucoseTextValid = false;
+        gUiGlucoseTextNextRedrawDs = 0u;
         gPrevAnomaly = 0u;
         gPrevWear = 0u;
         gPrevAiEnabled = false;
@@ -3669,7 +3718,6 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     DrawTerminalDynamic(style, sample, cpu_pct, ai_enabled);
     DrawMedicalOverlayData(style, sample, ai_enabled);
     DrawLeftBargraphDynamic(style, gUiReservoirPct, DisplayTempC10(sample));
-    DrawGlucoseIndicator();
     DrawAiSideButtons();
     if (gSettingsVisible)
     {
@@ -3689,11 +3737,11 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     }
     gModalWasActive = modal_active;
 
-    if (ai_enabled != gPrevAiEnabled)
-    {
-        DrawAiPill(style, ai_enabled);
-        DrawAiSideButtons();
-    }
+    DrawAiPill(style, ai_enabled);
+    DrawAiSideButtons();
+
+    /* Keep center CGM text as the final dynamic layer to avoid overdraw flicker. */
+    DrawGlucoseIndicator();
 
     gPrevCurrent = sample->current_mA;
     gPrevPower = power_w;

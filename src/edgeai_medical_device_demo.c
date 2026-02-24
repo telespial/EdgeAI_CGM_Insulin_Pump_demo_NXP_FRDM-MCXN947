@@ -1105,13 +1105,38 @@ static void TouchDelayMs(uint32_t delay_ms)
     SDK_DelayAtLeastUs(delay_ms * 1000u, CoreClockHz());
 }
 
+static uint32_t TimebaseCalibrateHz(bool use_raw)
+{
+    uint64_t t0 = use_raw ? OSTIMER_GetCurrentTimerRawValue(OSTIMER0) : OSTIMER_GetCurrentTimerValue(OSTIMER0);
+    uint64_t t1;
+    uint64_t dt_ticks;
+    uint64_t hz64;
+    uint32_t core_hz = CoreClockHz();
+
+    SDK_DelayAtLeastUs(EDGEAI_TIMEBASE_CAL_WINDOW_US, core_hz);
+    t1 = use_raw ? OSTIMER_GetCurrentTimerRawValue(OSTIMER0) : OSTIMER_GetCurrentTimerValue(OSTIMER0);
+    dt_ticks = t1 - t0;
+    if (dt_ticks == 0u)
+    {
+        return 0u;
+    }
+
+    hz64 = (dt_ticks * 1000000ull) / EDGEAI_TIMEBASE_CAL_WINDOW_US;
+    if ((hz64 < 1000ull) || (hz64 > 1000000ull))
+    {
+        return 0u;
+    }
+    return (uint32_t)hz64;
+}
+
 static bool TimebaseInit(void)
 {
     status_t st = CLOCK_SetupOsc32KClocking(kCLOCK_Osc32kToWake);
     uint32_t cfg_hz;
-    uint32_t measured_hz = 0u;
-    uint64_t t0;
-    uint64_t t1;
+    uint32_t raw_hz;
+    uint32_t dec_hz;
+    uint32_t err_raw;
+    uint32_t err_dec;
 
     CLOCK_AttachClk(kXTAL32K2_to_OSTIMER);
     OSTIMER_Init(OSTIMER0);
@@ -1121,29 +1146,40 @@ static bool TimebaseInit(void)
     s_timebase_use_raw = false;
     s_timebase_hz = (cfg_hz != 0u) ? cfg_hz : EDGEAI_TIMEBASE_CRYSTAL_HZ;
 
-    /* Calibrate effective OSTIMER tick rate against CPU delay, then quantize to expected divisors. */
-    t0 = OSTIMER_GetCurrentTimerValue(OSTIMER0);
-    SDK_DelayAtLeastUs(EDGEAI_TIMEBASE_CAL_WINDOW_US, CoreClockHz());
-    t1 = OSTIMER_GetCurrentTimerValue(OSTIMER0);
-    if (t1 > t0)
+    raw_hz = TimebaseCalibrateHz(true);
+    dec_hz = TimebaseCalibrateHz(false);
+
+    if (cfg_hz != 0u)
     {
-        measured_hz = (uint32_t)(((t1 - t0) * 1000000ull) / EDGEAI_TIMEBASE_CAL_WINDOW_US);
+        err_raw = (raw_hz > cfg_hz) ? (raw_hz - cfg_hz) : (cfg_hz - raw_hz);
+        err_dec = (dec_hz > cfg_hz) ? (dec_hz - cfg_hz) : (cfg_hz - dec_hz);
+        s_timebase_use_raw = (raw_hz != 0u) && ((dec_hz == 0u) || (err_raw <= err_dec));
     }
-    if (measured_hz != 0u)
+    else
     {
-        /* Accept measured tick rate when plausible; avoid forcing a wrong nominal divisor. */
-        if ((measured_hz >= (s_timebase_hz / 2u)) && (measured_hz <= (s_timebase_hz * 2u)))
-        {
-            s_timebase_hz = measured_hz;
-        }
+        s_timebase_use_raw = (raw_hz != 0u);
     }
 
-    PRINTF("TIMEBASE: src=ostimer32k setup=%d cfg=%u meas=%u use=%u raw=%u\r\n",
+    if (s_timebase_use_raw)
+    {
+        s_timebase_hz = (raw_hz != 0u) ? raw_hz : s_timebase_hz;
+    }
+    else if (dec_hz != 0u)
+    {
+        s_timebase_hz = dec_hz;
+    }
+    else if (cfg_hz != 0u)
+    {
+        s_timebase_hz = cfg_hz;
+    }
+
+    PRINTF("TIMEBASE: src=ostimer32k setup=%d cfg=%u raw=%u dec=%u use_raw=%u use_hz=%u\r\n",
            (int)st,
            (unsigned int)cfg_hz,
-           (unsigned int)measured_hz,
-           (unsigned int)s_timebase_hz,
-           (unsigned int)s_timebase_use_raw);
+           (unsigned int)raw_hz,
+           (unsigned int)dec_hz,
+           (unsigned int)s_timebase_use_raw,
+           (unsigned int)s_timebase_hz);
     s_timebase_ready = true;
     return true;
 }
@@ -4310,6 +4346,12 @@ int main(void)
                     elapsed_sec = runtime_elapsed_ds / 10u;
                 }
 
+                if ((runtime_displayed_sec != UINT32_MAX) && (elapsed_sec < runtime_displayed_sec) &&
+                    ((runtime_displayed_sec - elapsed_sec) <= 3u))
+                {
+                    /* Ignore small backward jitter from counter read/calibration noise. */
+                    elapsed_sec = runtime_displayed_sec;
+                }
                 if (elapsed_sec != runtime_displayed_sec)
                 {
                     uint16_t ch;
@@ -4400,6 +4442,12 @@ int main(void)
                     rec_elapsed_ds++;
                 }
                 rec_sec = rec_elapsed_ds / 10u;
+                if ((runtime_displayed_sec != UINT32_MAX) && (rec_sec < runtime_displayed_sec) &&
+                    ((runtime_displayed_sec - rec_sec) <= 3u))
+                {
+                    rec_sec = runtime_displayed_sec;
+                    rec_elapsed_ds = rec_sec * 10u;
+                }
                 ConsumeCapturePeaks(&rec_ax_mg, &rec_ay_mg, &rec_az_mg, &rec_gx, &rec_gy, &rec_gz, &rec_mx, &rec_my, &rec_mz);
                 rec_score = (record_sample != NULL) ? record_sample->anomaly_score_pct : s_frame_sample.anomaly_score_pct;
                 rec_status = (record_sample != NULL) ? record_sample->ai_status : s_frame_sample.ai_status;
@@ -4472,6 +4520,11 @@ int main(void)
                         uint16_t ch;
                         uint8_t cm, cs, cds;
                         uint32_t play_sec = playback_sample.ts_ds / 10u;
+                        if ((runtime_displayed_sec != UINT32_MAX) && (play_sec < runtime_displayed_sec) &&
+                            ((runtime_displayed_sec - play_sec) <= 3u))
+                        {
+                            play_sec = runtime_displayed_sec;
+                        }
                         ClockFromDeciseconds(play_sec * 10u, &ch, &cm, &cs, &cds);
                         GaugeRender_SetRuntimeClock(ch, cm, cs, 0u, true);
                         runtime_displayed_sec = play_sec;

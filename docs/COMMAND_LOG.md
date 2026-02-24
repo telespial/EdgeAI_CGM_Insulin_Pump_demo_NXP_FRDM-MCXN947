@@ -717,3 +717,171 @@ Format:
 2026-02-24T00:09:50Z | cmd: apply_patch src/gauge_render.c mark FormatDewAltCompact as __attribute__((unused)) | result: ok
 2026-02-24T00:09:50Z | cmd: ./scripts/build_and_flash.sh | result: ok (step-11 build+flash verification pass)
 2026-02-24T00:09:50Z | cmd: apply_patch docs/TODO.md docs/CGM_TRACEABILITY.md and append docs/PROJECT_STATE.md step-11 completion update | result: ok
+2026-02-24T00:11:24Z | cmd: apply_patch src/gauge_render.c increase SIM CGM on-screen text size (scale 1->2) and shorten label for fit | result: ok
+2026-02-24T00:11:24Z | cmd: ./scripts/build_and_flash.sh | result: fail (unused-function Werror: FormatDewAltCompact)
+2026-02-24T00:11:24Z | cmd: apply_patch src/gauge_render.c mark FormatDewAltCompact as __attribute__((unused)) | result: ok
+2026-02-24T00:11:24Z | cmd: ./scripts/build_and_flash.sh | result: ok (SIM text size update verified via build+flash)
+2026-02-24T00:11:42Z | cmd: apply_patch docs/PROJECT_STATE.md repair malformed 2026-02-24 SIM text-size update entry with correct verification fields | result: ok
+2026-02-24T00:12:26Z | cmd: apply_patch src/gauge_render.c reduce SIM CGM summary back to scale-1 to fit middle segment and rerun build+flash | result: ok
+2026-02-24T00:13:44Z | cmd: apply_patch src/gauge_render.c render SIM summary in pseudo-1.25x (double-draw at scale1) for slight size increase within middle segment + build_and_flash pass
+2026-02-24T00:14:30Z | cmd: update SIM summary to slightly larger 3-pass pseudo-scale and verify via build_and_flash pass
+2026-02-24T00:15:50Z | cmd: apply_patch src/gauge_render.c switch SIM summary to DrawTextUiCrisp for cleaner font look + build_and_flash pass
+2026-02-24T00:19:52Z | cmd: read docs/START_HERE.md docs/PROJECT_STATE.md docs/OPS_RUNBOOK.md and inspect src/gauge_render.c anchors for center glucose/SIM render path | result: ok
+2026-02-24T00:19:52Z | cmd: inspect current DrawGlucoseIndicator implementation and cache-reset points in src/gauge_render.c | result: ok
+2026-02-24T00:19:52Z | cmd: apply_patch src/gauge_render.c add 5-second redraw throttle and center-text cache invalidation for mg/dL + SIM line | result: ok
+2026-02-24T00:19:52Z | cmd: ./scripts/build_and_flash.sh | result: ok (center mg/dL+SIM redraw throttle verification pass)
+2026-02-24T00:19:59Z | cmd: git status/rg/tail verification of modified files and doc-log updates after center text throttle change | result: ok
+2026-02-24T00:21:37Z | cmd: sed inspect src/gauge_render.c globals around glucose/SIM render cache state | result: ok
+2026-02-24T00:21:37Z | cmd: apply_patch src/gauge_render.c add display-cache variables for mg/dL and SIM P15/P30 lines | result: ok
+2026-02-24T00:21:37Z | cmd: apply_patch src/gauge_render.c change DrawGlucoseIndicator to always render text each frame and refresh displayed values every 5 seconds | result: ok
+2026-02-24T00:21:37Z | cmd: ./scripts/build_and_flash.sh | result: ok (persistent mg/dL+SIM lines with 5s value refresh verified)
+2026-02-24T00:21:37Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for persistent-center-text fix | result: ok
+2026-02-24T00:21:44Z | cmd: git status and rg verify persistent-center-text cache variables/refresh points in src/gauge_render.c | result: ok
+2026-02-24T00:23:40Z | cmd: inspect draw-order and overlap regions in src/gauge_render.c (DrawFrame/DrawMedicalOverlayData/DrawHumanOrientationPointer/DrawGlucoseIndicator) | result: ok
+2026-02-24T00:23:40Z | cmd: apply_patch src/gauge_render.c restore center text strip each frame before mg/dL + SIM redraw to prevent dynamic background bleed-through | result: ok
+2026-02-24T00:23:40Z | cmd: ./scripts/build_and_flash.sh | result: ok (center text anti-overwrite fix verified)
+2026-02-24T00:23:40Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for center text anti-overwrite fix | result: ok
+2026-02-24T00:26:19Z | cmd: inspect render schedule in src/edgeai_medical_device_demo.c for periodic draw paths (DrawFrame/DrawGyroFast/runtime clock) | result: ok
+2026-02-24T00:26:19Z | cmd: apply_patch src/gauge_render.c move center mg/dL+SIM lines up to avoid y=240 pump clear/elapsed band overlap | result: ok
+2026-02-24T00:26:19Z | cmd: ./scripts/build_and_flash.sh | result: ok (center text vertical isolation from pump clear band verified)
+2026-02-24T00:26:19Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for center-text overlap isolation update | result: ok
+2026-02-24T00:30:15Z | cmd: apply_patch src/gauge_render.c enable deterministic full-frame redraw and render AI pill/buttons every frame to avoid stale state during full compositing | result: ok
+2026-02-24T00:30:15Z | cmd: ./scripts/build_and_flash.sh | result: ok (full-frame redraw mode verification pass)
+2026-02-24T00:30:15Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for full-frame redraw stability update | result: ok
+2026-02-24T00:31:41Z | cmd: inspect GaugeRender_DrawFrame to verify full-frame redraw block and final draw ordering | result: ok
+2026-02-24T00:31:41Z | cmd: apply_patch src/gauge_render.c remove per-frame DrawStaticDashboard full-redraw block (restore incremental rendering) | result: ok
+2026-02-24T00:31:41Z | cmd: ./scripts/build_and_flash.sh | result: ok (incremental rendering restored; anti-overwrite center text path retained)
+2026-02-24T00:31:41Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for full-redraw revert
+2026-02-24T00:35:38Z | cmd: inspect DrawGlucoseIndicator render path for center-strip clear and text shadow behavior | result: ok
+2026-02-24T00:35:38Z | cmd: apply_patch src/gauge_render.c replace center strip fill_rect with background blit and switch mg/dL draw to DrawTextUiCrisp | result: ok
+2026-02-24T00:35:38Z | cmd: ./scripts/build_and_flash.sh | result: ok (center-text box/bar artifact fix verification pass)
+2026-02-24T00:35:38Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for center-text artifact fix
+2026-02-24T00:38:40Z | cmd: apply_patch src/gauge_render.c implement minimal text-bounds dirty clear (union of previous/new mg/dL+SIM text boxes) and remove broad center strip clear | result: ok
+2026-02-24T00:38:40Z | cmd: ./scripts/build_and_flash.sh | result: ok (minimal dirty-clear center text redraw verification pass)
+2026-02-24T00:38:40Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for minimal center dirty-rect redraw update
+2026-02-24T00:42:07Z | cmd: inspect render constants and overlap regions; identify orientation ring redraw area intersecting center CGM text band | result: ok
+2026-02-24T00:42:07Z | cmd: apply_patch src/gauge_render.c add protected center-text guard rectangle in DrawHumanOrientationPointer (background restore and arc segments skip guard band) | result: ok
+2026-02-24T00:42:07Z | cmd: ./scripts/build_and_flash.sh | result: ok (orientation redraw isolation for center text verified)
+2026-02-24T00:42:07Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for center-text guard isolation update
+2026-02-24T00:45:55Z | cmd: apply_patch src/gauge_render.c add explicit guard-zone background restore each frame in DrawHumanOrientationPointer to clear residual motion trails under center CGM text | result: ok
+2026-02-24T00:45:55Z | cmd: ./scripts/build_and_flash.sh | result: ok (guard-zone trail cleanup verification pass)
+2026-02-24T00:45:55Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for guard-zone cleanup fix
+2026-02-24T00:48:07Z | cmd: apply_patch src/gauge_render.c revert orientation-guard carveout and restore full ring redraw so ball renders normally; rely on final cached CGM text overlay with minimal clear-on-value-change | result: ok
+2026-02-24T00:48:07Z | cmd: ./scripts/build_and_flash.sh | result: ok (overlay-after-ball render strategy verification pass)
+2026-02-24T00:48:07Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for overlay-after-ball strategy update
+2026-02-24T00:49:31Z | cmd: apply_patch src/gauge_render.c switch center text redraw to tight per-frame background restore + immediate redraw; remove stale previous-text cache state; restore normal ball/ring full redraw | result: ok
+2026-02-24T00:49:31Z | cmd: ./scripts/build_and_flash.sh | result: ok (permanent text overlay strategy verification pass)
+2026-02-24T00:49:31Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for permanent overlay redraw strategy
+2026-02-24T00:51:37Z | cmd: add opaque mask text API in src/text5x7.h/.c (edgeai_text5x7_draw_scaled_opaque) and switch center mg/dL+SIM to masked opaque redraw without separate area clear | result: ok
+2026-02-24T00:51:37Z | cmd: ./scripts/build_and_flash.sh | result: ok (mask-based center text redraw verification pass)
+2026-02-24T00:51:37Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for mask-based text redraw update
+2026-02-24T00:53:37Z | cmd: ./scripts/build_and_flash.sh after masked per-glyph pump-bg redraw change | result: fail (BlitPumpBgRegion implicit declaration order issue in src/gauge_render.c)
+2026-02-24T00:53:37Z | cmd: apply_patch src/gauge_render.c add forward declaration for BlitPumpBgRegion before DrawTextUiMaskedPumpBg helper | result: ok
+2026-02-24T00:53:37Z | cmd: ./scripts/build_and_flash.sh | result: ok (masked per-glyph pump-bg redraw build+flash pass)
+2026-02-24T00:53:37Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for masked per-glyph pump-bg redraw update
+2026-02-24T00:55:01Z | cmd: rg verify LCD controller/part from src/par_lcd_s035.c and related display driver includes | result: ok
+2026-02-24T01:07:53Z | cmd: apply_patch src/gauge_render.c replace masked pump-bg per-glyph rewrite with pure transparent final overlay text draw path for mg/dL+SIM | result: ok
+2026-02-24T01:07:53Z | cmd: ./scripts/build_and_flash.sh | result: fail (implicit declaration of BlitPumpBgRegion after helper insertion)
+2026-02-24T01:07:53Z | cmd: apply_patch src/gauge_render.c remove masked helper usage and restore transparent crisp text calls | result: ok
+2026-02-24T01:07:53Z | cmd: ./scripts/build_and_flash.sh | result: ok (transparent final-overlay text path verified)
+2026-02-24T01:07:53Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for transparent overlay rollback
+2026-02-24T01:08:56Z | cmd: apply_patch src/gauge_render.c remove masked per-glyph background restoration helper and force pure transparent final text overlay for mg/dL+SIM | result: ok
+2026-02-24T01:08:56Z | cmd: ./scripts/build_and_flash.sh | result: ok (transparent overlay test build+flash pass)
+2026-02-24T01:08:56Z | cmd: append docs/COMMAND_LOG.md and docs/PROJECT_STATE.md for transparent-only center text test
+2026-02-24T02:18:00Z | cmd: apply_patch src/gauge_render.c disable activity bargraph draw call in GaugeRender_DrawFrame (test mode) | result: ok
+2026-02-24T02:18:00Z | cmd: ./scripts/build_and_flash.sh | result: fail (unused static DrawHumanOrientationPointer with -Werror)
+2026-02-24T02:19:30Z | cmd: apply_patch src/gauge_render.c mark DrawHumanOrientationPointer as __attribute__((unused)) after draw-call removal | result: ok
+2026-02-24T02:19:30Z | cmd: ./scripts/build_and_flash.sh | result: ok (build+flash pass on probe #1)
+2026-02-24T01:11:12Z | cmd: rg -n "DrawHumanOrientationPointer|Test mode: activity bargraph" src/gauge_render.c | result: ok
+2026-02-24T01:11:31Z | cmd: rg -n "DrawHumanOrientationPointer|activity bargraph/orientation ring disabled" src/gauge_render.c | result: ok
+2026-02-24T01:11:40Z | cmd: apply_patch src/gauge_render.c restore DrawHumanOrientationPointer call and remove unused attribute | result: ok
+2026-02-24T01:12:01Z | cmd: ./scripts/build_and_flash.sh | result: ok (activity ball restored)
+2026-02-24T01:12:01Z | cmd: append docs/PROJECT_STATE.md with activity ball restoration update | result: ok
+2026-02-24T01:12:06Z | cmd: rg/tail verify ball-restore code+docs updates | result: ok
+2026-02-24T01:13:05Z | cmd: sed -n 1960,2145p src/gauge_render.c | result: ok
+2026-02-24T01:13:14Z | cmd: rg -n "DrawCircle\(|FillCircle|DrawDisc|ball marker draw disabled|void\)ball_x" src/gauge_render.c | result: ok
+2026-02-24T01:13:19Z | cmd: rg -n circle primitives under src | result: ok
+2026-02-24T01:13:29Z | cmd: apply_patch src/gauge_render.c restore orientation ball draw (filled-circle marker) | result: ok
+2026-02-24T01:13:52Z | cmd: ./scripts/build_and_flash.sh | result: ok (orientation ball marker restored)
+2026-02-24T01:13:52Z | cmd: append docs/PROJECT_STATE.md for restored orientation ball marker update | result: ok
+2026-02-24T01:13:58Z | cmd: rg/tail verify orientation ball restore + docs entries | result: ok
+2026-02-24T01:15:31Z | cmd: rg -n "DrawGlucoseIndicator|GLUCOSE|SIM|BlitPumpBgRegion|DrawHumanOrientationPointer" src/gauge_render.c | result: ok
+2026-02-24T01:15:36Z | cmd: sed inspect DrawGlucoseIndicator + DrawHumanOrientationPointer bodies | result: ok
+2026-02-24T01:16:00Z | cmd: rg helper search for rect overlap/minmax in gauge_render.c | result: ok
+2026-02-24T01:16:28Z | cmd: apply_patch src/gauge_render.c add center-text tight background restore + orientation guard-zone clipping | result: ok
+2026-02-24T01:16:51Z | cmd: ./scripts/build_and_flash.sh | result: ok (center text guard-zone + tight background restore fix)
+2026-02-24T01:16:51Z | cmd: append docs/PROJECT_STATE.md for center text stability guard-zone update | result: ok
+2026-02-24T01:16:56Z | cmd: rg/tail verify center-text stability fix markers and doc entries | result: ok
+2026-02-24T01:18:43Z | cmd: apply_patch src/gauge_render.c remove ball/text guard clipping and switch MG/DL+SIM clear to change-only | result: ok
+2026-02-24T01:19:05Z | cmd: ./scripts/build_and_flash.sh | result: ok (ball no longer clipped; center text clear only on value changes)
+2026-02-24T01:19:05Z | cmd: append docs/PROJECT_STATE.md for ball visibility + change-only text-clear update | result: ok
+2026-02-24T01:19:11Z | cmd: rg/tail verify post-fix code and docs entries | result: ok
+2026-02-24T01:20:45Z | cmd: rg -n "gRtc|RTC|elapsed|UiNowDs|now_ds|rtc|seconds|Ostimer|tick" src | result: ok
+2026-02-24T01:20:52Z | cmd: sed/rg inspect elapsed-time constants and runtime-clock update loop | result: ok
+2026-02-24T01:20:58Z | cmd: sed inspect timebase calibration and test harness source | result: ok
+2026-02-24T01:21:12Z | cmd: sed -n 120,240p src/edgeai_medical_device_demo.c | result: ok
+2026-02-24T01:21:43Z | cmd: apply_patch src/edgeai_medical_device_demo.c adopt raw-vs-dec OSTIMER calibration selection from timebase test and update TIMEBASE log | result: ok
+2026-02-24T01:21:43Z | cmd: apply_patch src/edgeai_medical_device_demo.c fix TIMEBASE PRINTF argument count | result: ok
+2026-02-24T01:21:57Z | cmd: rg -n "fsl_rtc|RTC_|RTC\b|SNVS|VBAT|LP RTC|RTCC|RIT" ... | result: ok
+2026-02-24T01:22:09Z | cmd: sed inspect overlay CMakeLists for driver source inclusion | result: ok
+2026-02-24T01:24:12Z | cmd: apply_patch src/edgeai_medical_device_demo.c add MCU IRTC init/read helpers and route elapsed runtime clock to hardware RTC with fallback | result: ok
+2026-02-24T01:24:12Z | cmd: apply_patch sdk_example/.../CMakeLists.txt add drivers/irtc/fsl_irtc.c and include path | result: ok
+2026-02-24T01:24:39Z | cmd: ./scripts/build_and_flash.sh | result: ok (MCU IRTC elapsed-time source integrated)
+2026-02-24T01:24:39Z | cmd: append docs/PROJECT_STATE.md for MCU IRTC elapsed clock migration | result: ok
+2026-02-24T01:25:46Z | cmd: restore src/edgeai_medical_device_demo.c and sdk_example/.../CMakeLists.txt from HEAD (revert MCU IRTC integration) | result: ok
+2026-02-24T01:26:09Z | cmd: ./scripts/build_and_flash.sh | result: ok (rollback to pre-IRTC code)
+2026-02-24T01:26:09Z | cmd: append docs/PROJECT_STATE.md rollback note for pre-IRTC restore | result: ok
+2026-02-24T01:27:12Z | cmd: sed -n 1110,1188p src/edgeai_medical_device_demo.c | result: ok
+2026-02-24T01:27:38Z | cmd: apply_patch src/edgeai_medical_device_demo.c restore working OSTIMER counter-source calibration (raw/dec) for elapsed timing+logging path | result: ok
+2026-02-24T01:27:58Z | cmd: ./scripts/build_and_flash.sh | result: ok (restored OSTIMER raw/dec counter selection for elapsed+logging)
+2026-02-24T01:27:58Z | cmd: append docs/PROJECT_STATE.md for restored working counter-read RTC/timebase logic | result: ok
+2026-02-24T01:28:44Z | cmd: sed/rg inspect runtime elapsed display update block for monotonic fix | result: ok
+2026-02-24T01:28:58Z | cmd: sed -n 4328,4524p src/edgeai_medical_device_demo.c | result: ok
+2026-02-24T01:29:12Z | cmd: apply_patch src/edgeai_medical_device_demo.c add bounded anti-backstep guard (<=3s) for runtime/record/playback display clock | result: ok
+2026-02-24T01:29:32Z | cmd: ./scripts/build_and_flash.sh | result: ok (elapsed display anti-backstep guard)
+2026-02-24T01:29:32Z | cmd: append docs/PROJECT_STATE.md for elapsed display anti-backstep fix | result: ok
+2026-02-24T01:30:36Z | cmd: sed read docs/START_HERE.md and docs/PROJECT_STATE.md for golden restore metadata | result: ok
+2026-02-24T01:30:42Z | cmd: read docs/OPS_RUNBOOK.md and list failsafe artifacts for golden restore | result: ok
+2026-02-24T01:31:05Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin | result: ok (golden restore flashed)
+2026-02-24T01:31:12Z | cmd: tail docs + git status after golden restore flash | result: ok
+2026-02-24T01:31:38Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin | result: ok (previous golden flashed)
+2026-02-24T01:31:38Z | cmd: append docs/PROJECT_STATE.md for previous-golden restore | result: ok
+2026-02-24T01:36:54Z | cmd: ls -1 failsafe artifacts | result: ok
+2026-02-24T01:37:12Z | cmd: tail -n 30 docs/PROJECT_STATE.md | result: ok
+2026-02-24T01:37:15Z | cmd: tail -n 30 docs/COMMAND_LOG.md | result: ok
+2026-02-24T01:38:41Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin | result: ok (one-more golden rollback flashed)
+2026-02-24T01:40:20Z | cmd: ls -1 failsafe artifacts | result: ok
+2026-02-24T01:40:28Z | cmd: tail -n 20 docs/PROJECT_STATE.md | result: ok
+2026-02-24T01:42:26Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin | result: ok (one-more rollback to failsafe R3)
+2026-02-24T01:42:41Z | cmd: append docs/PROJECT_STATE.md for failsafe rollback | result: ok
+2026-02-24T01:43:57Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin | result: ok (returned to latest golden restore)
+2026-02-24T01:44:04Z | cmd: append docs/PROJECT_STATE.md for latest golden restore | result: ok
+2026-02-24T01:45:57Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin | result: ok (rollback 1/2)
+2026-02-24T01:46:12Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R4.bin | result: ok (rollback 2/2)
+2026-02-24T01:46:24Z | cmd: append docs/PROJECT_STATE.md for two-step golden rollback | result: ok
+2026-02-24T01:49:28Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R3.bin | result: ok (rollback 1/3)
+2026-02-24T01:49:45Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R4.bin | result: ok (rollback 2/3)
+2026-02-24T01:50:02Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-23-R3.bin | result: ok (rollback 3/3)
+2026-02-24T01:50:12Z | cmd: append docs/PROJECT_STATE.md for three-step rollback | result: ok
+2026-02-24T01:52:41Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R1.bin | result: ok (forward to latest golden)
+2026-02-24T01:52:52Z | cmd: append docs/PROJECT_STATE.md for latest golden forward restore | result: ok
+2026-02-24T01:54:23Z | cmd: rg -n "Golden|golden|rollback|Restored device firmware" docs/PROJECT_STATE.md | tail -n 40 | result: ok
+2026-02-24T01:54:23Z | cmd: tail -n 60 docs/COMMAND_LOG.md | result: ok
+2026-02-24T01:56:31Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-23-R5.bin | result: ok (set active image to golden R5)
+2026-02-24T01:56:39Z | cmd: append docs/PROJECT_STATE.md for golden R5 restore | result: ok
+2026-02-24T01:58:12Z | cmd: ls -1 failsafe artifacts | result: ok
+2026-02-24T01:59:45Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R1.bin | result: ok (flashed latest failsafe)
+2026-02-24T01:59:52Z | cmd: append docs/PROJECT_STATE.md for latest failsafe flash | result: ok
+2026-02-24T02:01:16Z | cmd: nl -ba docs/PROJECT_STATE.md | sed -n 1728,1835p | result: ok
+2026-02-24T02:01:58Z | cmd: rg inspect PROJECT_STATE/COMMAND_LOG for SIM+MG/DL and ball-removal timeline markers | result: ok
+2026-02-24T02:02:21Z | cmd: nl -ba docs/PROJECT_STATE.md | sed -n 1728,1835p | result: ok
+2026-02-24T02:03:05Z | cmd: rg inspect src/gauge_render.c for DrawGlucoseIndicator/DrawHumanOrientationPointer presence | result: ok
+2026-02-24T02:03:20Z | cmd: sed -n 1480,1770p src/gauge_render.c | result: ok
+2026-02-24T02:04:12Z | cmd: ./scripts/build_and_flash.sh | result: ok (rebuilt/flashed recoverable pre-removal runtime source path with MG/DL+SIM + ball/bargraph active)
+2026-02-24T02:05:22Z | cmd: sed read docs/OPS_RUNBOOK.md; git status; list docs/scripts/tools/failsafe | result: ok
+2026-02-24T02:06:11Z | cmd: sed read docs/START_HERE.md docs/PROJECT_STATE.md docs/TODO.md | result: ok
+2026-02-24T02:07:04Z | cmd: cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin to failsafe/*_golden_2026-02-24-R2.bin and *_failsafe_2026-02-24-R2.bin | result: ok
+2026-02-24T02:07:18Z | cmd: ./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R2.bin | result: ok
+2026-02-24T02:07:42Z | cmd: apply_patch docs/START_HERE.md docs/PROJECT_STATE.md docs/TODO.md baseline R1->R2 and add restore update entry | result: ok
+2026-02-24T02:08:14Z | cmd: git status --short and list failsafe/*2026-02-24-R2.bin | result: ok
+2026-02-24T02:08:33Z | cmd: git ls-files failsafe | result: ok
