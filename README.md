@@ -9,6 +9,8 @@ The generated layer integrates cleanly into existing firmware. A firmware engine
 
 This architecture is designed to improve accuracy, prediction capability, and system-level decision making while preserving deterministic behavior and production stability. The AI layer operates as an isolated enhancement, reducing regression risk after deployment and protecting field reliability.
 
+For more info contact: rmhaberkern@gmail.com
+
 ![insulin_pump](https://github.com/user-attachments/assets/1033010d-696f-45b3-b7d1-bed7aa6203d0)
 
 ## Hardware Platform And Sensor BOM
