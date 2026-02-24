@@ -1655,3 +1655,18 @@ Last updated: 2026-02-24
   - target: `MCXN947:FRDM-MCXN947`
   - probe: `#1` (`UYLKOJI11H2B3`)
 - Result: ok
+
+## Update 2026-02-24
+- Change: Completed CGM alignment step 11 by aligning LCD/terminal semantics to the runtime CGM contract.
+  - `src/gauge_render.c` updates:
+    - added explicit simulation labeling in CGM UI paths (`SIM CGM`)
+    - added on-screen prediction visibility (`P15`/`P30`) under glucose display
+    - added terminal SQI confidence coding (`HI`/`MED`/`LOW`/`BAD`) and active sensor flag display (`Fxx`)
+    - aligned terminal summary lines to contract fields (predictions + trend with simulation marker)
+  - compile hygiene:
+    - marked now-unused `FormatDewAltCompact()` helper with `__attribute__((unused))` to satisfy `-Werror`
+- Verification:
+  - `./scripts/build_and_flash.sh` PASS
+  - target: `MCXN947:FRDM-MCXN947`
+  - probe: `#1` (`UYLKOJI11H2B3`)
+- Result: ok

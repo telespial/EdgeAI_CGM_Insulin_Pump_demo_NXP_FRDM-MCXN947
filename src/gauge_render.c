@@ -275,6 +275,23 @@ static int8_t PredictionAlertDir(void)
     return gUiPredAlertDir;
 }
 
+static const char *CgmConfidenceCode(uint8_t sqi_pct)
+{
+    if (sqi_pct >= 80u)
+    {
+        return "HI";
+    }
+    if (sqi_pct >= 60u)
+    {
+        return "MED";
+    }
+    if (sqi_pct >= 40u)
+    {
+        return "LOW";
+    }
+    return "BAD";
+}
+
 static void UpdatePredictionModelAndAlerts(void)
 {
     float pred15_f = (float)gUiGlucoseMgdl + (gUiGlucoseTrendMgDlPerMin * 15.0f);
@@ -916,7 +933,7 @@ static void FormatShieldEnvCompact(char *out, size_t out_len)
              (int)(sht_abs % 10));
 }
 
-static void FormatDewAltCompact(char *out, size_t out_len)
+static __attribute__((unused)) void FormatDewAltCompact(char *out, size_t out_len)
 {
     int16_t dew_c10 = gShtTempC10;
     int32_t alt_m = 0;
@@ -1514,6 +1531,7 @@ static void DrawGlucoseIndicator(void)
      * - publish processed glucose for display/dose logic */
     uint32_t now_ds = UiNowDs();
     char bg_text[20];
+    char cgm_meta[32];
     int32_t bg_x;
     int32_t bg_y = 224; /* moved up by two scale-2 row heights (2*14 px). */
     cgm_preprocess_output_t out;
@@ -1608,6 +1626,10 @@ static void DrawGlucoseIndicator(void)
     snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseMgdl);
     bg_x = SECTION2_CX - (edgeai_text5x7_width(2, bg_text) / 2);
     DrawTextUi(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
+    snprintf(cgm_meta, sizeof(cgm_meta), "SIM CGM P15 %3u P30 %3u",
+             (unsigned int)gUiPred15Mgdl,
+             (unsigned int)gUiPred30Mgdl);
+    DrawTextUi(SECTION2_CX - (edgeai_text5x7_width(1, cgm_meta) / 2), bg_y + 16, 1, cgm_meta, RGB565(166, 216, 244));
     gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 
@@ -2807,6 +2829,7 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     const char *status_text = ai_enabled ? AiStatusText(status) : "OFF";
     const char *sys_text = ai_enabled ? ActivityCodeText(gActivityStage) : "OFF";
     const char *anom_text = AnomModeText(gAnomMode, gAnomTraining);
+    const char *cgm_conf = CgmConfidenceCode(gUiCgmSqiPct);
     uint16_t anom_color = AnomLevelColor(gAnomOverall);
     const char *transport_text = TransportModeText(gTransportMode);
     (void)sample;
@@ -2874,7 +2897,10 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     FormatShieldEnvCompact(line, sizeof(line));
     DrawTerminalLine(TERM_Y + 106, line, RGB565(176, 218, 238));
 
-    FormatDewAltCompact(line, sizeof(line));
+    snprintf(line, sizeof(line), "SIM SQI %3u %s F%02X",
+             (unsigned int)gUiCgmSqiPct,
+             cgm_conf,
+             (unsigned int)(gUiCgmSensorFlags & 0xFFu));
     DrawTerminalLine(TERM_Y + 122, line, RGB565(176, 218, 238));
 
     snprintf(line, sizeof(line), "TRN %s %2u ACT %3u %s", transport_text,
@@ -2891,17 +2917,12 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     {
         int32_t trend10 = (int32_t)(gUiGlucoseTrendMgDlPerMin * 10.0f);
         int32_t trend_abs10 = (trend10 < 0) ? -trend10 : trend10;
-        uint32_t iob10 = (uint32_t)((gUiInsulinIobU * 10.0f) + 0.5f);
-        snprintf(line, sizeof(line), "DOS %u.%03uU IOB %1u.%01u dBG %c%u.%01u SQI %u F%02X",
-                 (unsigned int)(gUiDoseRecommendedUhMilli / 1000u),
-                 (unsigned int)(gUiDoseRecommendedUhMilli % 1000u),
-                 (unsigned int)(iob10 / 10u),
-                 (unsigned int)(iob10 % 10u),
+        snprintf(line, sizeof(line), "SIM P15 %3u P30 %3u dBG %c%u.%01u",
+                 (unsigned int)gUiPred15Mgdl,
+                 (unsigned int)gUiPred30Mgdl,
                  (trend10 < 0) ? '-' : '+',
                  (unsigned int)(trend_abs10 / 10),
-                 (unsigned int)(trend_abs10 % 10),
-                 (unsigned int)gUiCgmSqiPct,
-                 (unsigned int)(gUiCgmSensorFlags & 0xFFu));
+                 (unsigned int)(trend_abs10 % 10));
         DrawTerminalLine(TERM_Y + 154, line, RGB565(164, 222, 244));
     }
 }

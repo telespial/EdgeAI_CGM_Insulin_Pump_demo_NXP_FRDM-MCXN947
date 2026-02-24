@@ -30,4 +30,4 @@ Status legend:
 
 ## Immediate Follow-On
 
-Proceed with TODO step 11 to align LCD/terminal contract semantics for SQI/confidence/flags and explicit simulation labeling.
+Proceed with TODO step 12 to define validation protocol and quantitative pass/fail thresholds (lag, trend accuracy, alert chatter/false positives, replay robustness).

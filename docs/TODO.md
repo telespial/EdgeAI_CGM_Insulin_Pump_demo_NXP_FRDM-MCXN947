@@ -29,5 +29,6 @@ Last updated: 2026-02-24
    - implemented in `src/cgm_preprocess.c/.h` and integrated in `src/gauge_render.c` (runtime sensor flags, prediction block/de-rate, and dropout hold-last guard)
 10. [x] Implement trend/prediction/alerts behavior: short-horizon prediction (15m/30m), predictive hypo/hyper checks gated by SQI, debounce and hysteresis to prevent alert chatter.
     - implemented in `src/gauge_render.c` (P15/P30 runtime model, SQI-gated hypo/hyper warning/fault logic, debounce+hysteresis, and prediction-driven alert/dose integration)
-11. [ ] Align LCD/terminal semantics with CGM contract: show SQI/confidence and sensor flags on-screen, clearly mark simulated fields until live sensor path is active.
+11. [x] Align LCD/terminal semantics with CGM contract: show SQI/confidence and sensor flags on-screen, clearly mark simulated fields until live sensor path is active.
+    - implemented in `src/gauge_render.c` (explicit `SIM` labeling, on-screen P15/P30 display, terminal SQI confidence code + sensor flags, and simulated-contract CGM summary lines)
 12. [ ] Define validation protocol and pass/fail thresholds for lag estimation, trend accuracy by range, alert false-positive/chatter rate, and replay robustness under dropout/noise/motion artifacts.

@@ -712,3 +712,8 @@ Format:
 2026-02-24T00:05:49Z | cmd: git add docs/baseline updates + add -f failsafe R1 binaries + commit/push + create/push GOLDEN/FAILSAFE 2026-02-24-R1 tags | result: pending
 2026-02-24T00:06:10Z | cmd: git add/commit/push baseline promotion updates | result: ok (bda661f)
 2026-02-24T00:06:10Z | cmd: git tag -f GOLDEN-2026-02-24-R1 bda661f && git tag -f FAILSAFE-2026-02-24-R1 bda661f && git push origin GOLDEN-2026-02-24-R1 FAILSAFE-2026-02-24-R1 --force | result: ok
+2026-02-24T00:09:50Z | cmd: apply_patch src/gauge_render.c implement step-11 LCD/terminal CGM semantics (SIM label, confidence, flags, P15/P30 visibility) | result: ok
+2026-02-24T00:09:50Z | cmd: ./scripts/build_and_flash.sh | result: fail (unused function FormatDewAltCompact with -Werror)
+2026-02-24T00:09:50Z | cmd: apply_patch src/gauge_render.c mark FormatDewAltCompact as __attribute__((unused)) | result: ok
+2026-02-24T00:09:50Z | cmd: ./scripts/build_and_flash.sh | result: ok (step-11 build+flash verification pass)
+2026-02-24T00:09:50Z | cmd: apply_patch docs/TODO.md docs/CGM_TRACEABILITY.md and append docs/PROJECT_STATE.md step-11 completion update | result: ok
