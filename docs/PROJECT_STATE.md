@@ -3,14 +3,60 @@
 Last updated: 2026-02-24
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R3`
-- Failsafe: `FAILSAFE-2026-02-24-R3`
+- Golden: `GOLDEN-2026-02-24-R4`
+- Failsafe: `FAILSAFE-2026-02-24-R4`
 - Status: active
 
 ## Current Status
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
 - Git repository initialized locally.
+
+## Update 2026-02-24
+- Change: Promoted current subject001 dataset-driven CGM replay runtime as active restore baseline `R4`.
+  - tags:
+    - `GOLDEN-2026-02-24-R4`
+    - `FAILSAFE-2026-02-24-R4`
+  - artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R4.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R4.bin`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: active restore points staged and ready.
+
+## Update 2026-02-24
+- Change: LIVE replay CGM path now ingests real `subject001` glucose samples instead of synthetic glucose generation during playback.
+  - Added generated glucose replay header from holdout dataset:
+    - `src/cgm_replay_subject001.h` (`CGM_REPLAY_SUBJECT001_LEN=1438`, sourced from `data/d1namo_test_subject001.csv`)
+  - Firmware wiring:
+    - `src/edgeai_medical_device_demo.c`
+      - playback loop now feeds each replay step into CGM via `GaugeRender_IngestReplayCgmSample(...)`
+      - replay CGM index resets on all playback start/restart paths
+      - replay CGM ingest disabled during record/non-playback paths
+    - `src/gauge_render.h/.c`
+      - added `GaugeRender_IngestReplayCgmSample(...)`
+      - bypass synthetic CGM generation while LIVE replay CGM ingest is active
+      - UI center label shows `DATA` (instead of `SIM`) for replay-driven CGM
+- Scoring alignment:
+  - prediction score continues to use due-time interpolation fix from prior update and now evaluates against replay-driven glucose truth during playback.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ready for 4-day subject001 benchmark run with dataset-driven CGM path.
+
+## Update 2026-02-24
+- Change: Fixed prediction score under fast replay by evaluating each due prediction against an interpolated glucose actual at the prediction due timestamp (instead of scoring all overdue slots against one current glucose sample).
+  - `src/gauge_render.c`
+    - added due-time actual interpolation helper for prediction scoring
+    - `PredEvalConsumeDue(...)` now uses interpolated due-time glucose
+    - added rolling previous `(time, glucose)` state to support replay time jumps
+- Why:
+  - in warmup/full-run fast modes, timeline steps can be larger than scoring issue cadence; this previously biased score low.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ready for on-device re-check of prediction score progression.
 
 ## Update 2026-02-24
 - Change: Removed synthetic startup accuracy by requiring real evaluation evidence before score priming.
@@ -2483,4 +2529,95 @@ Last updated: 2026-02-24
 
 ## Update 2026-02-24
 - Change: Documentation refresh: synchronized TODO, runtime contract, traceability, and validation docs with current prediction-score/E#/MAE behavior and latest baseline findings.
+- Result: ok
+
+## Update 2026-02-24
+- Change: Wired exported trained CGM model into MCXN947 firmware prediction path.
+  - `src/cgm_preprocess.c`
+    - embedded ridge model coefficients from project `model/cgm_best_model.cpp`
+    - added feature builder for trained contract fields (`lag1/2/3`, deltas, accel, rolling means)
+    - replaced placeholder linear-only predictor with trained + conservative linear blend
+    - retained SQI/sensor-flag confidence derating and mg/dL clamps (`40..400`)
+- Effect:
+  - `CgmModel_Predict()` now uses trained model behavior for `+15m` with bounded extrapolation used for `+30m`.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - output: `mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin`
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed MCXN947 with trained-CGM-integrated firmware build.
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `west flash` with `linkserver` (probe `#1`, FRDM-MCXN947)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Updated LIVE replay flow to run benchmark-style through dataset and hold final prediction score.
+  - `src/edgeai_medical_device_demo.c`
+    - added `RECPLAY_FULLRUN_MULTIPLIER` for post-warmup fast replay stepping
+    - warmup remains first 4 hours (`RECPLAY_WARMUP_TARGET_DS` unchanged)
+    - after warmup, replay continues accelerated through full dataset (no realtime cadence handoff)
+    - on end-of-dataset in LIVE mode:
+      - stop playback (no loop restart)
+      - mark run complete and hold state
+      - force playhead to 100%
+      - keep final `PRED SCORE`/`MAE` visible on dashboard
+    - runtime clock progression now freezes when benchmark run is complete (`playback_run_complete` guard)
+    - restart paths reset completion flag so user can rerun benchmark via mode/timeline interactions
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Prevented post-benchmark auto-restart that could reset/overwrite final score display.
+  - `src/edgeai_medical_device_demo.c`
+    - guarded `AI_TRAIN: complete_live` auto-promote playback restart with `!playback_run_complete`
+- Effect:
+  - after full-run completion in LIVE benchmark mode, firmware no longer re-enters playback via trained-ready auto transition
+  - final timeline/score hold behavior remains latched until explicit user restart action
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Addressed `E9818` with `0%` prediction score by fixing trained feature mapping and completion restart path.
+  - `src/cgm_preprocess.c`
+    - set trained `epoch_s` feature to model mean (instead of runtime-relative epoch counter) to prevent large standardized bias and clipped predictions.
+  - `src/edgeai_medical_device_demo.c`
+    - blocked trained-ready auto-promote playback restart when benchmark run is already complete (`!playback_run_complete` guard).
+- Rationale:
+  - `E9818` confirms scoring path is active; persistent `0%` indicated systematic prediction mismatch, not missing evaluator wiring.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Replaced CGM predictor with glucose-only trained model (removed unconnected insulin/motor feature dependency).
+  - Training dataset: `data/d1namo_train_excl001.csv`
+  - Holdout dataset: `data/d1namo_test_subject001.csv`
+  - Output metrics artifact: `model/cgm_glucose_only_metrics.json`
+  - Feature set (9):
+    - `glucose_mgdl`
+    - `glucose_mgdl_lag1`
+    - `glucose_mgdl_lag2`
+    - `glucose_mgdl_lag3`
+    - `glucose_delta1`
+    - `glucose_delta2`
+    - `glucose_accel`
+    - `glucose_roll3`
+    - `glucose_roll6`
+- Holdout training metrics (glucose-only ridge):
+  - MAE `7.4848`
+  - RMSE `10.4997`
+  - R2 `0.98567`
+  - tol10 hit rate `0.84181`
+- Firmware integration:
+  - `src/cgm_preprocess.c` embedded model coefficients/normalization updated to 9-feature glucose-only contract.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
 - Result: ok

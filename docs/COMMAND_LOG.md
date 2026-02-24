@@ -1181,3 +1181,79 @@ Format:
 2026-02-24T06:45:08Z | inspect untracked data/model/tools files before staging
 2026-02-24T06:45:20Z | git add tracked updates + model artifacts + tools/d1namo_extract_replay.py
 2026-02-24T06:45:31Z | git add docs/COMMAND_LOG.md (restage after log append)
+2026-02-24T06:45:36Z | git push origin main
+2026-02-24T13:25:47Z | rg CGM runtime model and exported training model references
+2026-02-24T13:25:51Z | inspect src/cgm_preprocess.c model implementation
+2026-02-24T13:50:02Z | cmd: ls; rg model/inference references; inspect model/cgm_best_model.{hpp,cpp} and src/cgm_preprocess.{c,h} to locate CGM predictor integration points | result: ok
+2026-02-24T13:50:02Z | cmd: apply_patch src/cgm_preprocess.c embed trained ridge coefficients/features and replace placeholder predictor with trained+linear blended prediction path | result: ok
+2026-02-24T13:50:02Z | cmd: ./scripts/build.sh | result: ok (MCXN947 debug build PASS; cgm_preprocess.c compiled; bin generated)
+2026-02-24T13:50:40Z | cmd: ./scripts/flash.sh | result: ok (west/linkserver flash PASS to MCXN947 probe #1)
+2026-02-24T13:56:03Z | cmd: attempted repo grep/sed without project workdir for replay/warmup symbols | result: fail (path not found)
+2026-02-24T13:56:03Z | cmd: re-ran replay/warmup inspections in project workdir (rg/sed on edgeai_medical_device_demo.c + gauge_render.c) | result: ok
+2026-02-24T13:56:03Z | cmd: apply_patch src/edgeai_medical_device_demo.c add full-run replay mode (4h warmup + full dataset fast run + stop/hold final score) | result: partial (first patch failed; then applied in safe incremental patches)
+2026-02-24T13:56:03Z | cmd: ./scripts/build.sh | result: fail (unused variable warning: playback_period_us)
+2026-02-24T13:56:03Z | cmd: apply_patch src/edgeai_medical_device_demo.c recplay period uses playback_period_us to satisfy strict Werror | result: ok
+2026-02-24T13:56:03Z | cmd: ./scripts/build.sh | result: ok
+2026-02-24T13:56:03Z | cmd: ./scripts/flash.sh | result: ok
+2026-02-24T13:58:18Z | cmd: inspect gauge_render prediction-score internals and post-run playback restart paths | result: ok
+2026-02-24T13:58:18Z | cmd: apply_patch src/edgeai_medical_device_demo.c guard auto promote/restart path with !playback_run_complete | result: ok
+2026-02-24T13:58:18Z | cmd: ./scripts/build.sh | result: ok
+2026-02-24T13:58:18Z | cmd: ./scripts/flash.sh | result: ok
+2026-02-24T13:59:46Z | cmd: inspect score internals (gauge_render) and post-run restart paths (edgeai_medical_device_demo) after E9818/0% report | result: ok
+2026-02-24T13:59:46Z | cmd: apply_patch src/cgm_preprocess.c set epoch feature to trained mean to avoid regression collapse from runtime-relative epoch | result: ok
+2026-02-24T13:59:46Z | cmd: apply_patch src/edgeai_medical_device_demo.c guard auto-trained-ready promote with !playback_run_complete | result: ok
+2026-02-24T13:59:46Z | cmd: ./scripts/build.sh | result: ok
+2026-02-24T13:59:46Z | cmd: ./scripts/flash.sh | result: ok
+2026-02-24T14:04:57Z | cmd: inspect local data files and existing model metrics to confirm current model used unsupported insulin inputs | result: ok
+2026-02-24T14:04:57Z | cmd: python3 inline train attempt for glucose-only ridge on local d1namo train/test | result: fail (missing numpy)
+2026-02-24T14:04:57Z | cmd: python3 -m venv .venv && .venv/bin/pip install numpy pandas scikit-learn | result: ok
+2026-02-24T14:04:57Z | cmd: .venv/bin/python inline training (glucose-only features) -> model/cgm_glucose_only_metrics.json | result: ok
+2026-02-24T14:04:57Z | cmd: apply_patch src/cgm_preprocess.c replace 22-feature insulin-inclusive ridge block with 9-feature glucose-only ridge block | result: ok
+2026-02-24T14:04:57Z | cmd: ./scripts/build.sh | result: ok
+2026-02-24T14:04:57Z | cmd: ./scripts/flash.sh | result: ok
+2026-02-24T06:08:34-08:00 | read docs/START_HERE.md
+2026-02-24T06:08:34-08:00 | read docs/PROJECT_STATE.md
+2026-02-24T06:08:34-08:00 | read docs/OPS_RUNBOOK.md
+2026-02-24T06:08:40-08:00 | rg scoring/replay symbols in src
+2026-02-24T06:08:40-08:00 | rg replay/glucose/prediction symbols
+2026-02-24T06:08:44-08:00 | inspect gauge_render DrawGlucoseIndicator section
+2026-02-24T06:08:45-08:00 | inspect prediction eval functions
+2026-02-24T06:08:48-08:00 | inspect GaugeRender_DrawFrame sample usage
+2026-02-24T06:08:54-08:00 | inspect GaugeRender API symbols
+2026-02-24T06:09:00-08:00 | inspect replay_trace_generated header
+2026-02-24T06:09:06-08:00 | inspect ext flash sample struct/read path
+2026-02-24T06:09:50-08:00 | apply_patch src/gauge_render.c interpolate due-time actual for pred scoring
+2026-02-24T06:09:56-08:00 | run ./scripts/build.sh
+2026-02-24T06:10:05-08:00 | run ./scripts/flash.sh
+2026-02-24T06:10:26-08:00 | apply_patch docs/PROJECT_STATE.md add scoring interpolation update
+2026-02-24T06:10:29-08:00 | run git status and inspect gauge_render diff
+2026-02-24T06:12:27-08:00 | inspect playback loop section for replay wiring
+2026-02-24T06:12:54-08:00 | generate src/cgm_replay_subject001.h from data/d1namo_test_subject001.csv
+2026-02-24T06:12:59-08:00 | inspect gauge_render headers/globals for replay ingest patch
+2026-02-24T06:13:03-08:00 | inspect edgeai top includes and loop vars
+2026-02-24T06:13:13-08:00 | apply_patch src/gauge_render.h add GaugeRender_IngestReplayCgmSample API
+2026-02-24T06:13:32-08:00 | inspect exact locations for gauge_render patch retry
+2026-02-24T06:13:37-08:00 | inspect DrawGlucoseIndicator body for precise patch
+2026-02-24T06:13:46-08:00 | apply_patch src/gauge_render.c add replay cgm state globals
+2026-02-24T06:13:49-08:00 | inspect area near GaugeRender_PrimePredictionScore
+2026-02-24T06:14:07-08:00 | apply_patch src/gauge_render.c add GaugeRender_IngestReplayCgmSample implementation
+2026-02-24T06:14:15-08:00 | apply_patch src/gauge_render.c bypass synthetic CGM when replay CGM valid in LIVE mode
+2026-02-24T06:14:36-08:00 | apply_patch src/edgeai_medical_device_demo.c wire subject001 replay glucose ingest in playback loop
+2026-02-24T06:14:41-08:00 | locate all playback start sites for cgm index reset
+2026-02-24T06:14:45-08:00 | inspect playback start contexts
+2026-02-24T06:15:02-08:00 | apply_patch src/edgeai_medical_device_demo.c reset replay cgm index at all playback start sites
+2026-02-24T06:15:19-08:00 | apply_patch src/edgeai_medical_device_demo.c clear replay cgm ingest during record path
+2026-02-24T06:15:31-08:00 | apply_patch src/gauge_render.c label replay-driven cgm as DATA and reuse replay mode flag
+2026-02-24T06:15:36-08:00 | run ./scripts/build.sh after replay-cgm wiring
+2026-02-24T06:15:46-08:00 | run ./scripts/flash.sh after replay-cgm wiring
+2026-02-24T06:16:06-08:00 | apply_patch docs/PROJECT_STATE.md document subject001 replay-cgm wiring and verification
+2026-02-24T06:16:09-08:00 | run git status --short after subject001 replay-cgm wiring
+2026-02-24T06:17:36-08:00 | run git status --short before restore-point commit
+2026-02-24T06:17:44-08:00 | scan docs for restore-point tags
+2026-02-24T06:17:49-08:00 | inspect docs/TODO.md top section
+2026-02-24T06:18:00-08:00 | stage restore artifacts R4 from current build bin
+2026-02-24T06:18:14-08:00 | apply_patch docs/START_HERE.md set active restore baseline to R4
+2026-02-24T06:18:23-08:00 | apply_patch docs/OPS_RUNBOOK.md update restore baseline/artifacts to R4
+2026-02-24T06:18:33-08:00 | apply_patch docs/PROJECT_STATE.md set restore header to R4 and append restore promotion update
+2026-02-24T06:18:42-08:00 | apply_patch docs/TODO.md mark items 5/11/12 complete
+2026-02-24T06:18:53-08:00 | git add selected files failed because failsafe/*.bin ignored by .gitignore

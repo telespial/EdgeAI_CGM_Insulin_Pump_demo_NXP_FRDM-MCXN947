@@ -122,6 +122,7 @@ bool GaugeRender_IsLiveBannerMode(void);
 void GaugeRender_SetAiBackendNpu(bool use_npu);
 void GaugeRender_SetWarmupThinking(bool enabled);
 void GaugeRender_PrimePredictionScore(void);
+void GaugeRender_IngestReplayCgmSample(uint32_t ts_ds, uint16_t glucose_mgdl, bool valid);
 void GaugeRender_DrawGyroFast(void);
 bool GaugeRender_HandleTouch(int32_t x, int32_t y, bool pressed);
 uint8_t GaugeRender_GetTimelineHour(void);

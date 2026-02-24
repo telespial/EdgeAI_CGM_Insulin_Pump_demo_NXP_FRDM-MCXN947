@@ -196,6 +196,12 @@ static uint32_t gUiPredEvalCount = 0u;
 static uint32_t gUiPredTolHitCount = 0u;
 static uint32_t gUiPredTolTotalCount = 0u;
 static uint32_t gUiPredAccuracyNextIssueDs = 0u;
+static bool gUiReplayCgmValid = false;
+static uint16_t gUiReplayCgmMgdl = 98u;
+static uint32_t gUiReplayCgmTsDs = 0u;
+static bool gUiReplayCgmPrevValid = false;
+static uint16_t gUiReplayCgmPrevMgdl = 98u;
+static uint32_t gUiReplayCgmPrevTsDs = 0u;
 
 typedef struct
 {
@@ -211,6 +217,9 @@ static uint16_t gPredEval15Head = 0u;
 static uint16_t gPredEval15Tail = 0u;
 static uint16_t gPredEval30Head = 0u;
 static uint16_t gPredEval30Tail = 0u;
+static uint32_t gPredEvalPrevDs = 0u;
+static uint16_t gPredEvalPrevMgdl = 0u;
+static bool gPredEvalPrevValid = false;
 
 enum
 {
@@ -331,11 +340,55 @@ static void PredEvalPush(prediction_eval_slot_t *ring, uint16_t *head, uint16_t 
     *head = next;
 }
 
-static void PredEvalConsumeDue(prediction_eval_slot_t *ring, uint16_t *tail, uint16_t head, uint32_t now_ds, uint16_t actual_mgdl, float *mae)
+static uint16_t PredEvalActualAtDue(uint32_t due_ds,
+                                    uint32_t prev_ds,
+                                    uint16_t prev_mgdl,
+                                    uint32_t now_ds,
+                                    uint16_t now_mgdl)
+{
+    if (now_ds <= prev_ds)
+    {
+        return now_mgdl;
+    }
+    if (due_ds <= prev_ds)
+    {
+        return prev_mgdl;
+    }
+    if (due_ds >= now_ds)
+    {
+        return now_mgdl;
+    }
+
+    {
+        uint32_t span = now_ds - prev_ds;
+        uint32_t off = due_ds - prev_ds;
+        int32_t delta = (int32_t)now_mgdl - (int32_t)prev_mgdl;
+        int32_t interp = (int32_t)prev_mgdl + (int32_t)((delta * (int32_t)off) / (int32_t)span);
+        if (interp < 40)
+        {
+            interp = 40;
+        }
+        if (interp > 400)
+        {
+            interp = 400;
+        }
+        return (uint16_t)interp;
+    }
+}
+
+static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
+                               uint16_t *tail,
+                               uint16_t head,
+                               uint32_t prev_ds,
+                               uint16_t prev_mgdl,
+                               uint32_t now_ds,
+                               uint16_t now_mgdl,
+                               float *mae)
 {
     while (*tail != head)
     {
         prediction_eval_slot_t *slot = &ring[*tail];
+        uint16_t eval_actual;
         if (!slot->valid)
         {
             *tail = (uint16_t)((*tail + 1u) % PRED_EVAL_RING_LEN);
@@ -347,9 +400,10 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring, uint16_t *tail, uin
         }
 
         {
-            float err = (float)AbsDiffU16(actual_mgdl, slot->pred_mgdl);
+            eval_actual = PredEvalActualAtDue(slot->due_ds, prev_ds, prev_mgdl, now_ds, now_mgdl);
+            float err = (float)AbsDiffU16(eval_actual, slot->pred_mgdl);
             uint16_t tol = PredTolerance10PctMgdl(slot->pred_mgdl);
-            uint16_t abs_err = AbsDiffU16(actual_mgdl, slot->pred_mgdl);
+            uint16_t abs_err = AbsDiffU16(eval_actual, slot->pred_mgdl);
             if (!gUiPredMaePrimed)
             {
                 *mae = err;
@@ -372,6 +426,18 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring, uint16_t *tail, uin
 
 static void UpdatePredictionAccuracy(uint32_t now_ds)
 {
+    if (!gPredEvalPrevValid)
+    {
+        gPredEvalPrevDs = now_ds;
+        gPredEvalPrevMgdl = gUiGlucoseMgdl;
+        gPredEvalPrevValid = true;
+    }
+    else if ((int32_t)(now_ds - gPredEvalPrevDs) < 0)
+    {
+        gPredEvalPrevDs = now_ds;
+        gPredEvalPrevMgdl = gUiGlucoseMgdl;
+    }
+
     if ((gUiPredAccuracyNextIssueDs == 0u) || ((int32_t)(now_ds - gUiPredAccuracyNextIssueDs) >= 0))
     {
         PredEvalPush(gPredEval15, &gPredEval15Head, &gPredEval15Tail, now_ds + 9000u, gUiPred15Mgdl);
@@ -379,8 +445,22 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
         gUiPredAccuracyNextIssueDs = now_ds + 100u; /* issue every 10s */
     }
 
-    PredEvalConsumeDue(gPredEval15, &gPredEval15Tail, gPredEval15Head, now_ds, gUiGlucoseMgdl, &gUiPredMae15);
-    PredEvalConsumeDue(gPredEval30, &gPredEval30Tail, gPredEval30Head, now_ds, gUiGlucoseMgdl, &gUiPredMae30);
+    PredEvalConsumeDue(gPredEval15,
+                       &gPredEval15Tail,
+                       gPredEval15Head,
+                       gPredEvalPrevDs,
+                       gPredEvalPrevMgdl,
+                       now_ds,
+                       gUiGlucoseMgdl,
+                       &gUiPredMae15);
+    PredEvalConsumeDue(gPredEval30,
+                       &gPredEval30Tail,
+                       gPredEval30Head,
+                       gPredEvalPrevDs,
+                       gPredEvalPrevMgdl,
+                       now_ds,
+                       gUiGlucoseMgdl,
+                       &gUiPredMae30);
 
     if (!gUiPredMaePrimed && ((gUiPredEvalCount >= 1u) || (gUiPredTolTotalCount >= 1u)))
     {
@@ -400,6 +480,10 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
     {
         gUiPredAccuracyPct = 0u;
     }
+
+    gPredEvalPrevDs = now_ds;
+    gPredEvalPrevMgdl = gUiGlucoseMgdl;
+    gPredEvalPrevValid = true;
 }
 
 static const char *CgmConfidenceCode(uint8_t sqi_pct)
@@ -1725,10 +1809,12 @@ static void DrawGlucoseIndicator(void)
     static uint8_t sLastSqiPct = 0xFFu;
     static uint16_t sLastSensorFlags = 0xFFFFu;
     static int32_t sPrevTextW = 0;
+    bool replay_cgm_mode = (gUiReplayCgmValid && gLiveBannerMode);
     const char *cgm_conf = CgmConfidenceCode(gUiCgmSqiPct);
     cgm_preprocess_output_t out;
 
-    if ((!gUiGlucoseSchedPrimed) || ((int32_t)(now_ds - gUiGlucoseNextStepDs) >= 0))
+    if (!replay_cgm_mode &&
+        ((!gUiGlucoseSchedPrimed) || ((int32_t)(now_ds - gUiGlucoseNextStepDs) >= 0)))
     {
         uint32_t r = NextUiRand();
         if (gUiGlucosePhysioMgdl <= 96.0f)
@@ -1772,7 +1858,7 @@ static void DrawGlucoseIndicator(void)
         gCgmPreprocessInit = true;
     }
 
-    while ((int32_t)(now_ds - gCgmNextRawSampleDs) >= 0)
+    while (!replay_cgm_mode && ((int32_t)(now_ds - gCgmNextRawSampleDs) >= 0))
     {
         cgm_raw_sample_t raw;
         uint32_t r = NextUiRand();
@@ -1833,7 +1919,10 @@ static void DrawGlucoseIndicator(void)
     }
 
     snprintf(bg_text, sizeof(bg_text), "%3u mg/dL", (unsigned int)gUiGlucoseDisplayMgdl);
-    snprintf(cgm_meta, sizeof(cgm_meta), "SIM P15 %3u P30 %3u",
+    snprintf(cgm_meta,
+             sizeof(cgm_meta),
+             "%s P15 %3u P30 %3u",
+             replay_cgm_mode ? "DATA" : "SIM",
              (unsigned int)gUiPred15DisplayMgdl,
              (unsigned int)gUiPred30DisplayMgdl);
     snprintf(cgm_quality, sizeof(cgm_quality), "SQI %3u %s F%04X",
@@ -3856,6 +3945,67 @@ void GaugeRender_PrimePredictionScore(void)
     }
     gUiPredMaePrimed = true;
     gUiPredAccuracyPct = (uint8_t)ClampF32(tol_pct, 0.0f, 99.0f);
+}
+
+void GaugeRender_IngestReplayCgmSample(uint32_t ts_ds, uint16_t glucose_mgdl, bool valid)
+{
+    float trend = 0.0f;
+    float dt_min;
+    uint16_t g = glucose_mgdl;
+
+    if (!valid)
+    {
+        gUiReplayCgmValid = false;
+        gUiReplayCgmPrevValid = false;
+        return;
+    }
+
+    if (g < 40u)
+    {
+        g = 40u;
+    }
+    if (g > 400u)
+    {
+        g = 400u;
+    }
+
+    if (!gCgmPreprocessInit)
+    {
+        CgmPreprocess_InitDefault(&gCgmPreprocess);
+        CgmModel_Reset();
+        CgmModel_SetEnabled(true);
+        gUiPredEvalCount = 0u;
+        gUiPredTolHitCount = 0u;
+        gUiPredTolTotalCount = 0u;
+        gUiPredMaePrimed = false;
+        gUiPredAccuracyPct = 0u;
+        gCgmNextRawSampleDs = ts_ds;
+        gCgmPreprocessInit = true;
+    }
+
+    if (gUiReplayCgmPrevValid && (ts_ds > gUiReplayCgmPrevTsDs))
+    {
+        dt_min = (float)(ts_ds - gUiReplayCgmPrevTsDs) / 600.0f;
+        if (dt_min > 0.0f)
+        {
+            trend = ((float)((int32_t)g - (int32_t)gUiReplayCgmPrevMgdl)) / dt_min;
+        }
+    }
+
+    gUiReplayCgmValid = true;
+    gUiReplayCgmMgdl = g;
+    gUiReplayCgmTsDs = ts_ds;
+    gUiReplayCgmPrevValid = true;
+    gUiReplayCgmPrevMgdl = g;
+    gUiReplayCgmPrevTsDs = ts_ds;
+
+    gUiCgmSqiPct = 100u;
+    gUiCgmSensorFlags = 0u;
+    gUiCgmPredictionBlocked = false;
+    gUiCgmHoldLast = false;
+    gUiGlucoseMgdl = g;
+    gUiGlucoseTrendMgDlPerMin = ClampF32(trend, -6.0f, 6.0f);
+    UpdatePredictionModelAndAlerts(ts_ds);
 }
 
 void GaugeRender_DrawGyroFast(void)
