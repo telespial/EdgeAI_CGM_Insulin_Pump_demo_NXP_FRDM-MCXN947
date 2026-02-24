@@ -1315,3 +1315,6 @@ Format:
 2026-02-24T06:34:41-08:00 | inspect top of PROJECT_STATE.md before R5 update
 2026-02-24T06:34:55-08:00 | apply_patch docs/PROJECT_STATE.md set restore header to R5 and add 95% score/+15-only ±10% policy restore update
 2026-02-24T06:35:00-08:00 | run git status --short before final R5 commit
+2026-02-24T06:35:08-08:00 | git add final R5 code/docs/model artifacts and force-add R5 failsafe binaries
+2026-02-24T06:35:13-08:00 | git commit final R5 baseline (+15m-only ±10%, model-compare tooling, restore artifacts)
+2026-02-24T06:35:33-08:00 | run git push for R5 final baseline commit (main -> origin/main)
