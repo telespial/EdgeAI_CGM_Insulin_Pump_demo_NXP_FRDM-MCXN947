@@ -56,6 +56,52 @@ Scoring policy (current baseline):
 - hit tolerance: `±10%`
 - `+30m` remains displayed but excluded from hit-rate scoring until a dedicated +30 model policy is promoted
 
+## Human Activity States And Real-World Integration
+
+The runtime computes human activity intensity states:
+- `REST`
+- `LIGHT`
+- `MODERATE`
+- `ACTIVE`
+- `HEAVY`
+
+These states are derived from motion and context, then used as control signals for dosing-assist logic and warnings.
+
+### Sensor Inputs Driving Activity Classification
+
+- Accelerometer:
+  - body motion magnitude and orientation stability
+  - cadence-like movement signatures
+- Gyroscope:
+  - angular motion and dynamic posture changes
+  - movement burst characterization
+- Barometric pressure:
+  - vertical movement cues (up/down elevation trends, stair-like transitions)
+  - suppression of false “effort” under vibration-only conditions
+
+### How To Integrate Into A Real Prototype
+
+In a production-oriented prototype, feed activity state into prediction and dosing as explicit features:
+- current activity state and confidence
+- short rolling history of activity transitions
+- vertical-motion context from barometric trend
+- transport-context gate (e.g., suppress false effort during vehicle vibration)
+
+Recommended architecture:
+1. Run sensor fusion and activity-state detection at fixed cadence in host firmware.
+2. Publish activity state/confidence into model feature buffer.
+3. Apply hard safety gates in firmware (SQI/fault/rate limits) independent of model outputs.
+4. Use model output only for assistive modulation, never as the sole control authority.
+
+### Optional ST AI Biosensor Offload Path
+
+For lower host compute load, an external smart biosensor/AI IMU path can precompute:
+- activity class
+- movement confidence
+- event flags (step-like bursts, posture changes)
+
+This offloads part of feature extraction/classification from the MCU/NPU, reducing CPU budget and simplifying host-side pipelines. The host firmware still remains the safety authority for gating, limits, and final actuation policy.
+
 ## Runtime Flow
 
 1. Boot and initialize runtime + display.

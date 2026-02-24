@@ -169,6 +169,7 @@ static uint16_t gUiGlucosePrevForTrend = 98u;
 static uint32_t gUiGlucosePrevTrendDs = 0u;
 static float gUiGlucoseTrendMgDlPerMin = 0.0f;
 static uint32_t gUiDoseRecommendedUhMilli = 4000u;
+static uint32_t gUiDoseRateUpdateDs = 0u;
 static uint8_t gUiCgmSqiPct = 100u;
 static uint16_t gUiCgmSensorFlags = 0u;
 static bool gUiCgmPredictionBlocked = false;
@@ -1993,7 +1994,7 @@ static void DrawGlucoseIndicator(void)
     }
 
     bg_w = edgeai_text5x7_width(2, bg_text);
-    meta_w = edgeai_text5x7_width(meta_scale, cgm_meta) + 1; /* +1 for medium-weight double-draw */
+    meta_w = edgeai_text5x7_width(meta_scale, cgm_meta);
     bg_x = SECTION2_CX - (bg_w / 2);
     meta_x = SECTION2_CX - (meta_w / 2);
 
@@ -2031,9 +2032,7 @@ static void DrawGlucoseIndicator(void)
 
     /* Final center overlay text. */
     DrawTextUiCrisp(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
-    /* Medium style: scale-1 text with a 1px overdraw for readability. */
     DrawTextUiCrisp(meta_x, bg_y + 16, meta_scale, cgm_meta, RGB565(166, 216, 244));
-    DrawTextUiCrisp(meta_x + 1, bg_y + 16, meta_scale, cgm_meta, RGB565(166, 216, 244));
     gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 
@@ -2178,6 +2177,15 @@ static void UpdateDoseRecommendation(uint32_t now_ds)
     {
         rec_u_h = 6.000f;
     }
+    /* Neutral-zone damping: when glucose is near target and stable, hold close to
+     * basal behavior to avoid visually "busy" actuation. */
+    if (!gUiCgmPredictionBlocked &&
+        (gUiGlucoseMgdl >= 95u) && (gUiGlucoseMgdl <= 115u) &&
+        (gUiGlucoseTrendMgDlPerMin > -0.12f) && (gUiGlucoseTrendMgDlPerMin < 0.12f) &&
+        (PredictionAlertDir() == 0))
+    {
+        rec_u_h = (0.80f * rec_u_h) + (0.20f * basal_u_h);
+    }
 
     gUiDoseRecommendedUhMilli = (uint32_t)(rec_u_h * 1000.0f + 0.5f);
     gUiDoseRecommendedUhMilli = (gUiDoseRecommendedUhMilli / 25u) * 25u;
@@ -2185,10 +2193,53 @@ static void UpdateDoseRecommendation(uint32_t now_ds)
     {
         gUiDoseRecommendedUhMilli = 25u;
     }
-    /* Smooth rate update to avoid abrupt swings. */
-    gUiDoseRateUhMilli = (uint32_t)(((uint64_t)gUiDoseRateUhMilli * 7u +
-                                     (uint64_t)gUiDoseRecommendedUhMilli * 3u) /
-                                    10u);
+    /* Realistic control cadence: update the commanded delivery rate at fixed
+     * intervals instead of every frame. */
+    if ((gUiDoseRateUpdateDs == 0u) || ((now_ds - gUiDoseRateUpdateDs) >= 300u))
+    {
+        /* Slow ramp to avoid abrupt visible jumps in pump behavior. */
+        gUiDoseRateUhMilli = (uint32_t)(((uint64_t)gUiDoseRateUhMilli * 8u +
+                                         (uint64_t)gUiDoseRecommendedUhMilli * 2u) /
+                                        10u);
+        gUiDoseRateUpdateDs = now_ds;
+    }
+}
+
+/* Map current glucose state to a motor pulse RPM target so pump/motor visuals
+ * track CGM dynamics in a realistic prototype-style way. */
+static uint16_t ComputeMotorPulseRpmTenths(void)
+{
+    float dose_u_h = (float)gUiDoseRateUhMilli / 1000.0f;
+    float glucose_dev = (float)((int32_t)gUiGlucoseMgdl - 105); /* centered near nominal target */
+    float trend = gUiGlucoseTrendMgDlPerMin;
+    float rpm = 8.0f + (dose_u_h * 2.0f) + (glucose_dev * 0.04f) + (trend * 10.0f);
+
+    if (!gUiCgmPredictionBlocked)
+    {
+        if (PredictionAlertDir() > 0)
+        {
+            rpm += (PredictionAlertStatus() == AI_STATUS_FAULT) ? 3.5f : 1.5f;
+        }
+        else if (PredictionAlertDir() < 0)
+        {
+            rpm -= (PredictionAlertStatus() == AI_STATUS_FAULT) ? 3.5f : 1.5f;
+        }
+    }
+
+    if (gUiCgmPredictionBlocked && gUiCgmHoldLast)
+    {
+        rpm *= 0.85f;
+    }
+
+    if (rpm < 6.0f)
+    {
+        rpm = 6.0f;
+    }
+    if (rpm > 30.0f)
+    {
+        rpm = 30.0f;
+    }
+    return (uint16_t)(rpm * 10.0f + 0.5f);
 }
 
 static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
@@ -2221,6 +2272,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
         gUiRpmTenths = 0u;
         gUiDoseRateUhMilli = 4000u; /* 4.000 U/h baseline (~0.040 mL/h). */
         gUiDoseRecommendedUhMilli = gUiDoseRateUhMilli;
+        gUiDoseRateUpdateDs = now_ds;
         gUiDoseCtrlPrevDs = now_ds;
         gUiGlucosePrevTrendDs = now_ds;
         gUiGlucosePrevForTrend = gUiGlucoseMgdl;
@@ -2245,40 +2297,74 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
         if ((!gUiMotorRunning) && ((int32_t)(now_ds - gUiMotorPulseNextDs) >= 0))
         {
             float interval_ds_f;
+            float target_u_h;
+            float pulse_u;
+            uint16_t rpm_target_tenths;
+            int16_t rpm_dither_tenths;
+            int32_t rpm_candidate;
 
             if (gUiDoseRateUhMilli < 25u)
             {
                 gUiDoseRateUhMilli = 25u;
             }
+            target_u_h = (float)gUiDoseRateUhMilli / 1000.0f;
+            if (target_u_h < 0.025f)
+            {
+                target_u_h = 0.025f;
+            }
+
+            /* Quantized pump delivery for prototype realism:
+             * low demand -> 0.01 U pulses, medium -> 0.02 U, high -> 0.03 U. */
+            if (target_u_h < 1.0f)
+            {
+                pulse_u = 0.01f;
+            }
+            else if (target_u_h < 3.0f)
+            {
+                pulse_u = 0.02f;
+            }
+            else
+            {
+                pulse_u = 0.03f;
+            }
 
             pulse_width_ds = 8u + (NextUiRand() % 5u); /* 0.8 .. 1.2 s motor movement */
-            gUiRpmTenths = (uint16_t)(120u + (NextUiRand() % 141u)); /* 12.0 .. 26.0 RPM pulse */
+            rpm_target_tenths = ComputeMotorPulseRpmTenths();
+            rpm_dither_tenths = (int16_t)((int32_t)(NextUiRand() % 7u) - 3); /* +/-0.3 RPM */
+            rpm_candidate = (int32_t)rpm_target_tenths + rpm_dither_tenths;
+            if (rpm_candidate < 60)
+            {
+                rpm_candidate = 60;
+            }
+            if (rpm_candidate > 300)
+            {
+                rpm_candidate = 300;
+            }
+            gUiRpmTenths = (uint16_t)rpm_candidate;
             gUiMotorRunning = true;
             gUiMotorPulseEndDs = now_ds + pulse_width_ds;
-            /* Dosing tied to motor behavior:
-             * - running mL/h scales with RPM (20 RPM => 0.04 mL/h on U100 baseline profile)
-             * - pulse interval computed from target U/h (0.025 U/h increments) */
-            running_ml_h = ((float)gUiRpmTenths / 10.0f) * 0.002f;
+            /* Dosing tied to commanded insulin:
+             * - pulse size quantized in U
+             * - pulse interval derived from requested U/h */
+            running_ml_h = ((float)gUiDoseRateUhMilli) / 100000.0f; /* U100: 100 U/mL */
             pulse_h = ((float)pulse_width_ds) / 36000.0f;
             pulse_ml = running_ml_h * pulse_h;
-            if (pulse_ml < 0.00001f)
-            {
-                pulse_ml = 0.00001f;
-            }
+            /* Use quantized pulse dose as delivered bolus volume. */
+            pulse_ml = pulse_u / 100.0f; /* U100 conversion */
             target_ml_h = ((float)gUiDoseRateUhMilli) / 100000.0f; /* U100: 100 U/mL */
             if (target_ml_h < 0.00025f)
             {
                 target_ml_h = 0.00025f;
             }
-            interval_ds_f = (pulse_ml / target_ml_h) * 36000.0f;
+            interval_ds_f = (pulse_u / target_u_h) * 36000.0f;
             pulse_interval_ds = (uint32_t)(interval_ds_f + 0.5f);
-            if (pulse_interval_ds < 30u)
+            if (pulse_interval_ds < 300u)
             {
-                pulse_interval_ds = 30u;
+                pulse_interval_ds = 300u;
             }
-            if (pulse_interval_ds > 36000u)
+            if (pulse_interval_ds > 18000u)
             {
-                pulse_interval_ds = 36000u;
+                pulse_interval_ds = 18000u;
             }
             gUiMotorPulseNextDs = now_ds + pulse_interval_ds;
 
@@ -2313,7 +2399,7 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
     gUiReservoirPct = (uint8_t)fill_pct_u32;
 
     pumping = gUiMotorRunning;
-    running_ml_h = gUiMotorRunning ? (((float)gUiRpmTenths / 10.0f) * 0.002f) : 0.0f;
+    running_ml_h = gUiMotorRunning ? (((float)gUiDoseRateUhMilli) / 100000.0f) : 0.0f;
     snprintf(line, sizeof(line), "RPM:%2u.%1u",
              (unsigned int)(gUiRpmTenths / 10u),
              (unsigned int)(gUiRpmTenths % 10u));

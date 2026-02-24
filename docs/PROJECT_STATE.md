@@ -3,8 +3,8 @@
 Last updated: 2026-02-24
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R6`
-- Failsafe: `FAILSAFE-2026-02-24-R6`
+- Golden: `GOLDEN-2026-02-24-R7`
+- Failsafe: `FAILSAFE-2026-02-24-R7`
 - Status: active
 
 ## Current Status
@@ -15,8 +15,8 @@ Last updated: 2026-02-24
 ## Update 2026-02-24
 - Change: Promoted verified +15m-only `±10%` scoring policy build as active restore baseline `R5`.
   - tags:
-    - `GOLDEN-2026-02-24-R6`
-    - `FAILSAFE-2026-02-24-R6`
+    - `GOLDEN-2026-02-24-R5`
+    - `FAILSAFE-2026-02-24-R5`
   - artifacts:
     - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R5.bin`
     - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R5.bin`
@@ -2846,3 +2846,75 @@ Last updated: 2026-02-24
   - `./scripts/build.sh` PASS
   - `./scripts/flash.sh` PASS
 - Result: active release package and restore points updated.
+
+## Update 2026-02-24
+- Change: Increased center prediction line by one font size.
+  - `src/gauge_render.c`
+    - center `PRED 15M:xxx 30M:xxx` line now renders at scale-2 (was medium-weight scale-1)
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed build with one-step larger center prediction text (`PRED 15M:xxx 30M:xxx`).
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reduced center prediction text from oversized scale-2 to standard scale-1 for better balance.
+  - `src/gauge_render.c`
+    - `PRED 15M:xxx 30M:xxx` now renders at scale-1
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Enhanced real-world behavior mapping and documentation.
+  - `README.md`
+    - added Human Activity state explanation (`REST`..`HEAVY`)
+    - added real-world integration guidance for prediction/dosing feature pipelines
+    - documented accelerometer/gyroscope/barometric roles (including up/down elevation trend use)
+    - added optional ST AI biosensor offload architecture note
+  - `src/gauge_render.c`
+    - motor pulse RPM now directly maps to glucose/trend/dose state instead of broad random pulse RPM
+    - prediction direction/status and CGM block/hold conditions now modulate RPM target
+    - preserves dose safety gating while making motor/pump behavior visibly follow mg/dL dynamics
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed build with motor/pump behavior coupled to glucose/trend prediction context.
+- Verification:
+  - `./scripts/flash.sh` PASS
+  - runner: `linkserver` (probe `#1`, `UYLKOJI11H2B3`)
+- Result: ok
+
+## Update 2026-02-24
+- Change: Refined pump/motor mimic to look closer to real pump actuation behavior.
+  - `src/gauge_render.c`
+    - switched to quantized pulse dose sizes based on commanded U/h (0.01U / 0.02U / 0.03U)
+    - pulse interval now derived from `pulse_u / target_u_h` and bounded for realistic cadence
+    - minimum/maximum interval bounds updated to avoid overly rapid synthetic pulses
+    - `RATE` display while pumping now follows commanded dose flow (`U/h -> mL/h`) rather than RPM-only mapping
+- Verification:
+  - `./scripts/build.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Refined demo realism for pump behavior: fixed 30s dose-command cadence, neutral-zone damping near 95-115 mg/dL with stable trend, and reduced pulse chatter by raising pulse interval bounds to 30s..30min.
+- Command: ./scripts/build.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Flashed current realism-tuned CGM pump build to FRDM-MCXN947 for on-device validation.
+- Command: ./scripts/flash.sh
+- Result: ok
+
+## Update 2026-02-24
+- Change: Promoted current realism-tuned firmware as restore baseline R7 and staged new golden/failsafe binaries.
+- Binary: failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R7.bin ; failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin
+- Command: cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin -> failsafe/*R7.bin
+- Result: ok

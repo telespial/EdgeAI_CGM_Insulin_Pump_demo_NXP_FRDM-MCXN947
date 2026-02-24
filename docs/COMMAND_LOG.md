@@ -1441,3 +1441,59 @@ Format:
 [2026-02-24T07:08:22-08:00] Ran git status --short after push
 
 [2026-02-24T07:08:38-08:00] Ran git add/commit/push to sync docs/COMMAND_LOG.md after release push
+
+[2026-02-24T07:09:28-08:00] Ran ./scripts/build.sh after increasing center PRED line by one font size (scale 2)
+
+[2026-02-24T07:09:38-08:00] Updated docs/PROJECT_STATE.md for one-step font-size increase on center prediction line
+
+[2026-02-24T07:10:52-08:00] Ran ./scripts/flash.sh after increasing center prediction line font size
+
+[2026-02-24T07:10:57-08:00] Updated docs/PROJECT_STATE.md after successful flash (larger center prediction text)
+
+[2026-02-24T07:11:35-08:00] Ran ./scripts/build.sh after reducing center prediction text from scale 2 to scale 1 (medium)
+
+[2026-02-24T07:11:42-08:00] Updated docs/PROJECT_STATE.md for center prediction text size reduction
+
+[2026-02-24T07:15:56-08:00] Ran ./scripts/build.sh after motor/pump mg-dL-coupled RPM update
+[2026-02-24T07:15:56-08:00] Updated README with human activity states, sensor integration, and ST AI biosensor offload notes
+
+[2026-02-24T07:16:02-08:00] Updated docs/PROJECT_STATE.md for README integration notes and motor/pump mg-dL coupling change
+
+[2026-02-24T07:16:26-08:00] Ran ./scripts/flash.sh after motor/pump glucose-trend coupling update
+
+[2026-02-24T07:16:30-08:00] Updated docs/PROJECT_STATE.md after successful flash (motor/pump glucose coupling build)
+
+[2026-02-24T07:18:52-08:00] Reviewed motor/pump state variables and pulse scheduling block for realism update
+
+[2026-02-24T07:19:31-08:00] Ran ./scripts/build.sh after quantized motor pulse realism update (dose-sized pulses + bounded cadence)
+
+[2026-02-24T07:19:39-08:00] Updated docs/PROJECT_STATE.md for quantized pump actuation realism update
+[2026-02-24T07:22:03-08:00] Ran git status --short
+[2026-02-24T07:22:03-08:00] Ran rg scan across src/ for pump/motor/prediction hooks
+[2026-02-24T07:22:03-08:00] Read src/gauge_render.c (motor scheduling and alert overlay sections)
+[2026-02-24T07:22:03-08:00] Read docs/START_HERE.md, docs/PROJECT_STATE.md, docs/OPS_RUNBOOK.md
+[2026-02-24T07:22:03-08:00] Read docs/COMMAND_LOG.md tail for logging continuity
+[2026-02-24T07:22:03-08:00] Patched src/gauge_render.c for realism: 30s command cadence + neutral-zone damping + pulse interval bounds 30s..30min
+[2026-02-24T07:22:03-08:00] Ran ./scripts/build.sh (PASS)
+[2026-02-24T07:22:03-08:00] Ran ./scripts/update_state.sh for realism patch state entry
+[2026-02-24T07:21:53-08:00] Ran sed inspections for gauge_render pump/alert sections and project docs baseline
+[2026-02-24T07:21:53-08:00] Applied realism patch in src/gauge_render.c (dose cadence, neutral-zone damping, pulse interval bounds)
+[2026-02-24T07:21:53-08:00] Ran ./scripts/build.sh (PASS)
+[2026-02-24T07:21:53-08:00] Ran ./scripts/update_state.sh for realism patch
+[2026-02-24T07:22:06-08:00] Normalized same-turn COMMAND_LOG placeholder timestamps to actual timestamp
+[2026-02-24T07:22:12-08:00] Ran git status --short after realism patch/build/state updates
+[2026-02-24T07:22:45-08:00] Ran ./scripts/flash.sh (PASS) via linkserver probe #1 UYLKOJI11H2B3
+[2026-02-24T07:22:53-08:00] Ran ./scripts/update_state.sh for flash deployment state entry
+[2026-02-24T07:23:47-08:00] Ran git status --short
+[2026-02-24T07:23:47-08:00] Listed current build binary and failsafe artifacts for next restore baseline
+[2026-02-24T07:24:20-08:00] Ran rg for restore baseline references in docs/START_HERE.md docs/OPS_RUNBOOK.md docs/PROJECT_STATE.md
+[2026-02-24T07:24:20-08:00] Copied current build binary to failsafe R7 golden/failsafe artifacts
+[2026-02-24T07:24:20-08:00] Updated docs/START_HERE.md and docs/OPS_RUNBOOK.md baseline references from R6 to R7
+[2026-02-24T07:24:20-08:00] Attempted python-based PROJECT_STATE header update (python not installed)
+[2026-02-24T07:24:20-08:00] Updated top restore-point lines in docs/PROJECT_STATE.md via sed (R6 -> R7)
+[2026-02-24T07:24:20-08:00] Ran ./scripts/update_state.sh for R7 restore promotion entry
+[2026-02-24T07:24:45-08:00] Verified baseline references and R7 artifact presence (START_HERE, OPS_RUNBOOK, PROJECT_STATE header, failsafe/*R7.bin)
+[2026-02-24T07:24:45-08:00] Ran git status --short before commit staging
+[2026-02-24T07:24:45-08:00] Inspected docs/PROJECT_STATE.md top section and corrected historical R5 tags after header update
+[2026-02-24T07:24:51-08:00] Ran git status --short before staging R7 restore baseline commit
+[2026-02-24T07:25:02-08:00] Staged README/src/docs updates and forced-add R7 golden/failsafe binaries
