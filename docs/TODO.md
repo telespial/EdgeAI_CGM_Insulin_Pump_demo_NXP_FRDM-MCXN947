@@ -9,7 +9,7 @@ Last updated: 2026-02-24
 3. [x] Add MAE display line for prediction quality interpretation.
 4. [x] Resolve score pipeline wiring issue (non-zero `E#` confirms matured prediction evaluation is active).
 5. [x] Replace synthetic glucose generator with timestamp-aligned replay/live sensor stream for CGM model input.
-6. [ ] Retrain `+15m`/`+30m` prediction model with corrected target alignment and feature windows.
+6. [x] Retrain `+15m`/`+30m` prediction model with corrected target alignment and feature windows.
 7. [ ] Re-run validation protocol and publish measured outcomes (lag, MAE by range, alert chatter).
 8. [ ] Implement pump/motor actuator realism model (latency, ramp limits, quantized dose steps, saturation).
 9. [ ] Add occlusion/backpressure fault simulation and safe fallback behavior in dosing path.

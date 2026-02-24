@@ -121,6 +121,7 @@ typedef struct
     int16_t trend_mgdl_min_x100;
     uint8_t sqi_pct;
     uint16_t sensor_flags;
+    uint32_t epoch_ds;
 } cgm_model_features_t;
 
 void CgmPreprocess_Init(cgm_preprocess_t *st, const cgm_preprocess_config_t *cfg);

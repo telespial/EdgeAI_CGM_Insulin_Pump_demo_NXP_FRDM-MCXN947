@@ -3,14 +3,32 @@
 Last updated: 2026-02-24
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R4`
-- Failsafe: `FAILSAFE-2026-02-24-R4`
+- Golden: `GOLDEN-2026-02-24-R5`
+- Failsafe: `FAILSAFE-2026-02-24-R5`
 - Status: active
 
 ## Current Status
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
 - Git repository initialized locally.
+
+## Update 2026-02-24
+- Change: Promoted verified +15m-only `±10%` scoring policy build as active restore baseline `R5`.
+  - tags:
+    - `GOLDEN-2026-02-24-R5`
+    - `FAILSAFE-2026-02-24-R5`
+  - artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R5.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R5.bin`
+  - policy:
+    - prediction score uses `+15m` only
+    - score tolerance is `±10%`
+    - `+30m` remains displayed but excluded from score hit-rate
+- Verification:
+  - observed runtime score: `95%`
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: new golden/failsafe restore points staged for this scoring policy.
 
 ## Update 2026-02-24
 - Change: Promoted current subject001 dataset-driven CGM replay runtime as active restore baseline `R4`.
@@ -31,6 +49,65 @@ Last updated: 2026-02-24
   - commit: `0b11472`
   - push target: `origin/main`
 - Result: GitHub now contains the active restore-point firmware/docs state.
+
+## Update 2026-02-24
+- Change: Tightened prediction scoreboard tolerance from `±10%` to `±5%` for stricter hit-rate evaluation.
+  - `src/gauge_render.c`
+    - `PredTolerance10PctMgdl(...)` replaced by `PredTolerance5PctMgdl(...)`
+    - tolerance math changed from rounded `ref/10` to rounded `ref/20` (minimum 1 mg/dL)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: device now reports prediction score under ±5% acceptance criteria.
+
+## Update 2026-02-24
+- Change: Adjusted prediction scoreboard tolerance to `±8%`.
+  - `src/gauge_render.c`
+    - replaced `PredTolerance5PctMgdl(...)` with `PredTolerance8PctMgdl(...)`
+    - tolerance now computed as rounded `8%` of reference prediction with minimum `1 mg/dL`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: device now reports prediction score under ±8% acceptance criteria.
+
+## Update 2026-02-24
+- Change: Completed comprehensive CGM prediction improvement pass (training + runtime scoring alignment).
+  - Model training/comparison/export:
+    - added `tools/train_cgm_compare_export.py` to train and compare five models (`ridge`, `elastic_net`, `huber`, `random_forest`, `gradient_boosting`)
+    - features expanded to 16 fields (multi-lag glucose, multi-window deltas/rollups, time-of-day sin/cos)
+    - target changed to `+15m delta` (robust target form), then converted to absolute mg/dL in runtime
+    - generated:
+      - `model/cgm_compare_metrics.json`
+      - `src/cgm_model_generated.h`
+    - holdout results summary:
+      - best overall: `random_forest` (MAE `5.98`, hit@10% `93.25%`)
+      - best C-embeddable: `huber` (MAE `5.86`, hit@10% `92.62%`) and exported to firmware header
+  - Runtime model integration:
+    - `src/cgm_preprocess.c/.h`
+      - model now consumes generated header coefficients/statistics
+      - feature runtime updated to 16-feature set with `epoch_ds` support
+      - predictor now uses trained `+15m delta` output and maps to absolute glucose
+  - Score/evaluation improvements:
+    - `src/gauge_render.c`
+      - prediction scoring issue cadence aligned to 5-minute sample cadence (`3000 ds`)
+      - low-confidence score gating added (`AI on`, SQI>=60, model_conf>=55, prediction not blocked)
+      - split counters added for warmup vs steady-state scoring; steady-state score shown once available
+      - score tolerance remains configurable and currently set to `±8%`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: firmware now uses auto-compared exported model with cadence-aligned, confidence-gated, steady-state-first scoring behavior.
+
+## Update 2026-02-24
+- Change: Score metric policy adjusted to match requested clinical-demo interpretation.
+  - `src/gauge_render.c`
+    - score tolerance set to `±10%`
+    - score counters/evaluations now include `+15m` predictions only
+    - `+30m` prediction remains visible in UI and MAE path but is excluded from accuracy score hit-rate until dedicated +30m training is added
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: prediction score box now reports +15m-only ±10% hit-rate.
 
 ## Update 2026-02-24
 - Change: LIVE replay CGM path now ingests real `subject001` glucose samples instead of synthetic glucose generation during playback.

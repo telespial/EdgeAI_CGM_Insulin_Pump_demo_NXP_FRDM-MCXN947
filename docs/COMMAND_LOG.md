@@ -1263,3 +1263,55 @@ Format:
 2026-02-24T06:19:27-08:00 | run git push (main -> origin/main)
 2026-02-24T06:19:37-08:00 | apply_patch docs/PROJECT_STATE.md append commit/push publication update (commit 0b11472)
 2026-02-24T06:19:43-08:00 | run git status --short before final docs/log commit
+2026-02-24T06:19:47-08:00 | git commit docs/COMMAND_LOG.md docs/PROJECT_STATE.md (R4 publication log)
+2026-02-24T06:20:01-08:00 | run git push after docs/log commit (main -> origin/main)
+2026-02-24T06:20:25-08:00 | locate prediction tolerance function in gauge_render.c
+2026-02-24T06:20:34-08:00 | apply_patch src/gauge_render.c change prediction score tolerance from ±10% to ±5%
+2026-02-24T06:20:41-08:00 | run ./scripts/build.sh after ±5% scoring tolerance change
+2026-02-24T06:20:49-08:00 | run ./scripts/flash.sh after ±5% scoring tolerance change
+2026-02-24T06:21:07-08:00 | apply_patch docs/PROJECT_STATE.md add ±5% scoring tolerance update + verification
+2026-02-24T06:21:37-08:00 | apply_patch src/gauge_render.c change prediction score tolerance from ±5% to ±8%
+2026-02-24T06:21:41-08:00 | run ./scripts/build.sh after ±8% scoring tolerance change
+2026-02-24T06:21:51-08:00 | run ./scripts/flash.sh after ±8% scoring tolerance change
+2026-02-24T06:22:07-08:00 | apply_patch docs/PROJECT_STATE.md add ±8% scoring tolerance update + verification
+2026-02-24T06:24:24-08:00 | inspect src/cgm_preprocess.c model section
+2026-02-24T06:24:24-08:00 | inspect src/cgm_preprocess.h feature struct
+2026-02-24T06:24:24-08:00 | inspect src/gauge_render.c scoring functions
+2026-02-24T06:24:33-08:00 | locate prediction score render and warmup references in gauge_render.c
+2026-02-24T06:24:36-08:00 | inspect score rendering and prime function context
+2026-02-24T06:24:41-08:00 | search existing CGM training/export tooling
+2026-02-24T06:25:03-08:00 | verify .venv has sklearn/pandas/numpy
+2026-02-24T06:25:42-08:00 | add tools/train_cgm_compare_export.py (5-model compare + export linear header)
+2026-02-24T06:25:54-08:00 | run tools/train_cgm_compare_export.py to generate model/cgm_compare_metrics.json and src/cgm_model_generated.h
+2026-02-24T06:25:59-08:00 | inspect generated model header
+2026-02-24T06:25:59-08:00 | inspect top of cgm_preprocess.c before integration
+2026-02-24T06:26:10-08:00 | patch src/cgm_preprocess.h add epoch_ds to cgm_model_features_t
+2026-02-24T06:26:47-08:00 | patch src/cgm_preprocess.c integrate generated model header, 16-feature delta model, and time-of-day features
+2026-02-24T06:26:57-08:00 | patch src/gauge_render.c add model confidence and warmup/steady split score counters
+2026-02-24T06:27:08-08:00 | patch PredEvalConsumeDue split hit/eval counters by warmup vs steady state
+2026-02-24T06:27:21-08:00 | patch UpdatePredictionAccuracy: 5-min issue cadence, confidence/SQI gating, steady-first score selection
+2026-02-24T06:27:30-08:00 | patch UpdatePredictionModelAndAlerts to pass epoch_ds and track model confidence for score gating
+2026-02-24T06:27:43-08:00 | patch gauge_render init paths to reset warmup/steady score counters and model confidence
+2026-02-24T06:27:54-08:00 | patch GaugeRender_PrimePredictionScore to use steady-state totals first
+2026-02-24T06:28:06-08:00 | patch score rendering to display steady-state eval count when available
+2026-02-24T06:28:16-08:00 | run ./scripts/build.sh after full CGM improvement pass
+2026-02-24T06:28:32-08:00 | patch tools/train_cgm_compare_export.py float literal formatter to emit valid C floats
+2026-02-24T06:28:42-08:00 | rerun tools/train_cgm_compare_export.py after float-literal fix
+2026-02-24T06:28:47-08:00 | rerun ./scripts/build.sh after generated-header fix
+2026-02-24T06:28:56-08:00 | run ./scripts/flash.sh after full CGM improvement pass
+2026-02-24T06:29:10-08:00 | inspect model/cgm_compare_metrics.json results
+2026-02-24T06:29:20-08:00 | update docs/TODO.md mark step 6 complete
+2026-02-24T06:29:34-08:00 | update docs/PROJECT_STATE.md with full CGM improvement pass details and metrics
+2026-02-24T06:29:39-08:00 | verify cgm_model_features_t epoch_ds usage sites
+2026-02-24T06:29:45-08:00 | run git status --short after full improvement pass
+2026-02-24T06:32:15-08:00 | patch gauge_render scoring: tolerance ±10% and score-count +15m only (exclude +30m from accuracy counters)
+2026-02-24T06:32:26-08:00 | run ./scripts/build.sh after +15-only ±10% score patch
+2026-02-24T06:32:37-08:00 | run ./scripts/flash.sh after +15-only ±10% scoring update
+2026-02-24T06:32:59-08:00 | update docs/PROJECT_STATE.md for +15-only ±10% scoring policy change
+2026-02-24T06:34:03-08:00 | run git status --short and rev-parse before R5 finalization
+2026-02-24T06:34:15-08:00 | stage restore artifacts R5 from current build bin
+2026-02-24T06:34:27-08:00 | apply_patch docs/START_HERE.md set active restore baseline to R5
+2026-02-24T06:34:37-08:00 | apply_patch docs/OPS_RUNBOOK.md update restore baseline/artifacts to R5
+2026-02-24T06:34:41-08:00 | inspect top of PROJECT_STATE.md before R5 update
+2026-02-24T06:34:55-08:00 | apply_patch docs/PROJECT_STATE.md set restore header to R5 and add 95% score/+15-only ±10% policy restore update
+2026-02-24T06:35:00-08:00 | run git status --short before final R5 commit

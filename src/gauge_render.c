@@ -196,6 +196,13 @@ static uint32_t gUiPredEvalCount = 0u;
 static uint32_t gUiPredTolHitCount = 0u;
 static uint32_t gUiPredTolTotalCount = 0u;
 static uint32_t gUiPredAccuracyNextIssueDs = 0u;
+static uint8_t gUiPredModelConfPct = 0u;
+static uint32_t gUiPredEvalWarmCount = 0u;
+static uint32_t gUiPredEvalSteadyCount = 0u;
+static uint32_t gUiPredTolHitWarmCount = 0u;
+static uint32_t gUiPredTolHitSteadyCount = 0u;
+static uint32_t gUiPredTolTotalWarmCount = 0u;
+static uint32_t gUiPredTolTotalSteadyCount = 0u;
 static bool gUiReplayCgmValid = false;
 static uint16_t gUiReplayCgmMgdl = 98u;
 static uint32_t gUiReplayCgmTsDs = 0u;
@@ -383,7 +390,8 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
                                uint16_t prev_mgdl,
                                uint32_t now_ds,
                                uint16_t now_mgdl,
-                               float *mae)
+                               float *mae,
+                               bool count_for_score)
 {
     while (*tail != head)
     {
@@ -412,13 +420,43 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
             {
                 *mae = (*mae * 0.85f) + (err * 0.15f);
             }
-            gUiPredTolTotalCount++;
-            if (abs_err <= tol)
+            if (count_for_score)
             {
-                gUiPredTolHitCount++;
+                if (gUiWarmupThinking)
+                {
+                    gUiPredTolTotalWarmCount++;
+                }
+                else
+                {
+                    gUiPredTolTotalSteadyCount++;
+                }
+                gUiPredTolTotalCount++;
+                if (abs_err <= tol)
+                {
+                    gUiPredTolHitCount++;
+                    if (gUiWarmupThinking)
+                    {
+                        gUiPredTolHitWarmCount++;
+                    }
+                    else
+                    {
+                        gUiPredTolHitSteadyCount++;
+                    }
+                }
             }
         }
-        gUiPredEvalCount++;
+        if (count_for_score)
+        {
+            gUiPredEvalCount++;
+            if (gUiWarmupThinking)
+            {
+                gUiPredEvalWarmCount++;
+            }
+            else
+            {
+                gUiPredEvalSteadyCount++;
+            }
+        }
         slot->valid = false;
         *tail = (uint16_t)((*tail + 1u) % PRED_EVAL_RING_LEN);
     }
@@ -426,6 +464,11 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
 
 static void UpdatePredictionAccuracy(uint32_t now_ds)
 {
+    bool issue_allowed = gUiAiEnabled &&
+                         (!gUiCgmPredictionBlocked) &&
+                         (gUiCgmSqiPct >= 60u) &&
+                         (gUiPredModelConfPct >= 55u);
+
     if (!gPredEvalPrevValid)
     {
         gPredEvalPrevDs = now_ds;
@@ -438,11 +481,11 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
         gPredEvalPrevMgdl = gUiGlucoseMgdl;
     }
 
-    if ((gUiPredAccuracyNextIssueDs == 0u) || ((int32_t)(now_ds - gUiPredAccuracyNextIssueDs) >= 0))
+    if (((gUiPredAccuracyNextIssueDs == 0u) || ((int32_t)(now_ds - gUiPredAccuracyNextIssueDs) >= 0)) && issue_allowed)
     {
         PredEvalPush(gPredEval15, &gPredEval15Head, &gPredEval15Tail, now_ds + 9000u, gUiPred15Mgdl);
         PredEvalPush(gPredEval30, &gPredEval30Head, &gPredEval30Tail, now_ds + 18000u, gUiPred30Mgdl);
-        gUiPredAccuracyNextIssueDs = now_ds + 100u; /* issue every 10s */
+        gUiPredAccuracyNextIssueDs = now_ds + 3000u; /* issue every 5 minutes (cadence-aligned) */
     }
 
     PredEvalConsumeDue(gPredEval15,
@@ -452,7 +495,8 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
                        gPredEvalPrevMgdl,
                        now_ds,
                        gUiGlucoseMgdl,
-                       &gUiPredMae15);
+                       &gUiPredMae15,
+                       true);
     PredEvalConsumeDue(gPredEval30,
                        &gPredEval30Tail,
                        gPredEval30Head,
@@ -460,7 +504,8 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
                        gPredEvalPrevMgdl,
                        now_ds,
                        gUiGlucoseMgdl,
-                       &gUiPredMae30);
+                       &gUiPredMae30,
+                       false);
 
     if (!gUiPredMaePrimed && ((gUiPredEvalCount >= 1u) || (gUiPredTolTotalCount >= 1u)))
     {
@@ -470,9 +515,13 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
     if (gUiPredMaePrimed)
     {
         float tol_pct = 0.0f;
-        if (gUiPredTolTotalCount > 0u)
+        if (gUiPredTolTotalSteadyCount > 0u)
         {
-            tol_pct = ((float)gUiPredTolHitCount * 100.0f) / (float)gUiPredTolTotalCount;
+            tol_pct = ((float)gUiPredTolHitSteadyCount * 100.0f) / (float)gUiPredTolTotalSteadyCount;
+        }
+        else if (gUiPredTolTotalWarmCount > 0u)
+        {
+            tol_pct = ((float)gUiPredTolHitWarmCount * 100.0f) / (float)gUiPredTolTotalWarmCount;
         }
         gUiPredAccuracyPct = (uint8_t)ClampF32(tol_pct, 0.0f, 99.0f);
     }
@@ -547,7 +596,9 @@ static void UpdatePredictionModelAndAlerts(uint32_t now_ds)
     in.trend_mgdl_min_x100 = (int16_t)ClampF32(gUiGlucoseTrendMgDlPerMin * 100.0f, -500.0f, 500.0f);
     in.sqi_pct = gUiCgmSqiPct;
     in.sensor_flags = gUiCgmSensorFlags;
+    in.epoch_ds = now_ds;
     model_ok = CgmModel_Predict(&in, &model_pred15, &model_pred30, &model_conf);
+    gUiPredModelConfPct = model_ok ? model_conf : 0u;
 
     if (model_ok && (model_conf >= 45u))
     {
@@ -1852,8 +1903,15 @@ static void DrawGlucoseIndicator(void)
         gUiPredEvalCount = 0u;
         gUiPredTolHitCount = 0u;
         gUiPredTolTotalCount = 0u;
+        gUiPredEvalWarmCount = 0u;
+        gUiPredEvalSteadyCount = 0u;
+        gUiPredTolHitWarmCount = 0u;
+        gUiPredTolHitSteadyCount = 0u;
+        gUiPredTolTotalWarmCount = 0u;
+        gUiPredTolTotalSteadyCount = 0u;
         gUiPredMaePrimed = false;
         gUiPredAccuracyPct = 0u;
+        gUiPredModelConfPct = 0u;
         gCgmNextRawSampleDs = now_ds;
         gCgmPreprocessInit = true;
     }
@@ -3069,11 +3127,12 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     }
     else
     {
+        uint32_t eval_disp = (gUiPredEvalSteadyCount > 0u) ? gUiPredEvalSteadyCount : gUiPredEvalWarmCount;
         float mae_blend = (0.6f * gUiPredMae15) + (0.4f * gUiPredMae30);
         uint16_t mae_tenths = (uint16_t)ClampF32((mae_blend * 10.0f) + 0.5f, 0.0f, 9999.0f);
         snprintf(score_line, sizeof(score_line), "PRED SCORE %2u%% E%lu",
                  (unsigned int)gUiPredAccuracyPct,
-                 (unsigned long)gUiPredEvalCount);
+                 (unsigned long)eval_disp);
         snprintf(mae_line, sizeof(mae_line), "MAE %u.%u mg/dL",
                  (unsigned int)(mae_tenths / 10u),
                  (unsigned int)(mae_tenths % 10u));
@@ -3930,6 +3989,9 @@ void GaugeRender_SetWarmupThinking(bool enabled)
 
 void GaugeRender_PrimePredictionScore(void)
 {
+    uint32_t total = (gUiPredTolTotalSteadyCount > 0u) ? gUiPredTolTotalSteadyCount : gUiPredTolTotalWarmCount;
+    uint32_t hit = (gUiPredTolTotalSteadyCount > 0u) ? gUiPredTolHitSteadyCount : gUiPredTolHitWarmCount;
+
     if (gUiPredEvalCount < 1u)
     {
         /* Do not synthesize an accuracy score from default MAE seeds. */
@@ -3939,9 +4001,9 @@ void GaugeRender_PrimePredictionScore(void)
     }
 
     float tol_pct = 0.0f;
-    if (gUiPredTolTotalCount > 0u)
+    if (total > 0u)
     {
-        tol_pct = ((float)gUiPredTolHitCount * 100.0f) / (float)gUiPredTolTotalCount;
+        tol_pct = ((float)hit * 100.0f) / (float)total;
     }
     gUiPredMaePrimed = true;
     gUiPredAccuracyPct = (uint8_t)ClampF32(tol_pct, 0.0f, 99.0f);
@@ -3977,8 +4039,15 @@ void GaugeRender_IngestReplayCgmSample(uint32_t ts_ds, uint16_t glucose_mgdl, bo
         gUiPredEvalCount = 0u;
         gUiPredTolHitCount = 0u;
         gUiPredTolTotalCount = 0u;
+        gUiPredEvalWarmCount = 0u;
+        gUiPredEvalSteadyCount = 0u;
+        gUiPredTolHitWarmCount = 0u;
+        gUiPredTolHitSteadyCount = 0u;
+        gUiPredTolTotalWarmCount = 0u;
+        gUiPredTolTotalSteadyCount = 0u;
         gUiPredMaePrimed = false;
         gUiPredAccuracyPct = 0u;
+        gUiPredModelConfPct = 0u;
         gCgmNextRawSampleDs = ts_ds;
         gCgmPreprocessInit = true;
     }

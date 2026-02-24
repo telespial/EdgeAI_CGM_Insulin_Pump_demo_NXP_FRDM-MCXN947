@@ -1,9 +1,10 @@
 #include "cgm_preprocess.h"
+#include "cgm_model_generated.h"
 
 #include <math.h>
 #include <string.h>
 
-#define CGM_MODEL_HIST_LEN 8u
+#define CGM_MODEL_HIST_LEN 16u
 
 typedef struct
 {
@@ -16,61 +17,6 @@ typedef struct
 } cgm_model_state_t;
 
 static cgm_model_state_t gCgmModel;
-
-/* Embedded +15m glucose-only ridge model.
- * Feature order:
- * 0 glucose_mgdl
- * 1 glucose_mgdl_lag1
- * 2 glucose_mgdl_lag2
- * 3 glucose_mgdl_lag3
- * 4 glucose_delta1
- * 5 glucose_delta2
- * 6 glucose_accel
- * 7 glucose_roll3
- * 8 glucose_roll6
- */
-#define CGM_TRAINED_FEATURE_COUNT 9u
-static const float kCgmTrainedMedian[CGM_TRAINED_FEATURE_COUNT] =
-{
-    153.0f, 153.0f, 153.0f, 153.0f, 0.0f, 0.0f, 0.0f, 153.0f, 152.166667f
-};
-static const float kCgmTrainedMean[CGM_TRAINED_FEATURE_COUNT] =
-{
-    161.33244837758113f,
-    161.33805309734512f,
-    161.34572271386432f,
-    161.3268436578171f,
-    0.00471976401179941f,
-    0.007964601769911504f,
-    -0.002654867256637168f,
-    161.3283185840708f,
-    161.30582595870206f
-};
-static const float kCgmTrainedScale[CGM_TRAINED_FEATURE_COUNT] =
-{
-    72.62176699515148f,
-    72.61965731575678f,
-    72.61603025803866f,
-    72.60155710160303f,
-    9.244753347141902f,
-    13.5678866145243f,
-    9.24319052723524f,
-    72.35335630699541f,
-    71.92033655060398f
-};
-static const float kCgmTrainedCoeff[CGM_TRAINED_FEATURE_COUNT] =
-{
-    52.909166522618555f,
-    21.38937661755854f,
-    3.8048106438439078f,
-    -3.075326733172217f,
-    4.223390235386416f,
-    -0.8905607571257929f,
-    -2.235524202632374f,
-    52.81586369360577f,
-    -58.39138351668029f
-};
-static const float kCgmTrainedIntercept = 161.35737463126844f;
 
 static float ClampF32(float v, float lo, float hi)
 {
@@ -118,61 +64,86 @@ static uint16_t HistGetGlucose(uint8_t lag, uint16_t fallback)
     return gCgmModel.glucose_hist[idx];
 }
 
-static float TrainedPredict15Mgdl(const cgm_model_features_t *in)
+static float TrainedPredictDelta15Mgdl(const cgm_model_features_t *in)
 {
-    float features[CGM_TRAINED_FEATURE_COUNT];
+    float features[CGM_MODEL_GENERATED_FEATURE_COUNT];
     float glucose;
     float lag1;
     float lag2;
     float lag3;
+    float lag6;
+    float lag9;
+    float lag12;
+    float delta3;
+    float delta6;
     float roll3;
     float roll6;
+    float roll12;
     float delta1;
-    float delta2;
-    float accel;
+    float accel13;
+    float tod_sin;
+    float tod_cos;
+    float ang;
     float acc;
     uint8_t i;
     float v;
+    uint32_t sec_day;
 
     glucose = (float)in->glucose_mgdl;
     lag1 = (float)HistGetGlucose(1u, in->glucose_mgdl);
-    lag2 = (float)HistGetGlucose(2u, (uint16_t)lag1);
-    lag3 = (float)HistGetGlucose(3u, (uint16_t)lag2);
+    lag2 = (float)HistGetGlucose(2u, (uint16_t)lroundf(lag1));
+    lag3 = (float)HistGetGlucose(3u, (uint16_t)lroundf(lag2));
+    lag6 = (float)HistGetGlucose(6u, (uint16_t)lroundf(lag3));
+    lag9 = (float)HistGetGlucose(9u, (uint16_t)lroundf(lag6));
+    lag12 = (float)HistGetGlucose(12u, (uint16_t)lroundf(lag9));
     delta1 = glucose - lag1;
-    delta2 = glucose - lag2;
-    accel = delta1 - delta2;
+    delta3 = glucose - lag3;
+    delta6 = glucose - lag6;
+    accel13 = delta1 - delta3;
 
     roll3 = (glucose + lag1 + lag2) / 3.0f;
-    roll6 = (glucose +
-             (float)HistGetGlucose(1u, in->glucose_mgdl) +
-             (float)HistGetGlucose(2u, in->glucose_mgdl) +
-             (float)HistGetGlucose(3u, in->glucose_mgdl) +
-             (float)HistGetGlucose(4u, in->glucose_mgdl) +
-             (float)HistGetGlucose(5u, in->glucose_mgdl)) / 6.0f;
+    roll6 = (glucose + lag1 + lag2 + lag3 + (float)HistGetGlucose(4u, in->glucose_mgdl) + (float)HistGetGlucose(5u, in->glucose_mgdl)) /
+            6.0f;
+    roll12 = (glucose + lag1 + lag2 + lag3 + (float)HistGetGlucose(4u, in->glucose_mgdl) +
+              (float)HistGetGlucose(5u, in->glucose_mgdl) + lag6 + (float)HistGetGlucose(7u, in->glucose_mgdl) +
+              (float)HistGetGlucose(8u, in->glucose_mgdl) + lag9 + (float)HistGetGlucose(10u, in->glucose_mgdl) +
+              (float)HistGetGlucose(11u, in->glucose_mgdl)) /
+             12.0f;
+    sec_day = (in->epoch_ds / 10u) % 86400u;
+    ang = 2.0f * 3.14159265f * ((float)sec_day / 86400.0f);
+    tod_sin = sinf(ang);
+    tod_cos = cosf(ang);
 
     features[0] = glucose;
     features[1] = lag1;
     features[2] = lag2;
     features[3] = lag3;
-    features[4] = delta1;
-    features[5] = delta2;
-    features[6] = accel;
-    features[7] = roll3;
-    features[8] = roll6;
+    features[4] = lag6;
+    features[5] = lag9;
+    features[6] = lag12;
+    features[7] = delta1;
+    features[8] = delta3;
+    features[9] = delta6;
+    features[10] = accel13;
+    features[11] = roll3;
+    features[12] = roll6;
+    features[13] = roll12;
+    features[14] = tod_sin;
+    features[15] = tod_cos;
 
-    acc = kCgmTrainedIntercept;
-    for (i = 0u; i < CGM_TRAINED_FEATURE_COUNT; ++i)
+    acc = kCgmModelGenIntercept;
+    for (i = 0u; i < CGM_MODEL_GENERATED_FEATURE_COUNT; ++i)
     {
         v = features[i];
         if (!isfinite(v))
         {
-            v = kCgmTrainedMedian[i];
+            v = kCgmModelGenMedian[i];
         }
-        if (kCgmTrainedScale[i] != 0.0f)
+        if (kCgmModelGenScale[i] != 0.0f)
         {
-            v = (v - kCgmTrainedMean[i]) / kCgmTrainedScale[i];
+            v = (v - kCgmModelGenMean[i]) / kCgmModelGenScale[i];
         }
-        acc += (kCgmTrainedCoeff[i] * v);
+        acc += (kCgmModelGenCoeff[i] * v);
     }
 
     return acc;
@@ -229,7 +200,7 @@ bool CgmModel_Predict(const cgm_model_features_t *in,
     trend_x100 = (int32_t)in->trend_mgdl_min_x100;
     pred15_linear = (int32_t)in->glucose_mgdl + ((trend_x100 * 15) / 100);
     pred30_linear = (int32_t)in->glucose_mgdl + ((trend_x100 * 30) / 100);
-    pred15_trained = (int32_t)lroundf(TrainedPredict15Mgdl(in));
+    pred15_trained = (int32_t)in->glucose_mgdl + (int32_t)lroundf(TrainedPredictDelta15Mgdl(in));
     pred30_trained = (int32_t)in->glucose_mgdl + (2 * (pred15_trained - (int32_t)in->glucose_mgdl));
 
     if (in->sqi_pct >= 70u)
