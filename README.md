@@ -2,6 +2,8 @@
 
 Firmware demo for an embedded CGM + insulin-pump UX on FRDM-MCXN947 with a model-assisted prediction layer, replay benchmarking, and safety-gated alerting.
 
+![insulin_pump](https://github.com/user-attachments/assets/1033010d-696f-45b3-b7d1-bed7aa6203d0)
+
 ## Hardware Platform And Sensor BOM
 
 - Main board:
