@@ -1510,3 +1510,4 @@ Format:
 [2026-02-24T07:39:39-08:00] Edited README.md: added Vehicle And Non-Human Motion Filtering section; updated restore baseline references to R7
 [2026-02-24T07:39:39-08:00] Ran ./scripts/update_state.sh for README vehicle-filtering update
 [2026-02-24T07:39:49-08:00] Ran git status --short before commit/push for README vehicle-filtering section
+[2026-02-24T07:39:55-08:00] Ran git add/commit for README vehicle filtering + state/log updates
