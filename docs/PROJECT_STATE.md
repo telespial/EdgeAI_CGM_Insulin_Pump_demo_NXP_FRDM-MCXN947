@@ -2923,3 +2923,8 @@ Last updated: 2026-02-24
 - Change: README cleanup: removed date stamp line and added hardware/sensor BOM section with FRDM-MCXN947, LCD controller, touch controller, and all runtime sensor part numbers used by firmware.
 - Command: edit README.md
 - Result: ok
+
+## Update 2026-02-24
+- Change: README: added Vehicle And Non-Human Motion Filtering section describing transport-context suppression of false high-speed movement effects; aligned restore baseline references to R7.
+- Command: edit README.md
+- Result: ok

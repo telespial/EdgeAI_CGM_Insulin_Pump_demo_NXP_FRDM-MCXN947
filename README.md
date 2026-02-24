@@ -125,6 +125,21 @@ For lower host compute load, an external smart biosensor/AI IMU path can precomp
 
 This offloads part of feature extraction/classification from the MCU/NPU, reducing CPU budget and simplifying host-side pipelines. The host firmware still remains the safety authority for gating, limits, and final actuation policy.
 
+### Vehicle And Non-Human Motion Filtering
+
+Yes, the runtime includes transport-context filtering to suppress false activity escalation from non-human high-speed movement (for example, car/air vibration or transit motion).
+
+Current behavior:
+- Transport mode and confidence are estimated from fused accel/gyro/barometric context.
+- Vehicle-like signatures are prevented from being treated as true human exertion.
+- Dose modulation is damped in vehicle contexts (`CAR`, `AIR`) so vibration does not over-reduce insulin.
+- Barometric trend is used as a consistency signal to distinguish elevation transitions from pure vibration.
+
+Design intent:
+- Keep alerts and activity state realistic during motion/transport.
+- Avoid overreacting to high-frequency vibration that is not metabolic effort.
+- Preserve firmware safety gates as final authority even when transport filtering is active.
+
 ## Runtime Flow
 
 1. Boot and initialize runtime + display.
@@ -165,17 +180,17 @@ Direct board tooling:
 
 ## Active Restore Baseline
 
-- Golden: `GOLDEN-2026-02-24-R6`
-- Failsafe: `FAILSAFE-2026-02-24-R6`
+- Golden: `GOLDEN-2026-02-24-R7`
+- Failsafe: `FAILSAFE-2026-02-24-R7`
 
 Artifacts:
-- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R6.bin`
-- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R6.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R7.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin`
 
 Failsafe restore:
 
 ```bash
-./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R6.bin
+./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin
 ```
 
 ## Controls
