@@ -1679,3 +1679,186 @@ Format:
 [2026-02-24T20:54:20-08:00] Attempted git add/commit including R8 failsafe artifacts; add failed because failsafe binaries are ignored by .gitignore
 [2026-02-24T20:54:58-08:00] Re-ran git add with -f for R8 failsafe artifacts and committed docs+renderer updates as "Document popup bug progress and promote R8 golden restore point" (23fd05d)
 [2026-02-24T20:55:28-08:00] Created annotated restore tags GOLDEN-2026-02-24-R8 and FAILSAFE-2026-02-24-R8; pushed main and both tags to origin
+[2026-02-24T20:56:40-08:00] Read docs/START_HERE.md, docs/PROJECT_STATE.md, docs/OPS_RUNBOOK.md and inspected scope/timeline/live banner geometry in src/gauge_render.c (rg + sed)
+[2026-02-24T20:57:26-08:00] Confirmed timeline width mismatch (TIMELINE_X1 uses SCOPE_X + SCOPE_W) and duplicate LIVE/timeline repaint path in DrawScopeFrame + DrawScopeDynamic
+[2026-02-25T07:02:18-08:00] Patched src/gauge_render.c timeline geometry and refresh behavior: set TIMELINE_X1 = SCOPE_X + SCOPE_W - 1 and removed timeline/LIVE strip drawing from DrawScopeFrame so timeline redraw is handled only by DrawScopeDynamic change-gated path
+[2026-02-25T07:03:36-08:00] Ran ./scripts/build.sh (PASS) after timeline alignment and LIVE redraw-gating fix; memory m_text 62.33%, m_data 86.53%
+[2026-02-25T07:03:59-08:00] Ran ./scripts/flash.sh (PASS) after timeline alignment and LIVE redraw-gating fix
+[2026-02-25T07:04:14-08:00] Queried local timestamp via date for state/log update
+[2026-02-25T07:04:46-08:00] Appended docs/PROJECT_STATE.md with graph/timeline width alignment and LIVE banner redraw-gating update
+[2026-02-25T07:05:36-08:00] Patched src/gauge_render.c scope plot behavior: widened plot region (px0=SCOPE_X+2, pw=SCOPE_W-4) to better align with scope/timeline width and removed full interior clear on write-head wrap (column-overwrite only)
+[2026-02-25T07:07:15-08:00] Ran ./scripts/build.sh (PASS) after scope-plot width/overwrite patch; memory m_text 62.32%, m_data 86.53%
+[2026-02-25T07:08:10-08:00] Ran ./scripts/flash.sh (PASS) after scope-plot width/overwrite patch
+[2026-02-25T07:08:29-08:00] Captured timestamp and appended log/state updates for scope-plot width + no-full-cycle-wipe fix
+[2026-02-25T07:09:10-08:00] Verified missing-plot regression root cause: DrawScopeDynamic early-return due pw (SCOPE_W-4=147) exceeding SCOPE_PLOT_CACHE_W (139)
+[2026-02-25T07:09:29-08:00] Patched src/gauge_render.c to fix missing plot by increasing SCOPE_PLOT_CACHE_W from 139 to 151 so widened scope plot region fits cache bounds
+[2026-02-25T07:09:41-08:00] Ran ./scripts/build.sh (PASS) after scope cache width fix; memory m_data increased to 87.04%
+[2026-02-25T07:09:49-08:00] Ran ./scripts/flash.sh (PASS) after scope cache width fix
+[2026-02-25T07:09:53-08:00] Captured timestamp and prepared PROJECT_STATE update for missing-plot fix
+[2026-02-25T07:10:15-08:00] Appended docs/PROJECT_STATE.md with scope cache width fix and verification details
+[2026-02-25T07:10:58-08:00] Patched legend strip under scope in src/gauge_render.c to deterministic per-frame background restore (BlitPumpBgRegion) + label redraw to remove persistent black remnant artifacts
+[2026-02-25T07:11:35-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after under-graph legend strip deterministic redraw fix
+[2026-02-25T07:11:35-08:00] Appended PROJECT_STATE update for under-graph black-remnant cleanup
+[2026-02-25T07:12:35-08:00] Located AX/AY legend row position under scope graph in src/gauge_render.c for vertical alignment adjustment
+[2026-02-25T07:12:58-08:00] Patched AX/AY legend row up by 2px (ly and background restore start: SCOPE_Y+SCOPE_H+1 -> SCOPE_Y+SCOPE_H-1)
+[2026-02-25T07:12:42-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after AX/AY legend vertical alignment adjustment
+[2026-02-25T07:13:01-08:00] Captured timestamp and appended PROJECT_STATE update for AX/AY legend alignment tweak
+[2026-02-25T07:14:10-08:00] Investigating graph vs LIVE width mismatch after remnant cleanup; targeting scope plot geometry in DrawScopeDynamic for re-alignment
+[2026-02-25T07:14:52-08:00] Patched scope plot horizontal geometry in src/gauge_render.c to align with LIVE box interior (px0: SCOPE_X+2->SCOPE_X+1, pw: SCOPE_W-4->SCOPE_W-2)
+[2026-02-25T07:15:31-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after scope/LIVE width alignment patch
+[2026-02-25T07:15:31-08:00] Appended PROJECT_STATE update for scope/LIVE width re-alignment
+[2026-02-25T07:16:05-08:00] Implementing request to make AX/AY legend static with persistent black background (remove per-frame redraw path)
+[2026-02-25T07:17:36-08:00] Patched src/gauge_render.c to make AX/AY legend static: added DrawScopeLegendRow() (fixed black background), called from DrawStaticDashboard(), removed per-frame legend redraw block from GaugeRender_DrawFrame()
+[2026-02-25T07:18:44-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after static AX/AY legend row + black background change
+[2026-02-25T07:18:44-08:00] Appended PROJECT_STATE update for static legend/no-flash behavior
+[2026-02-25T07:19:22-08:00] Requested tweak: move static AX/AY legend row up by additional 2 px
+[2026-02-25T07:20:10-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after additional +2 px upward move for static AX/AY legend row
+[2026-02-25T07:20:10-08:00] Appended PROJECT_STATE update for AX/AY legend fine-position adjustment
+[2026-02-25T07:21:04-08:00] User-reported right-edge overshoot on AX/AY black bar; patching legend background bounds to exact scope box width
+[2026-02-25T07:21:13-08:00] Ran ./scripts/build.sh (PASS) for AX/AY legend right-edge fix (scope-width-clamped legend bar)
+[2026-02-25T07:21:13-08:00] Ran ./scripts/flash.sh (PASS) after AX/AY legend right-edge fix
+[2026-02-25T07:21:13-08:00] Appended docs/PROJECT_STATE.md + docs/COMMAND_LOG.md for AX/AY legend right-edge alignment update
+[2026-02-25T07:25:23-08:00] Read docs/START_HERE.md, docs/OPS_RUNBOOK.md, docs/PROJECT_STATE.md and inspected modal/render/touch paths in src/gauge_render.c + src/edgeai_medical_device_demo.c
+[2026-02-25T07:25:23-08:00] Created restore artifacts from current pre-change build: failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-25-R9.bin and failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R9.bin
+[2026-02-25T07:25:23-08:00] Patched src/gauge_render.c modal transitions: force full-screen black clear on modal open and on modal close before static dashboard redraw
+[2026-02-25T07:25:23-08:00] Ran ./scripts/build.sh (PASS) for modal popup freeze/clear transition change
+[2026-02-25T07:25:23-08:00] Ran ./scripts/flash.sh (PASS) after modal popup freeze/clear transition change
+[2026-02-25T07:25:50-08:00] Updated docs/START_HERE.md and docs/OPS_RUNBOOK.md restore baseline references to R9 artifacts/restore command
+[2026-02-25T07:25:50-08:00] Updated docs/PROJECT_STATE.md restore header to R9 and appended entries for R9 capture + modal transition behavior update
+[2026-02-25T07:26:03-08:00] Created local restore tags GOLDEN-2026-02-25-R9 and FAILSAFE-2026-02-25-R9 at current HEAD
+[2026-02-25T07:26:16-08:00] Verified working tree and key file updates via git status, rg on modal transition lines, and tail of PROJECT_STATE/COMMAND_LOG
+[2026-02-25T07:28:09-08:00] Corrected restore-point scope per user request: removed unintended failsafe R9 artifact and deleted FAILSAFE-2026-02-25-R9 tag; kept golden R9 only
+[2026-02-25T07:28:09-08:00] Restored docs failsafe baseline references to R8 (START_HERE/OPS_RUNBOOK/PROJECT_STATE) while retaining golden R9
+[2026-02-25T07:28:09-08:00] Verified no remaining FAILSAFE-2026-02-25-R9 or failsafe_2026-02-25-R9 references in active restore docs
+[2026-02-25T07:29:21-08:00] Ran ./scripts/flash.sh (PASS) on user request to flash current modal-popup build
+[2026-02-25T07:31:03-08:00] Patched src/gauge_render.c modal path to always redraw full black modal base + active popup whenever settings/help/limits is visible (removed gModalDirty gating in modal draw branch)
+[2026-02-25T07:31:03-08:00] Ran ./scripts/build.sh (PASS) after strict modal-display ownership patch
+[2026-02-25T07:31:03-08:00] Ran ./scripts/flash.sh (PASS) after strict modal-display ownership patch
+[2026-02-25T07:35:11-08:00] Implemented settings close-only modal step: settings now renders full-black modal with only top-right X and ignores all other settings touch targets
+[2026-02-25T07:35:11-08:00] Updated touch hitbox for settings close to dedicated corner X rectangle constants in gauge_render.h
+[2026-02-25T07:35:11-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) for close-only settings modal step
+[2026-02-25T07:36:55-08:00] Fixed modal blackout transparency by always calling GaugeRender_DrawFrame() on render ticks (removed modal-active skip in main loop)
+[2026-02-25T07:36:55-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after modal render-loop ownership fix
+[2026-02-25T07:40:24-08:00] Aligned Help modal to same close-only black behavior as Settings: both now render black + corner X and ignore non-close interactions
+[2026-02-25T07:40:24-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after help/settings close-only modal alignment
+[2026-02-25T07:42:36-08:00] Reworked DrawPopupModalBase() to deterministic per-line black blit across full screen to eliminate transparent modal background artifacts
+[2026-02-25T07:42:36-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after modal blackout blit-path change
+[2026-02-25T07:44:38-08:00] Fixed modal UX regressions: stopped per-frame modal redraw (draw only on modal dirty transitions) to eliminate flashing X; removed side-button cache gating so * and ? redraw reliably after modal close
+[2026-02-25T07:44:38-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after modal static/draw-cache fixes
+[2026-02-25T07:46:48-08:00] Added warmup background-only render gate: during gUiWarmupThinking, DrawFrame renders only background image (no overlays); restored full dashboard draw once warmup exits
+[2026-02-25T07:46:48-08:00] Added startup preroll visual latch in main: if LIVE mode at boot, set warmup-thinking before first frame so dashboard graphics stay hidden during initial warmup
+[2026-02-25T07:46:48-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) for warmup background-only behavior
+[2026-02-25T07:50:24-08:00] Fixed boot pre-draw and UI redraw issues: GaugeRender_Init now starts with background-only (no static dashboard), removed per-frame DrawAiSideButtons dynamic call, and added forced battery redraw flag on modal/warmup transitions
+[2026-02-25T07:50:24-08:00] Added playback timestamp normalization to relative elapsed time using first-sample origin (prevents clock jump to absolute dataset day/hour values)
+[2026-02-25T07:50:24-08:00] Added playback origin reset whenever playback restart paths reset playback_prev_ts_valid
+[2026-02-25T07:50:24-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after boot/warmup/elapsed/button/battery fixes
+[2026-02-25T07:54:40-08:00] Replaced replay elapsed-time mapping with source-timestamp delta accumulation (play_ds advances from 0 using per-sample ts deltas) and reset src-ts tracker on all playback restarts
+[2026-02-25T07:54:40-08:00] Restored per-frame DrawAiSideButtons call in normal render path to ensure settings/help touch affordances are always redrawn and tappable
+[2026-02-25T07:54:40-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after touch-open + elapsed-time fixes
+[2026-02-25T08:09:22-08:00] Added immediate modal-open touch path for * and ? (independent of edge-trigger latch) to restore reliable settings/help button response
+[2026-02-25T08:09:22-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after touch-open reliability patch
+[2026-02-25T08:37:00-08:00] Restored full Help popup UI rendering (text + NEXT PAGE) while keeping Settings close-only modal
+[2026-02-25T08:37:00-08:00] Restored Help touch behavior for close/next/outside-close and reverted help-close hitbox to help panel corner X
+[2026-02-25T08:37:00-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after Help popup restoration
+[2026-02-25T08:41:25-08:00] Optimized popup open speed by switching DrawPopupModalBase() from per-line blit blackout to single-call par_lcd_s035_fill(black)
+[2026-02-25T08:41:25-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after help-popup open speed optimization
+[2026-02-25T08:46:22-08:00] Reverted last popup-base speed optimization: restored DrawPopupModalBase() line-blit blackout implementation (undo par_lcd_s035_fill black clear)
+[2026-02-25T08:46:22-08:00] Ran ./scripts/build.sh (PASS) and ./scripts/flash.sh (PASS) after revert-to-last-build request
+
+- 2026-02-25T16:52:00Z CMD: rg popup/help/settings paths
+
+- 2026-02-25T16:52:08Z CMD: inspect modal state machine gauge_render.c:4620-4795
+
+- 2026-02-25T16:52:13Z CMD: locate gModalDirty and modal visibility setters
+
+- 2026-02-25T16:52:22Z CMD: inspect modal setter implementations
+
+- 2026-02-25T16:52:30Z CMD: find callsites of modal-dirty setters
+
+- 2026-02-25T16:53:05Z CMD: ./scripts/build.sh (modal dirty throttling fix)
+
+- 2026-02-25T16:53:21Z CMD: ./scripts/flash.sh (modal dirty throttling fix)
+
+- 2026-02-25T16:53:28Z CMD: tail PROJECT_STATE.md
+
+- 2026-02-25T16:53:40Z CMD: append PROJECT_STATE update for modal redraw throttling
+
+- 2026-02-25T17:03:21Z CMD: inspect popup draw functions and constants
+
+- 2026-02-25T17:03:26Z CMD: inspect buffer draw helpers
+
+- 2026-02-25T17:04:47Z CMD: ./scripts/build.sh (buffered help popup text blit)
+
+- 2026-02-25T17:05:03Z CMD: ./scripts/flash.sh (buffered help popup text blit)
+
+- 2026-02-25T17:05:12Z CMD: append PROJECT_STATE update for buffered help popup rendering
+
+- 2026-02-25T17:06:22Z CMD: inspect remaining help popup body and NEXT rendering
+
+- 2026-02-25T17:06:32Z CMD: inspect help NEXT touch handling
+
+- 2026-02-25T17:07:02Z CMD: ./scripts/build.sh (help NEXT button visibility)
+
+- 2026-02-25T17:07:16Z CMD: ./scripts/flash.sh (help NEXT button visibility)
+
+- 2026-02-25T17:07:23Z CMD: append PROJECT_STATE update for help NEXT button visibility
+
+- 2026-02-25T17:09:42Z CMD: ./scripts/build.sh (help NEXT overlap/draw-order fix)
+
+- 2026-02-25T17:09:55Z CMD: ./scripts/flash.sh (help NEXT overlap/draw-order fix)
+
+- 2026-02-25T17:10:05Z CMD: append PROJECT_STATE update for NEXT button overlap fix
+
+- 2026-02-25T17:10:58Z CMD: inspect settings popup + modal render path
+
+- 2026-02-25T17:11:07Z CMD: inspect settings touch handling block
+
+- 2026-02-25T17:11:44Z CMD: ./scripts/build.sh (settings overlay buffered text + draw-order)
+
+- 2026-02-25T17:12:03Z CMD: ./scripts/flash.sh (settings overlay buffered text + draw-order)
+
+- 2026-02-25T17:12:10Z CMD: append PROJECT_STATE update for settings buffered overlay
+
+- 2026-02-25T17:34:06Z CMD: inspect settings touch helpers and settings_visible branch
+
+- 2026-02-25T17:34:17Z CMD: inspect existing mode/run save logic to reuse for settings controls
+
+- 2026-02-25T17:35:49Z CMD: ./scripts/build.sh (fix unused DrawSettingsCloseOnlyOverlay and rebuild)
+
+- 2026-02-25T17:36:06Z CMD: ./scripts/flash.sh (restore full settings popup + handlers)
+
+- 2026-02-25T17:36:16Z CMD: ./scripts/build.sh (restore full settings popup + handlers) -> FAIL (unused DrawSettingsCloseOnlyOverlay)
+- 2026-02-25T17:36:26Z CMD: ./scripts/build.sh (restore full settings popup + handlers) -> FAIL (unused DrawSettingsCloseOnlyOverlay)
+- 2026-02-25T17:36:26Z CMD: patched gauge_render.c add __attribute__((unused)) to DrawSettingsCloseOnlyOverlay
+
+- 2026-02-25T17:42:05Z CMD: inspect modal open/close touch race around settings/help
+
+- 2026-02-25T17:42:11Z CMD: inspect exact lines around limits save call for argument correctness
+
+- 2026-02-25T17:42:33Z CMD: ./scripts/build.sh (fix modal immediate-close touch race)
+
+- 2026-02-25T17:42:49Z CMD: ./scripts/flash.sh (fix modal immediate-close touch race)
+
+- 2026-02-25T17:42:57Z CMD: append PROJECT_STATE update for modal open/close race fix
+
+- 2026-02-25T17:46:58Z CMD: ./scripts/build.sh (modal touch latch for settings/help/limits)
+
+- 2026-02-25T17:47:17Z CMD: ./scripts/flash.sh (modal touch latch for settings/help/limits)
+
+- 2026-02-25T17:47:25Z CMD: append PROJECT_STATE update for modal touch latch responsiveness fix
+
+- 2026-02-25T17:49:26Z CMD: ./scripts/build.sh (modal-specific press-edge tracking fix)
+
+- 2026-02-25T17:49:41Z CMD: ./scripts/flash.sh (modal-specific press-edge tracking fix)
+
+- 2026-02-25T17:49:51Z CMD: append PROJECT_STATE update for modal-specific edge tracking
+
+- 2026-02-25T17:57:16Z CMD: ./scripts/build.sh (settings responsiveness + speed + side-button flash fixes, AI default ON)
+
+- 2026-02-25T17:57:33Z CMD: ./scripts/flash.sh (settings responsiveness + speed + side-button flash fixes, AI default ON)
+
+- 2026-02-25T17:57:41Z CMD: append PROJECT_STATE update for settings speed/response and star-help flash fixes
+- 2026-02-25T18:06:37Z CMD: cp build bin to failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-25-R10.bin and failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R10.bin
+- 2026-02-25T18:07:22Z CMD: updated docs/START_HERE.md docs/OPS_RUNBOOK.md docs/PROJECT_STATE.md to set active baseline GOLDEN/FAILSAFE 2026-02-25-R10
+- 2026-02-25T18:07:22Z CMD: appended docs/PROJECT_STATE.md restore-point promotion entry for R10
+- 2026-02-25T18:07:28Z CMD: git status --short before R10 commit/tag

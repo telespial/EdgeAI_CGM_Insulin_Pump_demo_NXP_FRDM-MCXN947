@@ -3,8 +3,8 @@
 Last updated: 2026-02-25
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R8`
-- Failsafe: `FAILSAFE-2026-02-24-R8`
+- Golden: `GOLDEN-2026-02-25-R10`
+- Failsafe: `FAILSAFE-2026-02-25-R10`
 - Status: active
 
 ## Current Status
@@ -3226,3 +3226,405 @@ Last updated: 2026-02-25
   - `./scripts/build.sh` PASS
   - `./scripts/flash.sh` PASS
 - Result: `R8` is the active golden/failsafe restore baseline; popup bug remains tracked in `docs/TODO.md` pending final on-device validation.
+
+## Update 2026-02-25
+- Change: Fixed graph/timeline width mismatch and reduced unnecessary LIVE banner refreshes.
+  - `src/gauge_render.c`
+    - corrected timeline width alignment by changing `TIMELINE_X1` from `SCOPE_X + SCOPE_W` to `SCOPE_X + SCOPE_W - 1`
+    - removed timeline/LIVE strip drawing from `DrawScopeFrame()` so static scope frame no longer repaints the banner each frame
+    - timeline/LIVE strip remains rendered by `DrawScopeDynamic()` timeline change gate only (mode/state change driven)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: timeline background now aligns with graph width, and LIVE blue banner redraw is no longer tied to per-frame scope frame rendering.
+
+## Update 2026-02-25
+- Change: Adjusted scope plot width alignment and removed full-trace-cycle erase behavior.
+  - `src/gauge_render.c`
+    - widened scope plot region to align with scope interior/timeline framing (`px0 = SCOPE_X + 2`, `pw = SCOPE_W - 4`)
+    - removed full interior clear on write-head wrap; plot now overwrites old columns as head advances (continuous ring-buffer style)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: plot area should better match surrounding scope/timeline width and no longer blank on full-cycle wrap.
+
+## Update 2026-02-25
+- Change: Fixed missing scope plot introduced by width expansion.
+  - `src/gauge_render.c`
+    - increased `SCOPE_PLOT_CACHE_W` from `139` to `151` to match widened plot region (`pw = SCOPE_W - 4`)
+    - this removes the cache-bound early-return that blanked the plot area
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Notes:
+  - SRAM data usage increased to ~`87.04%` due larger scope plot cache.
+- Result: plot area should render again with the widened width and continuous overwrite behavior.
+
+## Update 2026-02-25
+- Change: Cleaned up persistent black remnant under scope graph strip.
+  - `src/gauge_render.c`
+    - scope legend strip under graph now restores pump background each frame (`BlitPumpBgRegion(...)`) and redraws labels deterministically
+    - removes stale black box remnants caused by prior legend redraw gating
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: under-graph area should no longer retain black remnant artifacts when UI layers refresh.
+
+## Update 2026-02-25
+- Change: Moved scope legend row (`AX AY AZ T GX GY GZ BP`) up to visually integrate with graph box.
+  - `src/gauge_render.c`
+    - legend baseline moved up by 2 px (`ly: SCOPE_Y + SCOPE_H + 1 -> SCOPE_Y + SCOPE_H - 1`)
+    - legend strip background restore start moved up accordingly
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: reduced visible gap between graph box and legend row.
+
+## Update 2026-02-25
+- Change: Re-aligned scope plot width to match LIVE banner interior width after remnant cleanup.
+  - `src/gauge_render.c`
+    - adjusted scope plot geometry to `px0 = SCOPE_X + 1` and `pw = SCOPE_W - 2`
+    - keeps plot rendering path and overwrite-on-wrap behavior unchanged
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: graph plot width should visually align with the LIVE box width again.
+
+## Update 2026-02-25
+- Change: Made AX/AY scope legend static and non-flashing with fixed black background.
+  - `src/gauge_render.c`
+    - added `DrawScopeLegendRow()` to render `AX AY AZ T GX GY GZ BP` with a fixed black strip
+    - moved legend draw to static dashboard path (`DrawStaticDashboard`) so it renders once per static refresh
+    - removed per-frame legend redraw block from `GaugeRender_DrawFrame`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: AX/AY legend row should no longer flash and keeps a stable black background.
+
+## Update 2026-02-25
+- Change: Fine-tuned static AX/AY legend position upward by an additional 2 px.
+  - `src/gauge_render.c`
+    - `DrawScopeLegendRow()` baseline moved from `SCOPE_Y + SCOPE_H - 1` to `SCOPE_Y + SCOPE_H - 3`
+    - legend black background strip start moved to match new baseline
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: legend sits tighter to the graph box with reduced vertical gap.
+
+## Update 2026-02-25
+- Change: Fixed AX/AY legend black bar overshoot on the right side of the display.
+  - `src/gauge_render.c`
+    - in `DrawScopeLegendRow()`, clamped legend background fill bounds to exact scope box width:
+      - from terminal bounds (`TERM_X .. TERM_X + TERM_W`)
+      - to scope bounds (`SCOPE_X .. SCOPE_X + SCOPE_W - 1`)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: AX/AY legend black background now lines up with the scope box right edge and no longer extends off-screen.
+
+## Update 2026-02-25
+- Change: Created a new pre-change restore baseline `R9` before popup flow modifications.
+  - artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-25-R9.bin`
+  - note:
+    - failsafe baseline remains `R8` per request (`FAILSAFE-2026-02-24-R8`)
+- Result: rollback point captured and available via `./tools/flash_failsafe.sh`.
+
+## Update 2026-02-25
+- Change: Modal transition behavior hardened for Settings/Help/Limits popup flow.
+  - `src/gauge_render.c`
+    - on modal open transition, force immediate full-screen black clear before popup render (`DrawPopupModalBase()`).
+    - on modal close transition, force full-screen black clear then redraw full dashboard (`DrawStaticDashboard(...)`).
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: popup mode now explicitly freezes regular UI refresh and performs deterministic clear-to-black/open and clear-to-dashboard/close transitions while background data processing continues.
+
+## Update 2026-02-25
+- Change: Reflashed current modal-popup build on request for device verification.
+- Verification:
+  - `./scripts/flash.sh` PASS
+- Result: board now running latest image with modal open/close clear behavior changes.
+
+## Update 2026-02-25
+- Change: Enforced strict popup display ownership while modal is open.
+  - `src/gauge_render.c`
+    - modal draw branch now always redraws full-screen black modal base and active popup every modal frame entry (settings/help/limits), instead of relying on dirty-state gating.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: popup interactions now consistently keep the dashboard frozen/hidden behind full black modal surface until close transition redraw.
+
+## Update 2026-02-25
+- Change: Implemented requested single-step settings modal behavior.
+  - `src/gauge_render.c`
+    - when settings modal is active, render full-screen black + only a touchable corner `X` (no settings panel/buttons/text).
+  - `src/edgeai_medical_device_demo.c`
+    - settings touch handling is now close-only: only the `X` hitbox closes settings; other settings touch targets are ignored.
+  - `src/gauge_render.h`
+    - added `GAUGE_RENDER_SETTINGS_CLOSE_X0..Y1` constants for shared corner-`X` hitbox geometry.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: pressing settings now freezes display updates, shows black screen with only `X`, and resumes normal dashboard redraw on close.
+
+## Update 2026-02-25
+- Change: Ensured modal blackout is actively rendered while settings modal is open.
+  - `src/edgeai_medical_device_demo.c`
+    - render loop now always calls `GaugeRender_DrawFrame(...)` on display ticks, including modal-active state.
+    - modal content remains display-owner via early-return modal branch in renderer, so normal dashboard updates stay paused.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: settings close-only `X` overlay should no longer appear transparent over visible dashboard.
+
+## Update 2026-02-25
+- Change: Extended close-only black modal behavior to both Settings and Help.
+  - `src/gauge_render.c`
+    - modal branch now shows the same full-black + corner `X` overlay when either settings or help is active.
+  - `src/edgeai_medical_device_demo.c`
+    - help touch handling is now close-only, matching settings (only `X` closes; no next/page interactions).
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: both `*` and `?` should now enter the same black modal with only corner `X`.
+
+## Update 2026-02-25
+- Change: Switched modal blackout renderer to per-line blit path.
+  - `src/gauge_render.c`
+    - `DrawPopupModalBase()` now writes full-screen black using line-by-line `par_lcd_s035_blit_rect(...)` with a static black scanline buffer.
+- Why:
+  - addresses persistent transparent-background behavior where corner `X` appeared over visible dashboard.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: modal black background should now fully overwrite prior UI for both settings/help close-only overlays.
+
+## Update 2026-02-25
+- Change: Addressed modal close redraw regressions and X flashing.
+  - `src/gauge_render.c`
+    - modal branch now redraws blackout/overlay only when modal state is dirty (not every frame), removing `X` flicker.
+    - `DrawAiSideButtons()` cache short-circuit removed so `*` and `?` are always redrawn after static/dashboard refreshes.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: `X` should stay stable while modal is open; `*`, `?`, and static UI elements (including battery frame) should reappear after close.
+
+## Update 2026-02-25
+- Change: Boot warmup now runs in background-only display mode until preroll completes.
+  - `src/gauge_render.c`
+    - `GaugeRender_DrawFrame(...)` now short-circuits to `DrawSpaceboxBackground()` when warmup-thinking is active (`gUiWarmupThinking`), with no UI overlays/graphics drawn.
+    - on warmup exit, renderer forces a full static dashboard rebuild before resuming normal updates.
+    - `GaugeRender_DrawGyroFast()` now also skips scope updates during warmup-thinking.
+  - `src/edgeai_medical_device_demo.c`
+    - if booting in LIVE mode, set warmup-thinking before first frame to avoid showing dashboard graphics during initial preroll.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: during first 4-hour preroll learning phase, only background image is displayed; full UI appears after preroll completion.
+
+## Update 2026-02-25
+- Change: Tightened boot warmup display and post-modal redraw behavior.
+  - `src/gauge_render.c`
+    - `GaugeRender_Init()` now draws background only (no pre-drawn dashboard graphics at boot).
+    - removed per-frame `DrawAiSideButtons()` dynamic redraw path to keep `*`/`?` stable.
+    - added `gForceBatteryRedraw` so battery frame/value is re-rendered after modal close and warmup transition.
+  - `src/edgeai_medical_device_demo.c`
+    - replay runtime clock now uses a relative timestamp origin (first playback sample) to avoid jumping elapsed display to large absolute times.
+    - playback-origin reset added on playback restart/reset paths.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result:
+  - no dashboard pre-draw at boot warmup,
+  - stable `*`/`?` (no continuous flash),
+  - battery static redraw restored after help/settings close,
+  - elapsed clock no longer jumps to absolute replay day/hour values.
+
+## Update 2026-02-25
+- Change: Corrected help/settings touch-open regression and elapsed-time progression.
+  - `src/edgeai_medical_device_demo.c`
+    - replay display time now advances via per-sample timestamp deltas from 0 (no absolute-day hour jump).
+    - added source-timestamp tracker reset on playback restart paths.
+  - `src/gauge_render.c`
+    - restored per-frame side-button redraw (`*`, `?`) in normal rendering path for reliable touch affordance visibility.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: help/settings buttons should respond again; elapsed time should progress from preroll handoff timeline instead of jumping to ~19h.
+
+## Update 2026-02-25
+- Change: Restored settings/help touch responsiveness with immediate-open path.
+  - `src/edgeai_medical_device_demo.c`
+    - if touch is inside `*` or `?` and no modal is active, modal now opens immediately (no dependency on edge-trigger latch state).
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: `*` and `?` should respond to touch and bring up the black close-only modal again.
+
+## Update 2026-02-25
+- Change: Re-enabled Help popup content and navigation.
+  - `src/gauge_render.c`
+    - modal branch now renders full `DrawHelpPopup()` for help mode (text + `NEXT PAGE` button).
+    - settings mode remains close-only black modal.
+  - `src/edgeai_medical_device_demo.c`
+    - help touch routing restored for `X` close, `NEXT PAGE`, and outside-panel close.
+    - help close hitbox restored to help-panel corner `X` geometry.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: Help now shows text and `NEXT`; Settings remains minimal close-only modal.
+
+## Update 2026-02-25
+- Change: Reduced help/settings popup open latency.
+  - `src/gauge_render.c`
+    - `DrawPopupModalBase()` now uses fast full-screen `par_lcd_s035_fill(RGB565(0,0,0))` instead of slow per-line blit loop.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: help popup should appear significantly faster (no slow serial-style text paint effect).
+
+## Update 2026-02-25
+- Change: Reverted most recent popup-base optimization to prior black-screen behavior.
+  - `src/gauge_render.c`
+    - `DrawPopupModalBase()` restored to line-by-line black blit implementation.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: device returned to previous modal-black rendering behavior before the last speed-only change.
+
+## Update 2026-02-25
+- Change: Fixed repeated modal redraw causing slow popup text rendering.
+  - `src/gauge_render.c`
+    - Added change-detection guards so `gModalDirty` is only set when values actually change in:
+      - `GaugeRender_SetLimitInfo`
+      - `GaugeRender_SetHelpVisible`
+      - `GaugeRender_SetHelpPage`
+      - `GaugeRender_SetSettingsVisible`
+      - `GaugeRender_SetLimitsVisible`
+      - `GaugeRender_SetLiveBannerMode`
+      - `GaugeRender_SetAiBackendNpu`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result: Help popup no longer repaints full text every frame; open/render latency should be substantially reduced.
+
+## Update 2026-02-25
+- Change: Switched Help popup text rendering to buffered line blits to remove slow character-by-character LCD writes.
+  - `src/gauge_render.c`
+    - Added `DrawPopupTextLineBuffered(...)`.
+    - `DrawHelpPopup()` now renders title/page label/help text and NEXT label via buffered blits.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Notes:
+  - This reduces LCD transactions during popup draw.
+  - Current RAM (`m_data`) is now ~93.11% due added line buffer; monitor for stability.
+
+## Update 2026-02-25
+- Change: Restored a clearly visible Help `NEXT PAGE` button.
+  - `src/gauge_render.c`
+    - Increased NEXT button contrast (green fill, bright edge/text).
+    - Kept existing NEXT hitbox and page-toggle behavior.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+
+## Update 2026-02-25
+- Change: Fixed black box overlap on Help `NEXT PAGE` button.
+  - `src/gauge_render.c`
+    - Moved NEXT button draw to the end of `DrawHelpPopup()` so lower help text/background blits cannot paint over it.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+
+## Update 2026-02-25
+- Change: Applied same buffered-popup render strategy to Settings overlay.
+  - `src/gauge_render.c`
+    - `DrawSettingsCloseOnlyOverlay()` now draws `SETTINGS` + close note using buffered text blits.
+    - Close `X` control is drawn last to prevent overlap artifacts.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+
+## Update 2026-02-25
+- Change: Restored full Settings popup and re-enabled settings button actions.
+  - `src/gauge_render.c`
+    - Modal branch now renders `DrawSettingsPopup()` (not close-only overlay).
+    - Marked `DrawSettingsCloseOnlyOverlay()` as unused helper to satisfy `-Werror`.
+  - `src/edgeai_medical_device_demo.c`
+    - Restored Settings touch handling for:
+      - AI mode ON/OFF
+      - RUN TRAIN/LIVE
+      - SENS LOOSE/NORM/STRICT
+      - AI backend MCU/NPU
+      - LIMITS open
+      - CLEAR FLASH confirm
+      - LOG HZ dec/inc
+      - outside-to-close
+    - Saves updated settings to flash via `SaveUiSettingsIfReady(...)`.
+- Verification:
+  - `./scripts/build.sh` FAIL once (unused-function warning)
+  - `./scripts/build.sh` PASS after fix
+  - `./scripts/flash.sh` PASS
+
+## Update 2026-02-25
+- Change: Fixed Settings/Help immediate close on open (tap race).
+  - `src/edgeai_medical_device_demo.c`
+    - Added `opened_modal_this_touch` guard so the same press that opens modal cannot also execute modal close/outside logic in that loop.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result:
+  - Settings no longer disappears immediately after opening from `*` tap.
+
+## Update 2026-02-25
+- Change: Improved modal button responsiveness with dedicated touch latch.
+  - `src/edgeai_medical_device_demo.c`
+    - Added `s_modal_touch_consumed`.
+    - Modal tap handling (Settings/Help/Limits) now processes one action per press-release cycle independent of `s_touch_was_down` edge timing.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result:
+  - Settings buttons should respond reliably to taps.
+
+## Update 2026-02-25
+- Change: Reworked modal touch handling to modal-specific edge detection.
+  - `src/edgeai_medical_device_demo.c`
+    - Replaced modal consumed-flag logic with `s_modal_touch_was_down` edge tracking.
+    - Modal actions now trigger on `modal_press_edge` while overlay is visible.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result:
+  - Settings buttons should react on tap; no dependency on main-screen touch edge state.
+
+## Update 2026-02-25
+- Change: Settings responsiveness + render speed + UI flash fixes.
+  - `src/edgeai_medical_device_demo.c`
+    - Boot default now forces AI ON (`ai_enabled = true`) even if persisted OFF.
+    - Settings interactions now call `GaugeRender_RequestModalRedraw()` after setting changes.
+  - `src/gauge_render.h`
+    - Added `GaugeRender_RequestModalRedraw()` API.
+  - `src/gauge_render.c`
+    - Added `GaugeRender_RequestModalRedraw()` implementation (`gModalDirty = true`).
+    - Settings popup button containers switched from rounded-pill renderer to fast rectangular renderer (`DrawButtonRectFast`) to reduce load latency.
+    - Added `gAiSideButtonsDirty` + state cache to avoid redrawing `*`/`?` every frame (reduces flashing).
+    - Side-button dirty flag now refreshes on static redraw and settings/help/limits visibility changes.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+
+## Update 2026-02-25
+- Change: Promoted current build as active Golden + Failsafe restore baseline `R10`.
+  - tags:
+    - `GOLDEN-2026-02-25-R10`
+    - `FAILSAFE-2026-02-25-R10`
+  - artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-25-R10.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R10.bin`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: `R10` is now the active golden/failsafe restore point set.

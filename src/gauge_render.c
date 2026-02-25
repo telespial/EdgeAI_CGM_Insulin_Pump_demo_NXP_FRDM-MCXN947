@@ -53,6 +53,9 @@ static bool gRecordStopRequest = false;
 static bool gClearFlashRequest = false;
 static bool gModalWasActive = false;
 static bool gModalDirty = true;
+static bool gAiSideButtonsDirty = true;
+static bool gWarmupBgOnlyShown = false;
+static bool gForceBatteryRedraw = true;
 static uint8_t gPlayheadPos = 99u;
 static bool gPlayheadValid = false;
 static int16_t gAccelXmg = 0;
@@ -213,7 +216,7 @@ enum
     CENTER_TEXT_CACHE_H = 40,
     RTC_TEXT_CACHE_W = 139,
     RTC_TEXT_CACHE_H = 18,
-    SCOPE_PLOT_CACHE_W = 139,
+    SCOPE_PLOT_CACHE_W = 151,
     SCOPE_PLOT_CACHE_H = 68,
     TIMELINE_CACHE_W = 152,
     TIMELINE_CACHE_H = 19,
@@ -1152,7 +1155,7 @@ enum
     ALERT_Y1 = 71,
     TIMELINE_X0 = SCOPE_X,
     TIMELINE_Y0 = 4,
-    TIMELINE_X1 = SCOPE_X + SCOPE_W,
+    TIMELINE_X1 = SCOPE_X + SCOPE_W - 1,
     TIMELINE_Y1 = SCOPE_Y - 2,
     REC_CONFIRM_X0 = 108,
     REC_CONFIRM_Y0 = 110,
@@ -1863,6 +1866,54 @@ static void DrawTerminalLineToBuffer(uint16_t *buf, int32_t buf_w, int32_t buf_h
     DrawTextUiToBuffer(x0, y_local, 1, clipped, color, buf, buf_w, buf_h);
 }
 
+static void DrawPopupTextLineBuffered(int32_t x,
+                                      int32_t y,
+                                      int32_t max_w,
+                                      int32_t scale,
+                                      const char *text,
+                                      uint16_t fg,
+                                      uint16_t bg)
+{
+    enum
+    {
+        POPUP_TEXT_LINE_BUF_W = 460,
+        POPUP_TEXT_LINE_BUF_H = 20
+    };
+    static uint16_t sPopupTextLineBuf[POPUP_TEXT_LINE_BUF_W * POPUP_TEXT_LINE_BUF_H];
+    int32_t w = max_w;
+    int32_t h = (7 * scale) + 2;
+    int32_t i;
+
+    if ((text == NULL) || (scale <= 0))
+    {
+        return;
+    }
+    if (w <= 0)
+    {
+        return;
+    }
+    if (w > POPUP_TEXT_LINE_BUF_W)
+    {
+        w = POPUP_TEXT_LINE_BUF_W;
+    }
+    if (h < 1)
+    {
+        h = 1;
+    }
+    if (h > POPUP_TEXT_LINE_BUF_H)
+    {
+        h = POPUP_TEXT_LINE_BUF_H;
+    }
+
+    for (i = 0; i < (w * h); i++)
+    {
+        sPopupTextLineBuf[i] = bg;
+    }
+
+    DrawTextUiToBuffer(0, 0, scale, text, fg, sPopupTextLineBuf, w, h);
+    BlitBufferToLcd(x, y, w, h, sPopupTextLineBuf, w, h);
+}
+
 static __attribute__((unused)) void DrawRing(int32_t cx, int32_t cy, int32_t r_outer, int32_t thickness, uint16_t ring, uint16_t inner)
 {
     par_lcd_s035_draw_filled_circle(cx, cy, r_outer, ring);
@@ -1984,45 +2035,31 @@ static void DrawSpaceboxBackground(void)
 
 static void DrawScopeFrame(const gauge_style_preset_t *style)
 {
-    int32_t ty;
-    int32_t lx0 = TIMELINE_X0;
-    int32_t mid = (TIMELINE_X0 + TIMELINE_X1) / 2;
-    int32_t lx1 = mid - 1;
-    int32_t rx0 = mid;
-    int32_t rx1 = TIMELINE_X1;
-
     (void)style;
     par_lcd_s035_fill_rect(SCOPE_X, SCOPE_Y, SCOPE_X + SCOPE_W - 1, SCOPE_Y + SCOPE_H - 1, RGB565(18, 3, 7));
     par_lcd_s035_fill_rect(SCOPE_X + 2, SCOPE_Y + 2, SCOPE_X + SCOPE_W - 3, SCOPE_Y + SCOPE_H - 3, RGB565(7, 10, 12));
-    par_lcd_s035_fill_rect(TIMELINE_X0 + 1, TIMELINE_Y0 + 1, TIMELINE_X1 - 1, TIMELINE_Y1 - 1, RGB565(20, 28, 34));
-    if (gLiveBannerMode)
-    {
-        par_lcd_s035_fill_rect(TIMELINE_X0 + 1, TIMELINE_Y0 + 1, TIMELINE_X1 - 1, TIMELINE_Y1 - 1, RGB565(22, 78, 112));
-        DrawLine(TIMELINE_X0 + 1, TIMELINE_Y0 + 2, TIMELINE_X1 - 1, TIMELINE_Y0 + 2, 1, RGB565(120, 220, 255));
-        DrawLine(TIMELINE_X0 + 1, TIMELINE_Y1 - 2, TIMELINE_X1 - 1, TIMELINE_Y1 - 2, 1, RGB565(70, 170, 220));
-        ty = TIMELINE_Y0 + ((TIMELINE_Y1 - TIMELINE_Y0 - 7) / 2);
-        DrawTextUi(TIMELINE_X0 + ((TIMELINE_X1 - TIMELINE_X0 + 1 - edgeai_text5x7_width(1, "LIVE")) / 2),
-                   ty,
-                   1,
-                   "LIVE",
-                   RGB565(192, 242, 255));
-    }
-    else
-    {
-        par_lcd_s035_fill_rect(lx0 + 1,
-                               TIMELINE_Y0 + 1,
-                               lx1 - 1,
-                               TIMELINE_Y1 - 1,
-                               gScopePaused ? RGB565(20, 180, 36) : RGB565(24, 82, 210));
-        par_lcd_s035_fill_rect(rx0 + 1, TIMELINE_Y0 + 1, rx1 - 1, TIMELINE_Y1 - 1, RGB565(220, 24, 24));
-        ty = TIMELINE_Y0 + ((TIMELINE_Y1 - TIMELINE_Y0 - 7) / 2);
-        DrawTextUi(lx0 + ((lx1 - lx0 + 1 - edgeai_text5x7_width(1, gScopePaused ? "PLAY" : "STOP")) / 2),
-                   ty,
-                   1,
-                   gScopePaused ? "PLAY" : "STOP",
-                   gScopePaused ? RGB565(232, 255, 232) : RGB565(210, 236, 255));
-        DrawTextUi(rx0 + ((rx1 - rx0 + 1 - edgeai_text5x7_width(1, "REC")) / 2), ty, 1, "REC", RGB565(255, 232, 232));
-    }
+}
+
+static void DrawScopeLegendRow(void)
+{
+    int32_t lx = SCOPE_X + 8;
+    int32_t ly = SCOPE_Y + SCOPE_H - 3;
+    par_lcd_s035_fill_rect(SCOPE_X, SCOPE_Y + SCOPE_H - 3, SCOPE_X + SCOPE_W - 1, TERM_Y - 1, RGB565(0, 0, 0));
+    DrawTextUi(lx, ly, 1, "AX", TRACE_AX_COLOR);
+    lx += edgeai_text5x7_width(1, "AX ");
+    DrawTextUi(lx, ly, 1, "AY", TRACE_AY_COLOR);
+    lx += edgeai_text5x7_width(1, "AY ");
+    DrawTextUi(lx, ly, 1, "AZ", TRACE_AZ_COLOR);
+    lx += edgeai_text5x7_width(1, "AZ ");
+    DrawTextUi(lx, ly, 1, "T", TRACE_TEMP_GREEN);
+    lx += edgeai_text5x7_width(1, "T ");
+    DrawTextUi(lx, ly, 1, "GX", TRACE_GX_COLOR);
+    lx += edgeai_text5x7_width(1, "GX ");
+    DrawTextUi(lx, ly, 1, "GY", TRACE_GY_COLOR);
+    lx += edgeai_text5x7_width(1, "GY ");
+    DrawTextUi(lx, ly, 1, "GZ", TRACE_GZ_COLOR);
+    lx += edgeai_text5x7_width(1, "GZ ");
+    DrawTextUi(lx, ly, 1, "BP", TRACE_BARO_COLOR);
 }
 
 static __attribute__((unused)) void DrawCenterWireBox(void)
@@ -2899,6 +2936,15 @@ static void DrawPillRect(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_
     DrawLine(x0, y1, x1, y1, 1, edge);
 }
 
+static void DrawButtonRectFast(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t fill, uint16_t edge)
+{
+    par_lcd_s035_fill_rect(x0, y0, x1, y1, fill);
+    par_lcd_s035_fill_rect(x0, y0, x1, y0, edge);
+    par_lcd_s035_fill_rect(x0, y1, x1, y1, edge);
+    par_lcd_s035_fill_rect(x0, y0, x0, y1, edge);
+    par_lcd_s035_fill_rect(x1, y0, x1, y1, edge);
+}
+
 static void DrawAiSideButtons(void)
 {
     int32_t set_cx = (AI_SET_X0 + AI_SET_X1) / 2;
@@ -2910,26 +2956,25 @@ static void DrawAiSideButtons(void)
     uint16_t help_fill = gHelpVisible ? RGB565(12, 64, 76) : RGB565(10, 44, 52);
     uint16_t help_txt = RGB565(176, 244, 255);
     uint16_t edge = RGB565(210, 214, 220);
-    static bool sButtonsInit = false;
+    static bool sInit = false;
     static bool sPrevSettingsVisible = false;
     static bool sPrevHelpVisible = false;
 
-    if (sButtonsInit &&
+    if (!gAiSideButtonsDirty && sInit &&
         (sPrevSettingsVisible == gSettingsVisible) &&
         (sPrevHelpVisible == gHelpVisible))
     {
         return;
     }
-
     DrawPillRect(AI_SET_X0, AI_SET_Y0, AI_SET_X1, AI_SET_Y1, set_fill, edge);
     DrawTextUiCrisp(set_cx - (edgeai_text5x7_width(2, "*") / 2), set_cy - 7, 2, "*", set_txt);
 
     DrawPillRect(AI_HELP_X0, AI_HELP_Y0, AI_HELP_X1, AI_HELP_Y1, help_fill, edge);
     DrawTextUiCrisp(help_cx - (edgeai_text5x7_width(2, "?") / 2), help_cy - 7, 2, "?", help_txt);
-
     sPrevSettingsVisible = gSettingsVisible;
     sPrevHelpVisible = gHelpVisible;
-    sButtonsInit = true;
+    sInit = true;
+    gAiSideButtonsDirty = false;
 }
 
 static void DrawPopupCloseButton(int32_t panel_x1, int32_t panel_y0)
@@ -2970,8 +3015,58 @@ static void DrawAdjustArrowIcon(int32_t x0, int32_t y0, int32_t w, int32_t h, bo
 
 static void DrawPopupModalBase(void)
 {
-    /* Modal backdrop: one full-screen black fill on modal state changes. */
-    par_lcd_s035_fill_rect(0, 0, PUMP_BG_WIDTH - 1, PUMP_BG_HEIGHT - 1, RGB565(0, 0, 0));
+    /* Deterministic full blackout path: line blit avoids large-rect fill artifacts. */
+    static uint16_t black_line[PUMP_BG_WIDTH];
+    static bool black_line_init = false;
+    int32_t y;
+
+    if (!black_line_init)
+    {
+        int32_t i;
+        for (i = 0; i < PUMP_BG_WIDTH; i++)
+        {
+            black_line[i] = RGB565(0, 0, 0);
+        }
+        black_line_init = true;
+    }
+
+    for (y = 0; y < PUMP_BG_HEIGHT; y++)
+    {
+        par_lcd_s035_blit_rect(0, y, PUMP_BG_WIDTH - 1, y, black_line);
+    }
+}
+
+static __attribute__((unused)) void DrawSettingsCloseOnlyOverlay(void)
+{
+    uint16_t fill = RGB565(150, 24, 24);
+    uint16_t edge = RGB565(255, 170, 170);
+    uint16_t xcol = RGB565(255, 244, 244);
+    uint16_t title = RGB565(220, 224, 230);
+    uint16_t note = RGB565(152, 158, 168);
+    uint16_t bg = RGB565(0, 0, 0);
+
+    DrawPopupTextLineBuffered(16, 14, 140, 2, "SETTINGS", title, bg);
+    DrawPopupTextLineBuffered(16, 34, 260, 1, "TAP X OR OUTSIDE TO CLOSE", note, bg);
+
+    /* Draw close control last so no text/background pass can overlap it. */
+    DrawPillRect(GAUGE_RENDER_SETTINGS_CLOSE_X0,
+                 GAUGE_RENDER_SETTINGS_CLOSE_Y0,
+                 GAUGE_RENDER_SETTINGS_CLOSE_X1,
+                 GAUGE_RENDER_SETTINGS_CLOSE_Y1,
+                 fill,
+                 edge);
+    DrawLine(GAUGE_RENDER_SETTINGS_CLOSE_X0 + 5,
+             GAUGE_RENDER_SETTINGS_CLOSE_Y0 + 5,
+             GAUGE_RENDER_SETTINGS_CLOSE_X1 - 5,
+             GAUGE_RENDER_SETTINGS_CLOSE_Y1 - 5,
+             1,
+             xcol);
+    DrawLine(GAUGE_RENDER_SETTINGS_CLOSE_X0 + 5,
+             GAUGE_RENDER_SETTINGS_CLOSE_Y1 - 5,
+             GAUGE_RENDER_SETTINGS_CLOSE_X1 - 5,
+             GAUGE_RENDER_SETTINGS_CLOSE_Y0 + 5,
+             1,
+             xcol);
 }
 
 static void DrawSettingsPopup(void)
@@ -3025,7 +3120,7 @@ static void DrawSettingsPopup(void)
         const char *t = (i == 0) ? "OFF" : "ON";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
-        DrawPillRect(bx0, by0, bx1, by1, f, edge);
+        DrawButtonRectFast(bx0, by0, bx1, by1, f, edge);
         DrawTextUi(bx0 + ((GAUGE_RENDER_SET_MODE_W - edgeai_text5x7_width(1, t)) / 2),
                    by0 + ((GAUGE_RENDER_SET_MODE_H - 7) / 2),
                    1,
@@ -3043,7 +3138,7 @@ static void DrawSettingsPopup(void)
         const char *t = (i == 0) ? "TRAIN" : "LIVE";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
-        DrawPillRect(bx0, by0, bx1, by1, f, edge);
+        DrawButtonRectFast(bx0, by0, bx1, by1, f, edge);
         DrawTextUi(bx0 + ((GAUGE_RENDER_SET_RUN_W - edgeai_text5x7_width(1, t)) / 2),
                    by0 + ((GAUGE_RENDER_SET_RUN_H - 7) / 2),
                    1,
@@ -3061,7 +3156,7 @@ static void DrawSettingsPopup(void)
         const char *t = (i == 0) ? "LOOSE" : (i == 1) ? "NORM" : "STRICT";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
-        DrawPillRect(bx0, by0, bx1, by1, f, edge);
+        DrawButtonRectFast(bx0, by0, bx1, by1, f, edge);
         DrawTextUi(bx0 + ((GAUGE_RENDER_SET_TUNE_W - edgeai_text5x7_width(1, t)) / 2),
                    by0 + ((GAUGE_RENDER_SET_TUNE_H - 7) / 2),
                    1,
@@ -3079,7 +3174,7 @@ static void DrawSettingsPopup(void)
         const char *t = (i == 0) ? "MCU" : "NPU";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
-        DrawPillRect(bx0, by0, bx1, by1, f, edge);
+        DrawButtonRectFast(bx0, by0, bx1, by1, f, edge);
         DrawTextUi(bx0 + ((GAUGE_RENDER_SET_AI_W - edgeai_text5x7_width(1, t)) / 2),
                    by0 + ((GAUGE_RENDER_SET_AI_H - 7) / 2),
                    1,
@@ -3093,7 +3188,7 @@ static void DrawSettingsPopup(void)
         int32_t bx1 = bx0 + GAUGE_RENDER_SET_LIMIT_BTN_W - 1;
         int32_t by1 = by0 + GAUGE_RENDER_SET_LIMIT_BTN_H - 1;
         const char *t = "OPEN LIMITS";
-        DrawPillRect(bx0, by0, bx1, by1, button_idle, edge);
+        DrawButtonRectFast(bx0, by0, bx1, by1, button_idle, edge);
         DrawTextUi(bx0 + ((GAUGE_RENDER_SET_LIMIT_BTN_W - edgeai_text5x7_width(1, t)) / 2),
                    by0 + ((GAUGE_RENDER_SET_LIMIT_BTN_H - 7) / 2),
                    1,
@@ -3110,7 +3205,7 @@ static void DrawSettingsPopup(void)
         uint32_t capacity_count = 0u;
         uint32_t usage_pct = 0u;
         const char *t = "CLEAR FLASH";
-        DrawPillRect(bx0, by0, bx1, by1, RGB565(58, 18, 18), edge);
+        DrawButtonRectFast(bx0, by0, bx1, by1, RGB565(58, 18, 18), edge);
         DrawTextUi(bx0 + ((GAUGE_RENDER_SET_CLEAR_BTN_W - edgeai_text5x7_width(1, t)) / 2),
                    by0 + ((GAUGE_RENDER_SET_CLEAR_BTN_H - 7) / 2),
                    1,
@@ -3149,15 +3244,15 @@ static void DrawSettingsPopup(void)
 
         snprintf(log_rate_line, sizeof(log_rate_line), "%uHZ", (unsigned int)gLogRateHz);
 
-        DrawPillRect(dec_x0, by0, dec_x1, by1, button_idle, edge);
+        DrawButtonRectFast(dec_x0, by0, dec_x1, by1, button_idle, edge);
         DrawAdjustArrowIcon(dec_x0, by0, GAUGE_RENDER_SET_LOG_DEC_W, GAUGE_RENDER_SET_LOG_H, false, body);
-        DrawPillRect(val_x0, by0, val_x1, by1, button_selected, edge);
+        DrawButtonRectFast(val_x0, by0, val_x1, by1, button_selected, edge);
         DrawTextUi(val_x0 + ((GAUGE_RENDER_SET_LOG_VAL_W - edgeai_text5x7_width(1, log_rate_line)) / 2),
                    by0 + ((GAUGE_RENDER_SET_LOG_H - 7) / 2),
                    1,
                    log_rate_line,
                    text_selected);
-        DrawPillRect(inc_x0, by0, inc_x1, by1, button_idle, edge);
+        DrawButtonRectFast(inc_x0, by0, inc_x1, by1, button_idle, edge);
         DrawAdjustArrowIcon(inc_x0, by0, GAUGE_RENDER_SET_LOG_INC_W, GAUGE_RENDER_SET_LOG_H, true, body);
     }
 
@@ -3278,7 +3373,11 @@ static void DrawHelpPopup(void)
     uint16_t edge = RGB565(52, 54, 58);
     uint16_t body = RGB565(214, 215, 217);
     uint16_t dim = RGB565(150, 152, 156);
-    uint16_t btn_idle = RGB565(26, 27, 31);
+    uint16_t btn_idle = RGB565(34, 64, 24);
+    uint16_t btn_edge = RGB565(178, 246, 166);
+    uint16_t btn_text = RGB565(236, 255, 226);
+    int32_t text_w = (x1 - x0) - 20;
+    uint16_t head = RGB565(210, 234, 255);
 
     par_lcd_s035_fill_rect(x0 - 3, y0 - 3, x1 + 3, y1 + 3, RGB565(0, 0, 0));
     par_lcd_s035_fill_rect(x0, y0, x1, y1, panel);
@@ -3286,60 +3385,62 @@ static void DrawHelpPopup(void)
     DrawLine(x0, y1, x1, y1, 2, edge);
     DrawLine(x0, y0, x0, y1, 2, edge);
     DrawLine(x1, y0, x1, y1, 2, edge);
-    DrawTextUi(x0 + 10, y0 + 8, 2, "HELP", body);
-    DrawTextUi(x0 + 318, y0 + 12, 1, (gHelpPage == 0u) ? "PAGE 1 OF 2" : "PAGE 2 OF 2", dim);
+    DrawPopupTextLineBuffered(x0 + 10, y0 + 8, 84, 2, "HELP", body, panel);
+    DrawPopupTextLineBuffered(x0 + 318, y0 + 12, 120, 1, (gHelpPage == 0u) ? "PAGE 1 OF 2" : "PAGE 2 OF 2", dim, panel);
     DrawPopupCloseButton(x1, y0);
+    if (gHelpPage == 0u)
+    {
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 42, text_w, 1, "QUICK START", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 56, text_w, 1, "STAR OPENS SETTINGS  HELP KEY OPENS NEXT PAGE", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 70, text_w, 1, "SYSTEM AUTO-CLASSIFIES TRANSPORT AND HUMAN EFFORT", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 84, text_w, 1, "TRN ROW SHOWS MODE FOOT SKATE SCOOT BIKE CAR AIR", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 98, text_w, 1, "ACT ARC SHOWS EFFORT LEVEL REST THROUGH HEAVY", body, panel);
+
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 118, text_w, 1, "MAIN SCREEN CONTROL", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 132, text_w, 1, "TOP LEFT PLAY STOP", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 146, text_w, 1, "TOP RIGHT RECORD TRAINING DATA", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 160, text_w, 1, "RECORD AND STOP REQUIRE CONFIRM DIALOG", body, panel);
+
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 180, text_w, 1, "DOSE RECOMMENDATION", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 194, text_w, 1, "DOS USES ACTIVITY TRANSPORT BG TREND AND IOB", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 208, text_w, 1, "DOS VALUE IS RECOMMENDED BASAL U PER HOUR", body, panel);
+
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 228, text_w, 1, "SIMULATION NOTICE", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 242, text_w, 1, "CGM DATA IN THIS DEMO IS SIMULATED", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 256, text_w, 1, "DOSING RESPONSE IS ALSO SIMULATED", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 264, text_w, 1, "TAP X OR OUTSIDE TO CLOSE", dim, panel);
+    }
+    else
+    {
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 42, text_w, 1, "DEEP DIVE", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 56, text_w, 1, "TRANSPORT MODE FROM ACCEL GYRO BARO RATE FUSION", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 70, text_w, 1, "CAR AIR MODES REDUCE FALSE EFFORT FROM VIBRATION", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 84, text_w, 1, "EFFORT OUTPUT FEEDS ACT ARC AND STATUS COLOR", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 98, text_w, 1, "BG TREND IS MG DL PER MIN FROM SLOW GLUCOSE MODEL", body, panel);
+
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 118, text_w, 1, "THRESHOLDS", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 132, text_w, 1, "IOB DECAYS OVER ABOUT FOUR HOURS FOR SAFETY", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 146, text_w, 1, "LOW BG OR FALLING TREND REDUCES DOSE RECOMMEND", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 160, text_w, 1, "HIGH BG OR RISING TREND INCREASES RECOMMEND", body, panel);
+
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 180, text_w, 1, "INTEGRATION NOTES", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 194, text_w, 1, "THIS DEMO GENERATES A SAFE RECOMMENDATION SIGNAL", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 208, text_w, 1, "PUMP RATE TRACKS MOTOR PULSES FOR VISUAL CONSISTENCY", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 222, text_w, 1, "CLINICAL USE REQUIRES VERIFIED CGM AND SAFETY LOGIC", body, panel);
+
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 242, text_w, 1, "UI TIP", head, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 256, text_w, 1, "TAP HELP KEY AGAIN TO RETURN TO PAGE 1", body, panel);
+        DrawPopupTextLineBuffered(x0 + 12, y0 + 264, text_w, 1, "TAP X OR OUTSIDE TO CLOSE", dim, panel);
+    }
+
+    /* Draw NEXT last so no later help text/background blit can overlap it. */
     DrawPillRect(GAUGE_RENDER_HELP_NEXT_X0,
                  GAUGE_RENDER_HELP_NEXT_Y0,
                  GAUGE_RENDER_HELP_NEXT_X1,
                  GAUGE_RENDER_HELP_NEXT_Y1,
                  btn_idle,
-                 edge);
-    DrawTextUi(GAUGE_RENDER_HELP_NEXT_X0 + 18, GAUGE_RENDER_HELP_NEXT_Y0 + 9, 1, "NEXT PAGE", body);
-    if (gHelpPage == 0u)
-    {
-        DrawTextUi(x0 + 12, y0 + 42, 1, "QUICK START", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 56, 1, "STAR OPENS SETTINGS  HELP KEY OPENS NEXT PAGE", body);
-        DrawTextUi(x0 + 12, y0 + 70, 1, "SYSTEM AUTO-CLASSIFIES TRANSPORT AND HUMAN EFFORT", body);
-        DrawTextUi(x0 + 12, y0 + 84, 1, "TRN ROW SHOWS MODE FOOT SKATE SCOOT BIKE CAR AIR", body);
-        DrawTextUi(x0 + 12, y0 + 98, 1, "ACT ARC SHOWS EFFORT LEVEL REST THROUGH HEAVY", body);
-
-        DrawTextUi(x0 + 12, y0 + 118, 1, "MAIN SCREEN CONTROL", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 132, 1, "TOP LEFT PLAY STOP", body);
-        DrawTextUi(x0 + 12, y0 + 146, 1, "TOP RIGHT RECORD TRAINING DATA", body);
-        DrawTextUi(x0 + 12, y0 + 160, 1, "RECORD AND STOP REQUIRE CONFIRM DIALOG", body);
-
-        DrawTextUi(x0 + 12, y0 + 180, 1, "DOSE RECOMMENDATION", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 194, 1, "DOS USES ACTIVITY TRANSPORT BG TREND AND IOB", body);
-        DrawTextUi(x0 + 12, y0 + 208, 1, "DOS VALUE IS RECOMMENDED BASAL U PER HOUR", body);
-
-        DrawTextUi(x0 + 12, y0 + 228, 1, "SIMULATION NOTICE", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 242, 1, "CGM DATA IN THIS DEMO IS SIMULATED", body);
-        DrawTextUi(x0 + 12, y0 + 256, 1, "DOSING RESPONSE IS ALSO SIMULATED", body);
-        DrawTextUi(x0 + 12, y0 + 264, 1, "TAP X OR OUTSIDE TO CLOSE", dim);
-    }
-    else
-    {
-        DrawTextUi(x0 + 12, y0 + 42, 1, "DEEP DIVE", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 56, 1, "TRANSPORT MODE FROM ACCEL GYRO BARO RATE FUSION", body);
-        DrawTextUi(x0 + 12, y0 + 70, 1, "CAR AIR MODES REDUCE FALSE EFFORT FROM VIBRATION", body);
-        DrawTextUi(x0 + 12, y0 + 84, 1, "EFFORT OUTPUT FEEDS ACT ARC AND STATUS COLOR", body);
-        DrawTextUi(x0 + 12, y0 + 98, 1, "BG TREND IS MG DL PER MIN FROM SLOW GLUCOSE MODEL", body);
-
-        DrawTextUi(x0 + 12, y0 + 118, 1, "THRESHOLDS", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 132, 1, "IOB DECAYS OVER ABOUT FOUR HOURS FOR SAFETY", body);
-        DrawTextUi(x0 + 12, y0 + 146, 1, "LOW BG OR FALLING TREND REDUCES DOSE RECOMMEND", body);
-        DrawTextUi(x0 + 12, y0 + 160, 1, "HIGH BG OR RISING TREND INCREASES RECOMMEND", body);
-
-        DrawTextUi(x0 + 12, y0 + 180, 1, "INTEGRATION NOTES", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 194, 1, "THIS DEMO GENERATES A SAFE RECOMMENDATION SIGNAL", body);
-        DrawTextUi(x0 + 12, y0 + 208, 1, "PUMP RATE TRACKS MOTOR PULSES FOR VISUAL CONSISTENCY", body);
-        DrawTextUi(x0 + 12, y0 + 222, 1, "CLINICAL USE REQUIRES VERIFIED CGM AND SAFETY LOGIC", body);
-
-        DrawTextUi(x0 + 12, y0 + 242, 1, "UI TIP", RGB565(210, 234, 255));
-        DrawTextUi(x0 + 12, y0 + 256, 1, "TAP HELP KEY AGAIN TO RETURN TO PAGE 1", body);
-        DrawTextUi(x0 + 12, y0 + 264, 1, "TAP X OR OUTSIDE TO CLOSE", dim);
-    }
+                 btn_edge);
+    DrawPopupTextLineBuffered(GAUGE_RENDER_HELP_NEXT_X0 + 12, GAUGE_RENDER_HELP_NEXT_Y0 + 9, 84, 1, "NEXT PAGE", btn_text, btn_idle);
 }
 
 static void DrawTerminalFrame(const gauge_style_preset_t *style)
@@ -3736,7 +3837,7 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
     static bool sBattInit = false;
     static uint8_t sPrevBattSoc = 0xFFu;
 
-    if (sBattInit && (sPrevBattSoc == soc))
+    if (!gForceBatteryRedraw && sBattInit && (sPrevBattSoc == soc))
     {
         return;
     }
@@ -3763,13 +3864,14 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
     DrawTextUi(text_x_lbl, text_y_lbl, 1, "BATT", style->palette.text_secondary);
     sPrevBattSoc = soc;
     sBattInit = true;
+    gForceBatteryRedraw = false;
 }
 
 static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
 {
-    int32_t px0 = SCOPE_X + 6;
+    int32_t px0 = SCOPE_X + 1;
     int32_t py0 = SCOPE_Y + 18;
-    int32_t pw = SCOPE_W - 12;
+    int32_t pw = SCOPE_W - 2;
     int32_t ph = SCOPE_H - 24;
     uint16_t axis_color = RGB565(120, 120, 128);
     uint16_t n = (gTraceCount < SCOPE_TRACE_POINTS) ? gTraceCount : SCOPE_TRACE_POINTS;
@@ -3880,7 +3982,7 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
 
         if (sScopeWriteX >= (pw - 1))
         {
-            BufFillRect(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, 1, 1, pw - 2, ph - 2, RGB565(4, 6, 8));
+            /* Wrap write-head without full-screen wipe; overwrite old columns as head advances. */
             sScopeWriteX = 1;
             sPrevPlotValid = false;
         }
@@ -4256,6 +4358,7 @@ static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_
     int32_t rtc_x;
     (void)profile;
 
+    gAiSideButtonsDirty = true;
     DrawSpaceboxBackground();
     DrawTextUi(2, 0, 1, "(c)RICHARD HABERKERN", style->palette.text_secondary);
 
@@ -4276,6 +4379,7 @@ static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_
 
     DrawBatteryIndicatorFrame(style);
     DrawScopeFrame(style);
+    DrawScopeLegendRow();
     DrawTerminalFrame(style);
     DrawAiPill(style, false);
     DrawAiSideButtons();
@@ -4283,14 +4387,11 @@ static void DrawStaticDashboard(const gauge_style_preset_t *style, power_replay_
 
 bool GaugeRender_Init(void)
 {
-    const gauge_style_preset_t *style;
-
     gLcdReady = par_lcd_s035_init();
     if (gLcdReady)
     {
-        style = GaugeStyle_GetCockpitPreset();
-        DrawStaticDashboard(style, POWER_REPLAY_PROFILE_WIRED);
-        gStaticReady = true;
+        DrawSpaceboxBackground();
+        gStaticReady = false;
         gDynamicReady = false;
         PrefillScopeTraceFromReplayWindow();
         gFrameCounter = 0u;
@@ -4325,6 +4426,7 @@ bool GaugeRender_Init(void)
         gMagCalMaxY = 0;
         gMagCalMinZ = 0;
         gMagCalMaxZ = 0;
+        gForceBatteryRedraw = true;
     }
     return gLcdReady;
 }
@@ -4421,12 +4523,36 @@ void GaugeRender_SetLimitInfo(uint16_t g_warn_mg,
                               int16_t temp_high_c10,
                               uint16_t gyro_limit_dps)
 {
-    gLimitGWarnMg = g_warn_mg;
-    gLimitGFailMg = g_fail_mg;
-    gLimitTempLowC10 = temp_low_c10;
-    gLimitTempHighC10 = temp_high_c10;
-    gLimitGyroDps = gyro_limit_dps;
-    gModalDirty = true;
+    bool changed = false;
+    if (gLimitGWarnMg != g_warn_mg)
+    {
+        gLimitGWarnMg = g_warn_mg;
+        changed = true;
+    }
+    if (gLimitGFailMg != g_fail_mg)
+    {
+        gLimitGFailMg = g_fail_mg;
+        changed = true;
+    }
+    if (gLimitTempLowC10 != temp_low_c10)
+    {
+        gLimitTempLowC10 = temp_low_c10;
+        changed = true;
+    }
+    if (gLimitTempHighC10 != temp_high_c10)
+    {
+        gLimitTempHighC10 = temp_high_c10;
+        changed = true;
+    }
+    if (gLimitGyroDps != gyro_limit_dps)
+    {
+        gLimitGyroDps = gyro_limit_dps;
+        changed = true;
+    }
+    if (changed)
+    {
+        gModalDirty = true;
+    }
 }
 
 void GaugeRender_SetAnomalyInfo(uint8_t mode,
@@ -4452,19 +4578,32 @@ void GaugeRender_SetAnomalyInfo(uint8_t mode,
 
 void GaugeRender_SetHelpVisible(bool visible)
 {
+    bool changed = (gHelpVisible != visible);
     gHelpVisible = visible;
-    gModalDirty = true;
     if (visible)
     {
+        if (gSettingsVisible || gLimitsVisible)
+        {
+            changed = true;
+        }
         gSettingsVisible = false;
         gLimitsVisible = false;
+    }
+    if (changed)
+    {
+        gModalDirty = true;
+        gAiSideButtonsDirty = true;
     }
 }
 
 void GaugeRender_SetHelpPage(uint8_t page)
 {
-    gHelpPage = (page > 1u) ? 1u : page;
-    gModalDirty = true;
+    uint8_t new_page = (page > 1u) ? 1u : page;
+    if (gHelpPage != new_page)
+    {
+        gHelpPage = new_page;
+        gModalDirty = true;
+    }
 }
 
 void GaugeRender_NextHelpPage(void)
@@ -4475,23 +4614,41 @@ void GaugeRender_NextHelpPage(void)
 
 void GaugeRender_SetSettingsVisible(bool visible)
 {
+    bool changed = (gSettingsVisible != visible);
     gSettingsVisible = visible;
-    gModalDirty = true;
     if (visible)
     {
+        if (gHelpVisible || gLimitsVisible)
+        {
+            changed = true;
+        }
         gHelpVisible = false;
         gLimitsVisible = false;
+    }
+    if (changed)
+    {
+        gModalDirty = true;
+        gAiSideButtonsDirty = true;
     }
 }
 
 void GaugeRender_SetLimitsVisible(bool visible)
 {
+    bool changed = (gLimitsVisible != visible);
     gLimitsVisible = visible;
-    gModalDirty = true;
     if (visible)
     {
+        if (gHelpVisible || gSettingsVisible)
+        {
+            changed = true;
+        }
         gHelpVisible = false;
         gSettingsVisible = false;
+    }
+    if (changed)
+    {
+        gModalDirty = true;
+        gAiSideButtonsDirty = true;
     }
 }
 
@@ -4502,8 +4659,11 @@ bool GaugeRender_IsLimitsVisible(void)
 
 void GaugeRender_SetLiveBannerMode(bool enabled)
 {
-    gLiveBannerMode = enabled;
-    gModalDirty = true;
+    if (gLiveBannerMode != enabled)
+    {
+        gLiveBannerMode = enabled;
+        gModalDirty = true;
+    }
 }
 
 bool GaugeRender_IsLiveBannerMode(void)
@@ -4513,8 +4673,11 @@ bool GaugeRender_IsLiveBannerMode(void)
 
 void GaugeRender_SetAiBackendNpu(bool use_npu)
 {
-    gUiAiBackendNpu = use_npu;
-    gModalDirty = true;
+    if (gUiAiBackendNpu != use_npu)
+    {
+        gUiAiBackendNpu = use_npu;
+        gModalDirty = true;
+    }
 }
 
 void GaugeRender_SetWarmupThinking(bool enabled)
@@ -4618,7 +4781,7 @@ void GaugeRender_DrawGyroFast(void)
     {
         return;
     }
-    if (gHelpVisible || gSettingsVisible || gLimitsVisible || gRecordConfirmActive)
+    if (gUiWarmupThinking || gHelpVisible || gSettingsVisible || gLimitsVisible || gRecordConfirmActive)
     {
         return;
     }
@@ -4643,14 +4806,34 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     style = GaugeStyle_GetCockpitPreset();
     power_w = DisplayPowerW(sample);
     modal_active = (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive);
+
+    if (gUiWarmupThinking)
+    {
+        if (!gWarmupBgOnlyShown)
+        {
+            DrawSpaceboxBackground();
+            gWarmupBgOnlyShown = true;
+        }
+        gModalWasActive = modal_active;
+        return;
+    }
+    if (gWarmupBgOnlyShown)
+    {
+        gWarmupBgOnlyShown = false;
+        gStaticReady = false;
+        gDynamicReady = false;
+        gForceBatteryRedraw = true;
+    }
     if (modal_active && !gModalWasActive)
     {
+        DrawPopupModalBase();
         gModalDirty = true;
     }
 
     if (gModalWasActive && !modal_active)
     {
-        /* Modal just closed: redraw static background to clear any stale overlay pixels. */
+        /* Modal just closed: force full clear, then redraw dashboard from base. */
+        par_lcd_s035_fill_rect(0, 0, PUMP_BG_WIDTH - 1, PUMP_BG_HEIGHT - 1, RGB565(0, 0, 0));
         DrawStaticDashboard(style, profile);
         gStaticReady = true;
         gDynamicReady = false;
@@ -4667,6 +4850,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gCenterTextCacheValid = false;
         gRtcTextCacheValid = false;
         gForceOrientRefresh = true;
+        gForceBatteryRedraw = true;
     }
 
     if (!gStaticReady)
@@ -4704,21 +4888,24 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
 
     if (gSettingsVisible || gHelpVisible || gLimitsVisible)
     {
+        /* Modal view owns the display and is static until modal state changes. */
         if (gModalDirty)
         {
             DrawPopupModalBase();
-            DrawAiSideButtons();
             if (gSettingsVisible)
             {
                 DrawSettingsPopup();
             }
-            if (gHelpVisible)
+            else
             {
-                DrawHelpPopup();
-            }
-            if (gLimitsVisible)
-            {
-                DrawLimitsPopup();
+                if (gHelpVisible)
+                {
+                    DrawHelpPopup();
+                }
+                if (gLimitsVisible)
+                {
+                    DrawLimitsPopup();
+                }
             }
             gModalDirty = false;
         }
@@ -4773,34 +4960,6 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     DrawScopeDynamic(style, ai_enabled);
     gDynamicReady = true;
 
-    {
-        static bool sLegendInit = false;
-        static uint16_t sLastLegendTempColor = 0u;
-        int32_t lx = SCOPE_X + 8;
-        int32_t ly = SCOPE_Y + SCOPE_H + 1;
-        uint16_t t_color = TempTraceColorFromC10(DisplayTempC10(sample));
-        if ((!sLegendInit) || (sLastLegendTempColor != t_color))
-        {
-            par_lcd_s035_fill_rect(TERM_X, SCOPE_Y + SCOPE_H + 1, TERM_X + TERM_W, TERM_Y - 1, RGB565(2, 3, 5));
-            DrawTextUi(lx, ly, 1, "AX", TRACE_AX_COLOR);
-            lx += edgeai_text5x7_width(1, "AX ");
-            DrawTextUi(lx, ly, 1, "AY", TRACE_AY_COLOR);
-            lx += edgeai_text5x7_width(1, "AY ");
-            DrawTextUi(lx, ly, 1, "AZ", TRACE_AZ_COLOR);
-            lx += edgeai_text5x7_width(1, "AZ ");
-            DrawTextUi(lx, ly, 1, "T", t_color);
-            lx += edgeai_text5x7_width(1, "T ");
-            DrawTextUi(lx, ly, 1, "GX", TRACE_GX_COLOR);
-            lx += edgeai_text5x7_width(1, "GX ");
-            DrawTextUi(lx, ly, 1, "GY", TRACE_GY_COLOR);
-            lx += edgeai_text5x7_width(1, "GY ");
-            DrawTextUi(lx, ly, 1, "GZ", TRACE_GZ_COLOR);
-            lx += edgeai_text5x7_width(1, "GZ ");
-            DrawTextUi(lx, ly, 1, "BP", TRACE_BARO_COLOR);
-            sLastLegendTempColor = t_color;
-            sLegendInit = true;
-        }
-    }
     DrawHumanOrientationPointer(style);
     if (!(gSettingsVisible || gHelpVisible || gLimitsVisible))
     {
@@ -5020,4 +5179,9 @@ bool GaugeRender_ConsumeClearFlashRequest(void)
     bool requested = gClearFlashRequest;
     gClearFlashRequest = false;
     return requested;
+}
+
+void GaugeRender_RequestModalRedraw(void)
+{
+    gModalDirty = true;
 }

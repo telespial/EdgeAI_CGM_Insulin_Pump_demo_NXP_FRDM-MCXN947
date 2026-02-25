@@ -124,6 +124,7 @@
 static gt911_handle_t s_touch_handle;
 static bool s_touch_ready = false;
 static bool s_touch_was_down = false;
+static bool s_modal_touch_was_down = false;
 static uint32_t s_touch_recover_backoff = 0u;
 static bool s_timebase_ready = false;
 static uint32_t s_timebase_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ;
@@ -3187,7 +3188,7 @@ static bool TouchInAiHelp(int32_t x, int32_t y)
            (y >= GAUGE_RENDER_AI_HELP_Y0) && (y <= GAUGE_RENDER_AI_HELP_Y1);
 }
 
-static bool TouchInSettingsPanel(int32_t x, int32_t y)
+static bool __attribute__((unused)) TouchInSettingsPanel(int32_t x, int32_t y)
 {
     return (x >= GAUGE_RENDER_SET_PANEL_X0) && (x <= GAUGE_RENDER_SET_PANEL_X1) &&
            (y >= GAUGE_RENDER_SET_PANEL_Y0) && (y <= GAUGE_RENDER_SET_PANEL_Y1);
@@ -3201,11 +3202,8 @@ static bool TouchInHelpPanel(int32_t x, int32_t y)
 
 static bool TouchInSettingsClose(int32_t x, int32_t y)
 {
-    int32_t bx1 = GAUGE_RENDER_SET_PANEL_X1 - 8;
-    int32_t bx0 = bx1 - 22;
-    int32_t by0 = GAUGE_RENDER_SET_PANEL_Y0 + 8;
-    int32_t by1 = by0 + 22;
-    return (x >= bx0) && (x <= bx1) && (y >= by0) && (y <= by1);
+    return (x >= GAUGE_RENDER_SETTINGS_CLOSE_X0) && (x <= GAUGE_RENDER_SETTINGS_CLOSE_X1) &&
+           (y >= GAUGE_RENDER_SETTINGS_CLOSE_Y0) && (y <= GAUGE_RENDER_SETTINGS_CLOSE_Y1);
 }
 
 static bool TouchInHelpClose(int32_t x, int32_t y)
@@ -3223,7 +3221,7 @@ static bool TouchInHelpNext(int32_t x, int32_t y)
            (y >= GAUGE_RENDER_HELP_NEXT_Y0) && (y <= GAUGE_RENDER_HELP_NEXT_Y1);
 }
 
-static bool TouchInSettingsModeIndex(int32_t x, int32_t y, uint8_t idx)
+static bool __attribute__((unused)) TouchInSettingsModeIndex(int32_t x, int32_t y, uint8_t idx)
 {
     int32_t x0 = GAUGE_RENDER_SET_MODE_X0 + (int32_t)idx * (GAUGE_RENDER_SET_MODE_W + GAUGE_RENDER_SET_MODE_GAP);
     int32_t x1 = x0 + GAUGE_RENDER_SET_MODE_W - 1;
@@ -3232,7 +3230,7 @@ static bool TouchInSettingsModeIndex(int32_t x, int32_t y, uint8_t idx)
     return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
 }
 
-static bool TouchInSettingsRunIndex(int32_t x, int32_t y, uint8_t idx)
+static bool __attribute__((unused)) TouchInSettingsRunIndex(int32_t x, int32_t y, uint8_t idx)
 {
     int32_t x0 = GAUGE_RENDER_SET_RUN_X0 + (int32_t)idx * (GAUGE_RENDER_SET_RUN_W + GAUGE_RENDER_SET_RUN_GAP);
     int32_t x1 = x0 + GAUGE_RENDER_SET_RUN_W - 1;
@@ -3241,7 +3239,7 @@ static bool TouchInSettingsRunIndex(int32_t x, int32_t y, uint8_t idx)
     return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
 }
 
-static bool TouchInSettingsTuneIndex(int32_t x, int32_t y, uint8_t idx)
+static bool __attribute__((unused)) TouchInSettingsTuneIndex(int32_t x, int32_t y, uint8_t idx)
 {
     int32_t x0 = GAUGE_RENDER_SET_TUNE_X0 + (int32_t)idx * (GAUGE_RENDER_SET_TUNE_W + GAUGE_RENDER_SET_TUNE_GAP);
     int32_t x1 = x0 + GAUGE_RENDER_SET_TUNE_W - 1;
@@ -3250,7 +3248,7 @@ static bool TouchInSettingsTuneIndex(int32_t x, int32_t y, uint8_t idx)
     return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
 }
 
-static bool TouchInSettingsAiIndex(int32_t x, int32_t y, uint8_t idx)
+static bool __attribute__((unused)) TouchInSettingsAiIndex(int32_t x, int32_t y, uint8_t idx)
 {
     int32_t x0 = GAUGE_RENDER_SET_AI_X0 + (int32_t)idx * (GAUGE_RENDER_SET_AI_W + GAUGE_RENDER_SET_AI_GAP);
     int32_t x1 = x0 + GAUGE_RENDER_SET_AI_W - 1;
@@ -3259,7 +3257,7 @@ static bool TouchInSettingsAiIndex(int32_t x, int32_t y, uint8_t idx)
     return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
 }
 
-static bool TouchInSettingsLimitsButton(int32_t x, int32_t y)
+static bool __attribute__((unused)) TouchInSettingsLimitsButton(int32_t x, int32_t y)
 {
     int32_t x0 = GAUGE_RENDER_SET_LIMIT_BTN_X0;
     int32_t x1 = x0 + GAUGE_RENDER_SET_LIMIT_BTN_W - 1;
@@ -3268,7 +3266,7 @@ static bool TouchInSettingsLimitsButton(int32_t x, int32_t y)
     return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
 }
 
-static bool TouchInSettingsClearButton(int32_t x, int32_t y)
+static bool __attribute__((unused)) TouchInSettingsClearButton(int32_t x, int32_t y)
 {
     int32_t x0 = GAUGE_RENDER_SET_CLEAR_BTN_X0;
     int32_t x1 = x0 + GAUGE_RENDER_SET_CLEAR_BTN_W - 1;
@@ -3277,7 +3275,7 @@ static bool TouchInSettingsClearButton(int32_t x, int32_t y)
     return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
 }
 
-static bool TouchInSettingsLogDec(int32_t x, int32_t y)
+static bool __attribute__((unused)) TouchInSettingsLogDec(int32_t x, int32_t y)
 {
     int32_t x0 = GAUGE_RENDER_SET_LOG_DEC_X0;
     int32_t x1 = x0 + GAUGE_RENDER_SET_LOG_DEC_W - 1;
@@ -3286,7 +3284,7 @@ static bool TouchInSettingsLogDec(int32_t x, int32_t y)
     return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
 }
 
-static bool TouchInSettingsLogInc(int32_t x, int32_t y)
+static bool __attribute__((unused)) TouchInSettingsLogInc(int32_t x, int32_t y)
 {
     int32_t x0 = GAUGE_RENDER_SET_LOG_INC_X0;
     int32_t x1 = x0 + GAUGE_RENDER_SET_LOG_INC_W - 1;
@@ -3307,7 +3305,7 @@ static uint8_t ClampLogRateHz(uint8_t hz)
     return 10u;
 }
 
-static uint8_t NextLogRateHz(uint8_t hz, bool increase)
+static uint8_t __attribute__((unused)) NextLogRateHz(uint8_t hz, bool increase)
 {
     uint32_t count = (uint32_t)(sizeof(k_log_rate_options) / sizeof(k_log_rate_options[0]));
     uint32_t idx = 0u;
@@ -3628,6 +3626,8 @@ int main(void)
     bool playback_warmup_complete = false;
     bool playback_run_complete = false;
     bool playback_prev_ts_valid = false;
+    bool playback_prev_src_ts_valid = false;
+    uint32_t playback_prev_src_ts_ds = 0u;
     uint32_t playback_prev_ts_ds = 0u;
     uint32_t playback_period_us = RECPLAY_TICK_PERIOD_US;
     uint32_t playback_rt_anchor_ds = 0u;
@@ -3748,7 +3748,8 @@ int main(void)
             saved_gyro_limit_dps = 2000u;
         }
         saved_log_rate_hz = ClampLogRateHz(saved_log_rate_hz);
-        ai_enabled = saved_ai;
+        /* Force default AI ON at boot even if previous persisted setting was OFF. */
+        ai_enabled = true;
         ai_use_npu = saved_ai_backend_npu;
         s_limit_g_warn_mg = saved_g_warn_mg;
         s_limit_g_fail_mg = saved_g_fail_mg;
@@ -3763,7 +3764,7 @@ int main(void)
                (unsigned int)saved_mode,
                (unsigned int)saved_tune,
                saved_run_live ? 1u : 0u,
-               saved_ai ? 1u : 0u,
+               ai_enabled ? 1u : 0u,
                saved_ai_backend_npu ? "NPU" : "MCU",
                (unsigned int)s_limit_g_warn_mg,
                (unsigned int)s_limit_g_fail_mg,
@@ -3821,6 +3822,11 @@ int main(void)
                              s_limit_temp_hi_c10,
                              s_limit_gyro_dps);
     GaugeRender_SetRecordMode(false);
+    if (GaugeRender_IsLiveBannerMode())
+    {
+        /* Boot into preroll visual mode: background-only until warmup handoff logic finalizes. */
+        GaugeRender_SetWarmupThinking(true);
+    }
     memset(&s_anom_out, 0, sizeof(s_anom_out));
     AnomalyEngine_GetOutput(&s_anom_out);
     GaugeRender_SetAnomalyInfo((uint8_t)s_anom_out.mode,
@@ -3846,6 +3852,7 @@ int main(void)
         playback_run_complete = false;
         ConfigurePlaybackWarmup(playback_active, GaugeRender_IsLiveBannerMode(), &playback_warmup_active, &playback_warmup_complete);
         playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
         playback_period_us = RECPLAY_TICK_PERIOD_US;
         runtime_elapsed_ds = 0u;
         runtime_displayed_ds = UINT32_MAX;
@@ -3871,6 +3878,9 @@ int main(void)
         bool pressed = TouchGetPoint(&tx, &ty);
         bool in_set;
         bool in_help;
+        bool opened_modal_this_touch = false;
+        bool modal_overlay_visible = (help_visible || settings_visible || limits_visible);
+        bool modal_press_edge = false;
         bool timeline_changed = GaugeRender_HandleTouch(tx, ty, pressed);
         bool record_start_request;
         bool record_stop_request;
@@ -3911,8 +3921,57 @@ int main(void)
             in_help = false;
         }
 
-        if (pressed && !s_touch_was_down && !modal_active &&
-            (!ui_block_touch || help_visible || settings_visible || limits_visible))
+        if (modal_overlay_visible)
+        {
+            modal_press_edge = pressed && !s_modal_touch_was_down;
+            s_modal_touch_was_down = pressed;
+        }
+        else
+        {
+            s_modal_touch_was_down = false;
+        }
+
+        /* Immediate open path for top-row modal buttons.
+         * Avoid depending on edge-trigger state that can miss taps on some touch scans. */
+        if (pressed && !modal_active && !help_visible && !settings_visible && !limits_visible)
+        {
+            bool opened_modal = false;
+            if (in_set)
+            {
+                settings_visible = true;
+                help_visible = false;
+                limits_visible = false;
+                GaugeRender_SetHelpVisible(false);
+                GaugeRender_SetLimitsVisible(false);
+                GaugeRender_SetSettingsVisible(true);
+                opened_modal = true;
+                opened_modal_this_touch = true;
+            }
+            else if (in_help)
+            {
+                help_visible = true;
+                settings_visible = false;
+                limits_visible = false;
+                GaugeRender_SetSettingsVisible(false);
+                GaugeRender_SetLimitsVisible(false);
+                GaugeRender_SetHelpPage(0u);
+                GaugeRender_SetHelpVisible(true);
+                opened_modal = true;
+                opened_modal_this_touch = true;
+                PRINTF("UI_HELP,ON\r\n");
+            }
+            if (opened_modal && lcd_ok)
+            {
+                GaugeRender_DrawFrame(GetFrameSample(), ai_enabled, PowerData_GetReplayProfile());
+            }
+        }
+
+        if (pressed &&
+            !opened_modal_this_touch &&
+            !modal_active &&
+            (!ui_block_touch || modal_overlay_visible) &&
+            ((modal_overlay_visible && modal_press_edge) ||
+             (!modal_overlay_visible && !s_touch_was_down)))
         {
             bool redraw_ui = false;
 
@@ -3977,225 +4036,128 @@ int main(void)
             }
             else if (settings_visible)
             {
-                bool handled_setting = false;
-
+                bool settings_changed = false;
                 if (TouchInSettingsClose(tx, ty))
                 {
                     settings_visible = false;
                     GaugeRender_SetSettingsVisible(false);
                     redraw_ui = true;
-                    handled_setting = true;
+                }
+                else if (TouchInSettingsModeIndex(tx, ty, 0u))
+                {
+                    ai_enabled = false;
+                    PowerData_SetAiAssistEnabled(ai_enabled);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsModeIndex(tx, ty, 1u))
+                {
+                    ai_enabled = true;
+                    PowerData_SetAiAssistEnabled(ai_enabled);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsRunIndex(tx, ty, 0u))
+                {
+                    GaugeRender_SetLiveBannerMode(false);
+                    ConfigurePlaybackWarmup(playback_active,
+                                            GaugeRender_IsLiveBannerMode(),
+                                            &playback_warmup_active,
+                                            &playback_warmup_complete);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsRunIndex(tx, ty, 1u))
+                {
+                    GaugeRender_SetLiveBannerMode(true);
+                    ConfigurePlaybackWarmup(playback_active,
+                                            GaugeRender_IsLiveBannerMode(),
+                                            &playback_warmup_active,
+                                            &playback_warmup_complete);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsTuneIndex(tx, ty, 0u))
+                {
+                    AnomalyEngine_SetTune(ANOMALY_TUNE_LOOSE);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsTuneIndex(tx, ty, 1u))
+                {
+                    AnomalyEngine_SetTune(ANOMALY_TUNE_NORMAL);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsTuneIndex(tx, ty, 2u))
+                {
+                    AnomalyEngine_SetTune(ANOMALY_TUNE_STRICT);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsAiIndex(tx, ty, 0u))
+                {
+                    ai_use_npu = false;
+                    GaugeRender_SetAiBackendNpu(ai_use_npu);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsAiIndex(tx, ty, 1u))
+                {
+                    ai_use_npu = true;
+                    GaugeRender_SetAiBackendNpu(ai_use_npu);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsLimitsButton(tx, ty))
+                {
+                    settings_visible = false;
+                    limits_visible = true;
+                    GaugeRender_SetSettingsVisible(false);
+                    GaugeRender_SetLimitsVisible(true);
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsClearButton(tx, ty))
+                {
+                    GaugeRender_RequestClearFlashConfirm();
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsLogDec(tx, ty))
+                {
+                    s_log_rate_hz = NextLogRateHz(s_log_rate_hz, false);
+                    GaugeRender_SetLogRateHz(s_log_rate_hz);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (TouchInSettingsLogInc(tx, ty))
+                {
+                    s_log_rate_hz = NextLogRateHz(s_log_rate_hz, true);
+                    GaugeRender_SetLogRateHz(s_log_rate_hz);
+                    settings_changed = true;
+                    redraw_ui = true;
+                }
+                else if (!TouchInSettingsPanel(tx, ty))
+                {
+                    settings_visible = false;
+                    GaugeRender_SetSettingsVisible(false);
+                    redraw_ui = true;
                 }
 
-                for (uint8_t i = 0u; i < 2u; i++)
+                if (settings_changed)
                 {
-                    if (!handled_setting && TouchInSettingsModeIndex(tx, ty, i))
-                    {
-                        ai_enabled = (i == 1u);
-                        PowerData_SetAiAssistEnabled(ai_enabled);
-                        handled_setting = true;
-                        redraw_ui = true;
-                        PRINTF("AI_ENABLE,%s\r\n", ai_enabled ? "ON" : "OFF");
-                        SaveUiSettingsIfReady(ext_flash_ok,
-                                              anom_mode,
-                                              AnomalyEngine_GetTune(),
-                                              GaugeRender_IsLiveBannerMode(),
-                                              ai_enabled,
-                                              ai_use_npu,
-                                              s_limit_g_warn_mg,
-                                              s_limit_g_fail_mg,
-                                              s_limit_temp_lo_c10,
-                                              s_limit_temp_hi_c10,
-                                              s_limit_gyro_dps,
-                                              s_log_rate_hz);
-                        break;
-                    }
-                }
-
-                if (!handled_setting)
-                {
-                    for (uint8_t i = 0u; i < 2u; i++)
-                    {
-                        if (TouchInSettingsRunIndex(tx, ty, i))
-                        {
-                            bool run_live = (i == 1u);
-                            GaugeRender_SetLiveBannerMode(run_live);
-                            if (run_live)
-                            {
-                                GaugeRender_SetRecordMode(false);
-                                AnomalyEngine_StopTraining();
-                                train_armed_idle = false;
-                                playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
-                                playback_cgm_index = 0u;
-                                playback_run_complete = false;
-                                ConfigurePlaybackWarmup(playback_active, true, &playback_warmup_active, &playback_warmup_complete);
-                                playback_prev_ts_valid = false;
-                                playback_period_us = RECPLAY_TICK_PERIOD_US;
-                            }
-                            else
-                            {
-                                train_armed_idle = (anom_mode == ANOMALY_MODE_TRAINED_MONITOR);
-                                playback_active = ext_flash_ok && ExtFlashRecorder_StartPlayback();
-                                playback_cgm_index = 0u;
-                                playback_run_complete = false;
-                                ConfigurePlaybackWarmup(playback_active, false, &playback_warmup_active, &playback_warmup_complete);
-                                playback_prev_ts_valid = false;
-                                playback_period_us = RECPLAY_TICK_PERIOD_US;
-                            }
-                            handled_setting = true;
-                            redraw_ui = true;
-                            PRINTF("RUN_MODE,%s\r\n", run_live ? "LIVE" : "TRAIN");
-                            SaveUiSettingsIfReady(ext_flash_ok,
-                                                  anom_mode,
-                                                  AnomalyEngine_GetTune(),
-                                                  run_live,
-                                                  ai_enabled,
-                                                  ai_use_npu,
-                                                  s_limit_g_warn_mg,
-                                                  s_limit_g_fail_mg,
-                                                  s_limit_temp_lo_c10,
-                                                  s_limit_temp_hi_c10,
-                                                  s_limit_gyro_dps,
-                                                  s_log_rate_hz);
-                            break;
-                        }
-                    }
-                }
-
-                if (!handled_setting)
-                {
-                    for (uint8_t i = 0u; i < 3u; i++)
-                    {
-                        if (TouchInSettingsTuneIndex(tx, ty, i))
-                        {
-                            AnomalyEngine_SetTune((anomaly_tune_t)i);
-                            handled_setting = true;
-                            redraw_ui = true;
-                            PRINTF("ANOM_TUNE,%u\r\n", (unsigned int)i);
-                            anom_tune = AnomalyEngine_GetTune();
-                            SaveUiSettingsIfReady(ext_flash_ok,
-                                                  anom_mode,
-                                                  anom_tune,
-                                                  GaugeRender_IsLiveBannerMode(),
-                                                  ai_enabled,
-                                                  ai_use_npu,
-                                                  s_limit_g_warn_mg,
-                                                  s_limit_g_fail_mg,
-                                                  s_limit_temp_lo_c10,
-                                                  s_limit_temp_hi_c10,
-                                                  s_limit_gyro_dps,
-                                                  s_log_rate_hz);
-                            break;
-                        }
-                    }
-                }
-
-                if (!handled_setting)
-                {
-                    if (TouchInSettingsLogDec(tx, ty) || TouchInSettingsLogInc(tx, ty))
-                    {
-                        bool increase = TouchInSettingsLogInc(tx, ty);
-                        s_log_rate_hz = NextLogRateHz(s_log_rate_hz, increase);
-                        GaugeRender_SetLogRateHz(s_log_rate_hz);
-                        handled_setting = true;
-                        redraw_ui = true;
-                        PRINTF("LOG_RATE,%uHz\r\n", (unsigned int)s_log_rate_hz);
-                        SaveUiSettingsIfReady(ext_flash_ok,
-                                              anom_mode,
-                                              AnomalyEngine_GetTune(),
-                                              GaugeRender_IsLiveBannerMode(),
-                                              ai_enabled,
-                                              ai_use_npu,
-                                              s_limit_g_warn_mg,
-                                              s_limit_g_fail_mg,
-                                              s_limit_temp_lo_c10,
-                                              s_limit_temp_hi_c10,
-                                              s_limit_gyro_dps,
-                                              s_log_rate_hz);
-                    }
-                }
-
-                if (!handled_setting)
-                {
-                    if (TouchInSettingsAiIndex(tx, ty, 0u))
-                    {
-                        ai_use_npu = false;
-                        GaugeRender_SetAiBackendNpu(ai_use_npu);
-                        settings_visible = false;
-                        GaugeRender_SetSettingsVisible(false);
-                        handled_setting = true;
-                        redraw_ui = true;
-                        PRINTF("AI_SET,MCU\r\n");
-                        SaveUiSettingsIfReady(ext_flash_ok,
-                                              anom_mode,
-                                              AnomalyEngine_GetTune(),
-                                              GaugeRender_IsLiveBannerMode(),
-                                              ai_enabled,
-                                              ai_use_npu,
-                                              s_limit_g_warn_mg,
-                                              s_limit_g_fail_mg,
-                                              s_limit_temp_lo_c10,
-                                              s_limit_temp_hi_c10,
-                                              s_limit_gyro_dps,
-                                              s_log_rate_hz);
-                    }
-                    else if (TouchInSettingsAiIndex(tx, ty, 1u))
-                    {
-                        ai_use_npu = true;
-                        GaugeRender_SetAiBackendNpu(ai_use_npu);
-                        settings_visible = false;
-                        GaugeRender_SetSettingsVisible(false);
-                        handled_setting = true;
-                        redraw_ui = true;
-                        PRINTF("AI_SET,NPU\r\n");
-                        SaveUiSettingsIfReady(ext_flash_ok,
-                                              anom_mode,
-                                              AnomalyEngine_GetTune(),
-                                              GaugeRender_IsLiveBannerMode(),
-                                              ai_enabled,
-                                              ai_use_npu,
-                                              s_limit_g_warn_mg,
-                                              s_limit_g_fail_mg,
-                                              s_limit_temp_lo_c10,
-                                              s_limit_temp_hi_c10,
-                                              s_limit_gyro_dps,
-                                              s_log_rate_hz);
-                    }
-                }
-
-                if (!handled_setting)
-                {
-                    if (TouchInSettingsLimitsButton(tx, ty))
-                    {
-                        handled_setting = true;
-                        redraw_ui = true;
-                        settings_visible = false;
-                        limits_visible = true;
-                        GaugeRender_SetSettingsVisible(false);
-                        GaugeRender_SetLimitsVisible(true);
-                    }
-                }
-
-                if (!handled_setting)
-                {
-                    if (TouchInSettingsClearButton(tx, ty))
-                    {
-                        handled_setting = true;
-                        redraw_ui = true;
-                        settings_visible = false;
-                        GaugeRender_SetSettingsVisible(false);
-                        GaugeRender_RequestClearFlashConfirm();
-                    }
-                }
-
-                if (!handled_setting)
-                {
-                    if (in_set || !TouchInSettingsPanel(tx, ty))
-                    {
-                        settings_visible = false;
-                        GaugeRender_SetSettingsVisible(false);
-                        redraw_ui = true;
-                    }
+                    GaugeRender_RequestModalRedraw();
+                    SaveUiSettingsIfReady(ext_flash_ok,
+                                          anom_mode,
+                                          AnomalyEngine_GetTune(),
+                                          GaugeRender_IsLiveBannerMode(),
+                                          ai_enabled,
+                                          ai_use_npu,
+                                          s_limit_g_warn_mg,
+                                          s_limit_g_fail_mg,
+                                          s_limit_temp_lo_c10,
+                                          s_limit_temp_hi_c10,
+                                          s_limit_gyro_dps,
+                                          s_log_rate_hz);
                 }
 
                 if (redraw_ui)
@@ -4259,6 +4221,7 @@ int main(void)
                                     &playback_warmup_active,
                                     &playback_warmup_complete);
             playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
             playback_period_us = RECPLAY_TICK_PERIOD_US;
             runtime_elapsed_ds = 0u;
             runtime_displayed_ds = UINT32_MAX;
@@ -4282,6 +4245,7 @@ int main(void)
                 playback_run_complete = false;
                 ConfigurePlaybackWarmup(false, false, &playback_warmup_active, &playback_warmup_complete);
                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                 train_armed_idle = false;
                 runtime_elapsed_ds = 0u;
@@ -4308,6 +4272,7 @@ int main(void)
                                         &playback_warmup_active,
                                         &playback_warmup_complete);
                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                 train_armed_idle = (anom_mode == ANOMALY_MODE_TRAINED_MONITOR);
                 runtime_elapsed_ds = 0u;
@@ -4344,6 +4309,7 @@ int main(void)
             playback_active = false;
             ConfigurePlaybackWarmup(false, false, &playback_warmup_active, &playback_warmup_complete);
             playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
             playback_period_us = RECPLAY_TICK_PERIOD_US;
             GaugeRender_SetPlayhead(99u, false);
             runtime_elapsed_ds = 0u;
@@ -4379,6 +4345,7 @@ int main(void)
                                         &playback_warmup_active,
                                         &playback_warmup_complete);
                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                 runtime_elapsed_ds = 0u;
                 runtime_displayed_ds = UINT32_MAX;
@@ -4401,6 +4368,7 @@ int main(void)
                 playback_run_complete = false;
                 ConfigurePlaybackWarmup(false, false, &playback_warmup_active, &playback_warmup_complete);
                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                 runtime_elapsed_ds = 0u;
                 rec_elapsed_ds = 0u;
@@ -4541,6 +4509,7 @@ int main(void)
                 GaugeRender_SetWarmupThinking(false);
                 GaugeRender_PrimePredictionScore();
                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                 PRINTF("AI_WARMUP: force_complete at %u ds from display timeline\r\n",
                        (unsigned int)runtime_displayed_ds);
@@ -4741,7 +4710,22 @@ int main(void)
                         {
                             uint16_t ch;
                             uint8_t cm, cs, cds;
-                            uint32_t play_ds = playback_sample.ts_ds;
+                            uint32_t play_ds;
+                            if (!playback_prev_src_ts_valid)
+                            {
+                                play_ds = (runtime_displayed_ds == UINT32_MAX) ? 0u : runtime_displayed_ds;
+                            }
+                            else
+                            {
+                                uint32_t delta_ds = 1u;
+                                if (playback_sample.ts_ds > playback_prev_src_ts_ds)
+                                {
+                                    delta_ds = playback_sample.ts_ds - playback_prev_src_ts_ds;
+                                }
+                                play_ds = (runtime_displayed_ds == UINT32_MAX) ? delta_ds : (runtime_displayed_ds + delta_ds);
+                            }
+                            playback_prev_src_ts_ds = playback_sample.ts_ds;
+                            playback_prev_src_ts_valid = true;
                             if ((runtime_displayed_ds != UINT32_MAX) && (play_ds < runtime_displayed_ds))
                             {
                                 /* Avoid display-clock stalls on duplicate/non-monotonic replay timestamps. */
@@ -4759,6 +4743,7 @@ int main(void)
                                 PRINTF("AI_WARMUP: complete at %u ds, switching to full-run scoring\r\n",
                                        (unsigned int)play_ds);
                                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                                 break;
                             }
@@ -4806,6 +4791,7 @@ int main(void)
                             GaugeRender_PrimePredictionScore();
                             GaugeRender_SetPlayhead(100u, true);
                             playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                             playback_period_us = RECPLAY_TICK_PERIOD_US;
                             PRINTF("EXT_FLASH_PLAY: complete_final_score_hold\r\n");
                         }
@@ -4823,6 +4809,7 @@ int main(void)
                                 runtime_displayed_ds = UINT32_MAX;
                                 GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
                                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                                 PRINTF("EXT_FLASH_PLAY: loop_restart\r\n");
                             }
@@ -4859,6 +4846,7 @@ int main(void)
                     runtime_displayed_ds = UINT32_MAX;
                     GaugeRender_SetRuntimeClock(0u, 0u, 0u, 0u, true);
                     playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                     playback_period_us = RECPLAY_TICK_PERIOD_US;
                     PRINTF("EXT_FLASH_PLAY: retry_restart\r\n");
                 }
@@ -4880,6 +4868,7 @@ int main(void)
                 playback_run_complete = false;
                 ConfigurePlaybackWarmup(playback_active, true, &playback_warmup_active, &playback_warmup_complete);
                 playback_prev_ts_valid = false;
+                playback_prev_src_ts_valid = false;
                 playback_period_us = RECPLAY_TICK_PERIOD_US;
                 AnomalyEngine_StopTraining();
                 SaveUiSettingsIfReady(ext_flash_ok,
@@ -4929,10 +4918,7 @@ int main(void)
         if (lcd_ok && (render_tick_accum_us >= DISPLAY_REFRESH_PERIOD_US))
         {
             render_tick_accum_us -= DISPLAY_REFRESH_PERIOD_US;
-            if (!modal_active_now)
-            {
-                GaugeRender_DrawFrame(GetFrameSample(), ai_enabled, PowerData_GetReplayProfile());
-            }
+            GaugeRender_DrawFrame(GetFrameSample(), ai_enabled, PowerData_GetReplayProfile());
         }
 
         DelayUsByTimebase(TOUCH_POLL_DELAY_US);

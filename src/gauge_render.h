@@ -25,6 +25,10 @@
 #define GAUGE_RENDER_SET_PANEL_Y0 32
 #define GAUGE_RENDER_SET_PANEL_X1 440
 #define GAUGE_RENDER_SET_PANEL_Y1 304
+#define GAUGE_RENDER_SETTINGS_CLOSE_X0 448
+#define GAUGE_RENDER_SETTINGS_CLOSE_Y0 8
+#define GAUGE_RENDER_SETTINGS_CLOSE_X1 472
+#define GAUGE_RENDER_SETTINGS_CLOSE_Y1 32
 #define GAUGE_RENDER_SET_MODE_X0 166
 #define GAUGE_RENDER_SET_MODE_Y0 54
 #define GAUGE_RENDER_SET_MODE_W 96
@@ -134,5 +138,6 @@ bool GaugeRender_ConsumeRecordStartRequest(void);
 bool GaugeRender_ConsumeRecordStopRequest(void);
 void GaugeRender_RequestClearFlashConfirm(void);
 bool GaugeRender_ConsumeClearFlashRequest(void);
+void GaugeRender_RequestModalRedraw(void);
 
 #endif

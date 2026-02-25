@@ -1,6 +1,6 @@
 # Operations Runbook
 
-Last updated: 2026-02-24
+Last updated: 2026-02-25
 
 ## One-Time Bootstrap (Ubuntu User-Local)
 
@@ -29,15 +29,15 @@ Safe direct flash:
 ## Restore Points
 
 Current baseline:
-- Golden: `GOLDEN-2026-02-24-R7`
-- Failsafe: `FAILSAFE-2026-02-24-R7`
+- Golden: `GOLDEN-2026-02-25-R10`
+- Failsafe: `FAILSAFE-2026-02-25-R10`
 
 Artifacts:
-- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R7.bin`
-- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-25-R10.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R10.bin`
 
 Restore command (direct):
-- `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin`
+- `./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R10.bin`
 
 ## State Updates
 
