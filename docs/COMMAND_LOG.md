@@ -1862,3 +1862,4 @@ Format:
 - 2026-02-25T18:07:22Z CMD: updated docs/START_HERE.md docs/OPS_RUNBOOK.md docs/PROJECT_STATE.md to set active baseline GOLDEN/FAILSAFE 2026-02-25-R10
 - 2026-02-25T18:07:22Z CMD: appended docs/PROJECT_STATE.md restore-point promotion entry for R10
 - 2026-02-25T18:07:28Z CMD: git status --short before R10 commit/tag
+- 2026-02-25T18:07:45Z CMD: git add src/docs + force-add failsafe R10 artifacts; git commit -m "Promote R10 golden/failsafe restore points and persist modal UI fixes"; git tag -f GOLDEN-2026-02-25-R10 FAILSAFE-2026-02-25-R10; git push origin main and both tags
