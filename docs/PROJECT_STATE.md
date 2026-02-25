@@ -1,10 +1,10 @@
 # Project State
 
-Last updated: 2026-02-24
+Last updated: 2026-02-25
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-24-R7`
-- Failsafe: `FAILSAFE-2026-02-24-R7`
+- Golden: `GOLDEN-2026-02-24-R8`
+- Failsafe: `FAILSAFE-2026-02-24-R8`
 - Status: active
 
 ## Current Status
@@ -2933,3 +2933,296 @@ Last updated: 2026-02-24
 - Change: Synchronized local README.md to latest remote version from origin/main via checkout of tracked file.
 - Command: git fetch origin main && git checkout origin/main -- README.md
 - Result: ok
+
+## Update 2026-02-24
+- Change: Created pre-change restore checkpoint before any CGM display pipeline modifications.
+- Restore refs:
+  - Tag: `restore-cgm-20260224-192316`
+  - Branch: `restore/cgm-20260224-192316`
+  - Commit: `3c62fc2`
+- Recovery commands:
+  - `git checkout restore/cgm-20260224-192316`
+  - or `git checkout restore-cgm-20260224-192316`
+- Result: ready
+
+## Update 2026-02-24
+- Change: Implemented buffered atomic redraw for high-flicker CGM text regions.
+  - `src/gauge_render.c`
+    - added center glucose/prediction text cache (RAM compose from pump background + text, then blit)
+    - added RTC strip cache (RAM compose + blit) to avoid direct clear-then-draw flashing
+    - invalidates caches when static dashboard/modal transitions force background redraw
+  - `src/text5x7.c`, `src/text5x7.h`
+    - added `edgeai_text5x7_draw_scaled_to_buffer(...)` for RGB565 offscreen text composition
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added buffered atomic redraw for graph-heavy dynamic regions to further reduce visible flashing.
+  - `src/gauge_render.c`
+    - scope waveform plot (`SCOPE_X+6 ..`) now composes into `gScopePlotCache` (RAM) and blits once per frame
+    - timeline control strip now composes into `gTimelineCache` (RAM) and blits once per frame
+    - added buffer primitives (`BufFillRect`, `BufDrawLine`, `BufDrawCircleFilled`) used by the offscreen path
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Optimized LCD solid-rectangle write path to reduce visible raster during dynamic UI updates.
+  - `src/par_lcd_s035.c`
+    - `par_lcd_s035_fill_rect(...)` now selects the destination area once and streams RGB565 pixels in chunks (`4096` pixels/chunk)
+    - removed per-row `SelectArea + WritePixels` loop for rectangle fills
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Converted terminal/status dynamic renderer to offscreen composition + atomic blit.
+  - `src/gauge_render.c`
+    - terminal dynamic region now composes text/header in `gTerminalCache` and blits once per frame
+    - added buffer text helpers for shadowed 5x7 rendering in RAM
+  - previous LCD driver fill optimization remains active (`src/par_lcd_s035.c` streamed fill_rect)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reworked scope/timeline update behavior to reduce full-region repaint artifacts.
+  - `src/gauge_render.c`
+    - scope plot now uses incremental column updates in `gScopePlotCache` instead of full trace re-rasterization every frame
+    - timeline strip redraw is now gated to state changes (live mode / pause state / AI mode) instead of unconditional per-frame redraw
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Extended anti-raster conversion to remaining left/middle dynamic regions.
+  - `src/gauge_render.c`
+    - human orientation pointer now composes in `gOrientCache` and blits once (replaces direct multi-primitive LCD writes)
+    - left bar dynamic region now composes in `gLeftBarCache` and blits once on value changes
+    - alert score/MAE strip redraw is now change-gated (no unconditional per-frame clear/redraw)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Notes:
+  - SRAM dynamic data usage increased significantly due added region buffers (`m_data` ~76.96%).
+- Result: ok
+
+## Update 2026-02-24
+- Change: Added startup scope history prefill and further left/middle anti-raster gating.
+  - `src/gauge_render.c`
+    - new `PrefillScopeTraceFromReplayWindow()` seeds scope traces from the first 4-hour replay window so graph is not empty at startup
+    - `GaugeRender_Init()` now preloads trace buffers via prefill helper
+    - `DrawScopeDynamic()` initializes first render cache from prefilled trace history before incremental updates
+    - `DrawMedicalOverlayData()` now redraws motor/pump/anomaly text regions only when values change
+    - `DrawHumanOrientationPointer()` now skips redraw when movement/segment change is negligible
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Notes:
+  - Memory usage after changes: `m_text` ~64.00%, `m_data` ~76.97%.
+- Result: ok
+
+## Update 2026-02-24
+- Change: Adjusted startup graph preload and removed several remaining unnecessary dynamic redraws.
+  - `src/gauge_render.c`
+    - replaced replay-window prefill behavior with first-live-sample bootstrap: on first sample, all trace buffers are initialized to that sample, creating in-range flat startup lines that transition smoothly to live data
+    - center glucose text cache blit is now dirty-only (no unconditional middle-panel redraw when unchanged)
+    - battery widget redraw is now gated by SOC changes (fixed SOC no longer repaints each frame)
+    - AX/AY/AZ/T/GX/GY/GZ/BP legend strip now redraws only on first draw or temperature-color change
+    - removed duplicate `DrawAiSideButtons()` call to avoid a second redundant repaint of the side buttons region
+    - removed replay-trace include dependency from startup trace initialization path
+- Verification:
+  - `./scripts/build.sh` PASS (latest edit set)
+  - `./scripts/flash.sh` PASS
+- Notes:
+  - Goal was to reduce residual flashing in mg/dL/PRED row, symbol row (`* ?`), battery, and the left/middle legend strip while keeping live updates active.
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed rendering regressions introduced by aggressive redraw gating in center and alert regions.
+  - `src/gauge_render.c`
+    - center CGM text cache (mg/dL + PRED row) now blits whenever cache is valid, preventing intermittent disappearance when neighboring dynamic layers repaint
+    - alert score strip cache now invalidates on modal/recording/training/thinking early-return paths so the accuracy strip always restores when returning to normal view
+    - warning/activity headline switched from crisp text path to standard UI text path for reliable rendering of labels such as `HUMAN REST`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed alert/text persistence regressions and reduced unnecessary static touch-marker redraws.
+  - `src/gauge_render.c`
+    - `DrawGlucoseIndicator()` now rebuilds center cache when cache is invalidated (not only on value deltas), then blits dirty-only to reduce sporadic mg/dL/PRED flashing while still recovering after static redraws
+    - `DrawAiSideButtons()` now redraws only when settings/help visibility state changes (`*` and `?` are static unless touch-state changes)
+    - `DrawAiAlertOverlay()` refactored so `RECORDING`, `TRAINING`, and `THINKING` no longer bypass score-strip rendering via early return
+    - score strip redraw now triggers whenever the alert panel itself is redrawn, preventing "appeared then disappeared" behavior after panel/static invalidations
+    - modal branch now clears both alert box and score-strip area together to prevent stale fragments
+    - activity/warning headline rendering in normal/fault panel path uses crisp text rendering for cleaner/consistent label output
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Stabilized warning panel text rendering and score-strip persistence under static redraw transitions.
+  - `src/gauge_render.c`
+    - added `gUiForceAlertOverlayRefresh` flag; set when static dashboard is redrawn (`!gStaticReady` and modal-close full redraw paths)
+    - `DrawAiAlertOverlay()` now consumes this flag to invalidate both alert visual cache and score-strip cache so score/MAE reliably reappear without requiring motion/activity-state changes
+    - switched warning/activity headline draw path from crisp renderer back to standard `DrawTextUi(...)` to remove dithered/non-font appearance in warning box
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Artifact-cleanup pass focused on black box fragments and width mismatches.
+  - `src/gauge_render.c`
+    - fixed scope frame rectangle bounds to strict inclusive coordinates (`SCOPE_X + SCOPE_W - 1`, `SCOPE_Y + SCOPE_H - 1`) to eliminate +1 width mismatch against dynamic graph content
+    - converted alert/warning panel paths (`RECORDING`/`TRAINING`/`THINKING` and normal warning/activity mode) to deterministic redraw each frame path (no cache-skip branch)
+    - score strip now reliably repaints with the alert region (condition still cache-aware but forced by alert redraw), reducing missing center strip/side fragment artifacts under warning box
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reworked warning + score region into a single offscreen-composited panel to remove side fragments, half-filled backgrounds, and multi-rect repaint artifacts.
+  - `src/gauge_render.c`
+    - added `gAlertPanelCache` (`192x80`) for alert/score composite rendering
+    - `DrawAiAlertOverlay()` now composes full-width warning panel + full-width score strip in RAM and blits once to LCD
+    - settings/help/limits modal path restores full alert+score region from background image (`BlitPumpBgRegion(...)`) instead of piecemeal clears
+    - removed obsolete alert visual cache state fields no longer used by the new renderer
+    - retained prior scope frame width-bound fix (`SCOPE_W/H - 1` inclusive bounds)
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Notes:
+  - SRAM usage increased due new alert panel cache: `m_data` now ~86.54%.
+- Result: ok
+
+## Update 2026-02-24
+- Change: Converted center mg/dL + PRED rows to the same deterministic offscreen-composited render strategy used for warning/score.
+  - `src/gauge_render.c`
+    - `DrawGlucoseIndicator()` now composes a fixed-width center panel (`CENTER_TEXT_CACHE_W x 30`) into `gCenterTextCache` each frame and blits once
+    - removed delta-gated center text cache invalidation logic that could leave center rows missing after overlapping redraw events
+    - removed obsolete legacy center-cache coordinate globals no longer used by the deterministic panel path
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Notes:
+  - SRAM remains high due panel buffers: `m_data` ~86.53%.
+- Result: ok
+
+## Update 2026-02-24
+- Change: Reduced AI status pill flashing by making it state-driven.
+  - `src/gauge_render.c`
+    - `DrawAiPill()` now caches prior state and redraws only when either AI enable state changes or backend label changes (`AI MCU` / `AI NPU`)
+    - no per-frame repaint when state is unchanged
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed center panel overlap into terminal text area.
+  - `src/gauge_render.c`
+    - center mg/dL/PRED offscreen panel width is now dynamic and clamped so it cannot cross into terminal region (`TERM_X` boundary)
+    - preserves deterministic single-blit center rendering while preventing leading-character erasure in terminal rows (`ACC`, subsequent lines)
+  - `DrawAiPill()` remains state-gated from prior update
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed slow settings/help popup rendering and restored solid black modal background.
+  - `src/gauge_render.c`
+    - `DrawPopupModalBase()` now paints a full black backdrop for modal views
+    - added modal redraw-on-demand path in `GaugeRender_DrawFrame()` using `ModalRenderSignature()` and `gModalRedrawPending`; popups are redrawn only when modal state/content changes
+    - added modal invalidation triggers in popup-related setters (`SetHelpVisible`, `SetHelpPage`, `NextHelpPage`, `SetSettingsVisible`, `SetLimitsVisible`, `SetLiveBannerMode`, `SetAiBackendNpu`, `SetLogRateHz`, `SetLimitInfo`) and static/modal transitions
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Tuned modal backdrop rendering for settings/help/limits to improve open latency while preserving black background.
+  - `src/gauge_render.c`
+    - `DrawPopupModalBase()` now fills expanded black regions around active popup panels instead of full-screen black fill
+    - retains modal redraw-on-demand signature path from prior update
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: ok
+
+## Update 2026-02-24
+- Change: Fixed modal popup latency/regression and restored top-row modal black background coverage.
+  - `src/gauge_render.c`
+    - removed modal signature/pending redraw gating (`ModalRenderSignature`, `gModalRedrawPending`, `gModalLastSignature`)
+    - `GaugeRender_DrawFrame()` now deterministically redraws active modal popup content every modal frame
+    - `DrawPopupModalBase()` now paints a single black backdrop from top edge through popup-bottom extent, keeping `?` and `*` on black while popup is active
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: popup open/close path is now deterministic, and top `?/*` modal background coverage is restored.
+
+## Update 2026-02-24
+- Change: Added modal dirty-redraw path to reduce popup latency and keep `?`/`*` visible with black backing while modal is active.
+  - `src/gauge_render.c`
+    - added `gModalDirty` and switched modal rendering to redraw only when modal state/content changes
+    - modal branch now redraws side buttons during modal render (`DrawAiSideButtons()`), preventing `?`/`*` disappearance
+    - `DrawPopupModalBase()` now fills active popup panel region plus top button strip backgrounds (instead of broad full-screen/top-band fill)
+    - modal-affecting setters (`SetHelp*`, `SetSettingsVisible`, `SetLimitsVisible`, `SetLiveBannerMode`, `SetAiBackendNpu`, `SetLogRateHz`, `SetLimitInfo`) now mark modal dirty
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: modal open/close rendering is now event-driven rather than continuous redraw; `?`/`*` are explicitly repainted in modal state.
+
+## Update 2026-02-24
+- Change: Improved popup readability and fixed missing center ball after closing popups.
+  - `src/gauge_render.c`
+    - modal branch now redraws active popup content every modal frame (settings/help/limits text stays readable), while modal backdrop fill remains dirty-gated
+    - added one-shot orientation force-refresh flag (`gForceOrientRefresh`) to bypass no-change early-return after modal close and redraw the ball immediately
+    - modal-close path now sets `gForceOrientRefresh = true`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: popup text should remain readable and center ball should reappear immediately after popup close (without requiring tilt/shake).
+
+## Update 2026-02-24
+- Change: Restored full modal black background and reduced popup draw cost.
+  - `src/gauge_render.c`
+    - `DrawPopupModalBase()` now performs a one-shot full-screen black fill for modal transitions
+    - modal render branch now draws popup content only when `gModalDirty` is set (open/close/page/settings changes), removing per-frame popup repaint overhead
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: settings/help should show complete black modal background and open/close faster under normal touch interaction.
+
+## Update 2026-02-25
+- Change: Documented settings/help popup bug progression and promoted current UI-fix build as restore baseline `R8`.
+  - popup bug progression covered in docs:
+    - missing modal black background in settings/help
+    - high popup open/close latency during modal redraw churn
+    - post-popup orientation-ball missing until sensor motion forced redraw
+  - implemented progress in code path (`src/gauge_render.c`):
+    - modal redraw gating via `gModalDirty`
+    - full-screen modal black backdrop on modal transitions
+    - one-shot orientation force refresh after modal close (`gForceOrientRefresh`)
+- Restore point staging:
+  - tags:
+    - `GOLDEN-2026-02-24-R8`
+    - `FAILSAFE-2026-02-24-R8`
+  - artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R8.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R8.bin`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: `R8` is the active golden/failsafe restore baseline; popup bug remains tracked in `docs/TODO.md` pending final on-device validation.

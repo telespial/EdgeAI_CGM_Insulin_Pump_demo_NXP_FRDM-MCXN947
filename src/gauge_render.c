@@ -43,12 +43,6 @@ static uint8_t gPrevAiFaultFlags = 255u;
 static uint16_t gPrevThermalRisk = 65535u;
 static uint8_t gPrevDrift = 255u;
 static bool gAlertVisualValid = false;
-static uint8_t gAlertVisualStatus = 255u;
-static bool gAlertVisualSevere = false;
-static bool gAlertVisualAiEnabled = false;
-static bool gAlertVisualRecording = false;
-static char gAlertVisualDetail[30];
-static char gAlertVisualHeadline[48];
 static uint32_t gScopeSampleAccumUs = 0u;
 static bool gTimelineTouchLatch = false;
 static bool gScopePaused = true;
@@ -58,6 +52,7 @@ static bool gRecordStartRequest = false;
 static bool gRecordStopRequest = false;
 static bool gClearFlashRequest = false;
 static bool gModalWasActive = false;
+static bool gModalDirty = true;
 static uint8_t gPlayheadPos = 99u;
 static bool gPlayheadValid = false;
 static int16_t gAccelXmg = 0;
@@ -128,6 +123,7 @@ static char gExtensionVersion[16] = "0.1.0";
 static float gUiBallXmgFilt = 0.0f;
 static float gUiBallYmgFilt = 0.0f;
 static bool gUiBallFiltPrimed = false;
+static bool gForceOrientRefresh = false;
 static uint32_t gUiRpmRand = 0x73A51C9Du;
 static uint16_t gUiRpmTenths = 0u;
 static bool gUiRpmSchedulePrimed = false;
@@ -187,6 +183,7 @@ static uint8_t gUiPredHypoFaultDebounce = 0u;
 static uint8_t gUiPredHyperWarnDebounce = 0u;
 static uint8_t gUiPredHyperFaultDebounce = 0u;
 static bool gUiAiEnabled = true;
+static bool gUiForceAlertOverlayRefresh = false;
 static bool gUiAiBackendNpu = true;
 static bool gUiWarmupThinking = false;
 static uint8_t gUiPredAccuracyPct = 0u;
@@ -210,6 +207,37 @@ static uint32_t gUiReplayCgmTsDs = 0u;
 static bool gUiReplayCgmPrevValid = false;
 static uint16_t gUiReplayCgmPrevMgdl = 98u;
 static uint32_t gUiReplayCgmPrevTsDs = 0u;
+enum
+{
+    CENTER_TEXT_CACHE_W = 196,
+    CENTER_TEXT_CACHE_H = 40,
+    RTC_TEXT_CACHE_W = 139,
+    RTC_TEXT_CACHE_H = 18,
+    SCOPE_PLOT_CACHE_W = 139,
+    SCOPE_PLOT_CACHE_H = 68,
+    TIMELINE_CACHE_W = 152,
+    TIMELINE_CACHE_H = 19,
+    TERMINAL_CACHE_W = 146,
+    TERMINAL_CACHE_H = 161,
+    ORIENT_CACHE_W = 192,
+    ORIENT_CACHE_H = 192,
+    LEFTBAR_CACHE_W = 176,
+    LEFTBAR_CACHE_H = 160,
+};
+static uint16_t gCenterTextCache[CENTER_TEXT_CACHE_W * CENTER_TEXT_CACHE_H];
+static bool gCenterTextCacheValid = false;
+static uint16_t gRtcTextCache[RTC_TEXT_CACHE_W * RTC_TEXT_CACHE_H];
+static bool gRtcTextCacheValid = false;
+static char gRtcTextCacheLine[20];
+static uint16_t gScopePlotCache[SCOPE_PLOT_CACHE_W * SCOPE_PLOT_CACHE_H];
+static uint16_t gTimelineCache[TIMELINE_CACHE_W * TIMELINE_CACHE_H];
+static uint16_t gTerminalCache[TERMINAL_CACHE_W * TERMINAL_CACHE_H];
+static uint16_t gOrientCache[ORIENT_CACHE_W * ORIENT_CACHE_H];
+static uint16_t gLeftBarCache[LEFTBAR_CACHE_W * LEFTBAR_CACHE_H];
+/* Full alert + score panel offscreen cache (fits ALERT(179x39) + score strip). */
+#define ALERT_PANEL_CACHE_W 192
+#define ALERT_PANEL_CACHE_H 80
+static uint16_t gAlertPanelCache[ALERT_PANEL_CACHE_W * ALERT_PANEL_CACHE_H];
 
 typedef struct
 {
@@ -228,6 +256,18 @@ static uint16_t gPredEval30Tail = 0u;
 static uint32_t gPredEvalPrevDs = 0u;
 static uint16_t gPredEvalPrevMgdl = 0u;
 static bool gPredEvalPrevValid = false;
+static uint8_t ScaleTo8(uint32_t value, uint32_t max_value);
+
+static void PrefillScopeTraceFromReplayWindow(void)
+{
+    uint16_t cap = (uint16_t)sizeof(gTraceAx);
+    if (cap == 0u)
+    {
+        return;
+    }
+    gTraceCount = 0u;
+    gTraceReady = false;
+}
 
 enum
 {
@@ -1438,7 +1478,26 @@ static void PushScopeSample(void)
     }
     gScopeSampleAccumUs -= SCOPE_SAMPLE_PERIOD_US;
 
-    if (gTraceCount < cap)
+    if (gTraceCount == 0u)
+    {
+        uint16_t i;
+        for (i = 0u; i < cap; i++)
+        {
+            gTraceAx[i] = ax;
+            gTraceAy[i] = ay;
+            gTraceAz[i] = az;
+            gTraceGx[i] = gx;
+            gTraceGy[i] = gy;
+            gTraceGz[i] = gz;
+            gTraceTemp[i] = tp;
+            gTraceBaro[i] = bp;
+            gTraceRh[i] = rh;
+        }
+        gTraceCount = cap;
+        gTraceReady = true;
+        return;
+    }
+    else if (gTraceCount < cap)
     {
         gTraceAx[gTraceCount] = ax;
         gTraceAy[gTraceCount] = ay;
@@ -1610,32 +1669,177 @@ static void BlitPumpBgRegion(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
     }
 }
 
-static void DrawTerminalLine(int32_t y, const char *text, uint16_t color)
+static void CopyPumpBgToBuffer(int32_t x0, int32_t y0, int32_t w, int32_t h, uint16_t *buf, int32_t buf_w, int32_t buf_h)
 {
-    int32_t x0 = TERM_X + 4;
-    int32_t x1 = TERM_X + TERM_W - 4;
-    int32_t yy;
+    int32_t y;
+    int32_t x;
+
+    if ((buf == NULL) || (buf_w <= 0) || (buf_h <= 0) || (w <= 0) || (h <= 0))
+    {
+        return;
+    }
+
+    if (w > buf_w)
+    {
+        w = buf_w;
+    }
+    if (h > buf_h)
+    {
+        h = buf_h;
+    }
+
+    for (y = 0; y < h; y++)
+    {
+        for (x = 0; x < w; x++)
+        {
+            int32_t sx = x0 + x;
+            int32_t sy = y0 + y;
+            uint16_t c = RGB565(2, 3, 5);
+            if ((sx >= 0) && (sx < PUMP_BG_WIDTH) && (sy >= 0) && (sy < PUMP_BG_HEIGHT))
+            {
+                c = g_pump_bg_rgb565[(sy * PUMP_BG_WIDTH) + sx];
+            }
+            buf[(y * buf_w) + x] = c;
+        }
+    }
+}
+
+static void BlitBufferToLcd(int32_t x0, int32_t y0, int32_t w, int32_t h, const uint16_t *buf, int32_t buf_w, int32_t buf_h)
+{
+    int32_t y;
+
+    if ((buf == NULL) || (buf_w <= 0) || (buf_h <= 0) || (w <= 0) || (h <= 0))
+    {
+        return;
+    }
+
+    if (w > buf_w)
+    {
+        w = buf_w;
+    }
+    if (h > buf_h)
+    {
+        h = buf_h;
+    }
+
+    for (y = 0; y < h; y++)
+    {
+        par_lcd_s035_blit_rect(x0, y0 + y, x0 + w - 1, y0 + y, (uint16_t *)&buf[y * buf_w]);
+    }
+}
+
+static void BufFillRect(uint16_t *buf, int32_t bw, int32_t bh, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t c)
+{
+    int32_t y;
+    int32_t x;
+    if ((buf == NULL) || (bw <= 0) || (bh <= 0))
+    {
+        return;
+    }
+    if (x0 > x1)
+    {
+        int32_t t = x0;
+        x0 = x1;
+        x1 = t;
+    }
+    if (y0 > y1)
+    {
+        int32_t t = y0;
+        y0 = y1;
+        y1 = t;
+    }
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 >= bw) x1 = bw - 1;
+    if (y1 >= bh) y1 = bh - 1;
+    if ((x0 > x1) || (y0 > y1))
+    {
+        return;
+    }
+    for (y = y0; y <= y1; y++)
+    {
+        for (x = x0; x <= x1; x++)
+        {
+            buf[(y * bw) + x] = c;
+        }
+    }
+}
+
+static void BufDrawLine(uint16_t *buf, int32_t bw, int32_t bh, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t c)
+{
+    int32_t dx = (x1 >= x0) ? (x1 - x0) : (x0 - x1);
+    int32_t sx = (x0 < x1) ? 1 : -1;
+    int32_t dy = -((y1 >= y0) ? (y1 - y0) : (y0 - y1));
+    int32_t sy = (y0 < y1) ? 1 : -1;
+    int32_t err = dx + dy;
+
+    while (true)
+    {
+        if ((x0 >= 0) && (x0 < bw) && (y0 >= 0) && (y0 < bh))
+        {
+            buf[(y0 * bw) + x0] = c;
+        }
+        if ((x0 == x1) && (y0 == y1))
+        {
+            break;
+        }
+        {
+            int32_t e2 = 2 * err;
+            if (e2 >= dy)
+            {
+                err += dy;
+                x0 += sx;
+            }
+            if (e2 <= dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
+}
+
+static void BufDrawCircleFilled(uint16_t *buf, int32_t bw, int32_t bh, int32_t cx, int32_t cy, int32_t r, uint16_t c)
+{
+    int32_t y;
+    for (y = -r; y <= r; y++)
+    {
+        int32_t x2 = (r * r) - (y * y);
+        int32_t x;
+        if (x2 < 0)
+        {
+            continue;
+        }
+        x = (int32_t)sqrtf((float)x2);
+        BufFillRect(buf, bw, bh, cx - x, cy + y, cx + x, cy + y, c);
+    }
+}
+
+static void DrawTextUiToBuffer(int32_t x,
+                               int32_t y,
+                               int32_t scale,
+                               const char *text,
+                               uint16_t fg,
+                               uint16_t *buf,
+                               int32_t buf_w,
+                               int32_t buf_h)
+{
+    edgeai_text5x7_draw_scaled_to_buffer(x + 1, y + 1, scale, text, RGB565(0, 0, 0), false, 0u, buf, buf_w, buf_h);
+    edgeai_text5x7_draw_scaled_to_buffer(x, y, scale, text, fg, false, 0u, buf, buf_w, buf_h);
+}
+
+static void DrawTerminalLineToBuffer(uint16_t *buf, int32_t buf_w, int32_t buf_h, int32_t y_local, const char *text, uint16_t color)
+{
+    int32_t x0 = 1;
+    int32_t x1 = buf_w - 2;
     int32_t avail_px;
     char clipped[40];
     size_t n;
 
-    if (x0 < 0)
+    if ((buf == NULL) || (y_local < 0) || (y_local >= buf_h))
     {
-        x0 = 0;
+        return;
     }
-    if (x1 >= PUMP_BG_WIDTH)
-    {
-        x1 = PUMP_BG_WIDTH - 1;
-    }
-
-    for (yy = y - 1; yy <= (y + 9); yy++)
-    {
-        if ((yy >= 0) && (yy < PUMP_BG_HEIGHT))
-        {
-            par_lcd_s035_blit_rect(x0, yy, x1, yy, (uint16_t *)&g_pump_bg_rgb565[(yy * PUMP_BG_WIDTH) + x0]);
-        }
-    }
-
     avail_px = x1 - x0 + 1;
     if (avail_px <= 0)
     {
@@ -1656,7 +1860,7 @@ static void DrawTerminalLine(int32_t y, const char *text, uint16_t color)
         clipped[n] = '\0';
     }
 
-    DrawTextUi(x0, y, 1, clipped, color);
+    DrawTextUiToBuffer(x0, y_local, 1, clipped, color, buf, buf_w, buf_h);
 }
 
 static __attribute__((unused)) void DrawRing(int32_t cx, int32_t cy, int32_t r_outer, int32_t thickness, uint16_t ring, uint16_t inner)
@@ -1788,8 +1992,8 @@ static void DrawScopeFrame(const gauge_style_preset_t *style)
     int32_t rx1 = TIMELINE_X1;
 
     (void)style;
-    par_lcd_s035_fill_rect(SCOPE_X, SCOPE_Y, SCOPE_X + SCOPE_W, SCOPE_Y + SCOPE_H, RGB565(18, 3, 7));
-    par_lcd_s035_fill_rect(SCOPE_X + 2, SCOPE_Y + 2, SCOPE_X + SCOPE_W - 2, SCOPE_Y + SCOPE_H - 2, RGB565(7, 10, 12));
+    par_lcd_s035_fill_rect(SCOPE_X, SCOPE_Y, SCOPE_X + SCOPE_W - 1, SCOPE_Y + SCOPE_H - 1, RGB565(18, 3, 7));
+    par_lcd_s035_fill_rect(SCOPE_X + 2, SCOPE_Y + 2, SCOPE_X + SCOPE_W - 3, SCOPE_Y + SCOPE_H - 3, RGB565(7, 10, 12));
     par_lcd_s035_fill_rect(TIMELINE_X0 + 1, TIMELINE_Y0 + 1, TIMELINE_X1 - 1, TIMELINE_Y1 - 1, RGB565(20, 28, 34));
     if (gLiveBannerMode)
     {
@@ -1845,26 +2049,15 @@ static void DrawGlucoseIndicator(void)
     int32_t meta_x;
     int32_t bg_w;
     int32_t meta_w;
+    int32_t text_w;
     int32_t meta_scale = 1;
     int32_t bg_y = 208; /* keep both lines above pump clear bands that start at y=240. */
     int32_t text_x0;
     int32_t text_y0;
-    int32_t text_x1;
-    int32_t text_y1;
-    int32_t text_w;
-    static bool sTextBgPrimed = false;
-    static uint16_t sLastBgMgdl = 0xFFFFu;
-    static uint16_t sLastP15 = 0xFFFFu;
-    static uint16_t sLastP30 = 0xFFFFu;
-    static uint8_t sLastPredStatus = 0xFFu;
-    static int8_t sLastPredDir = 127;
-    static uint8_t sLastSqiPct = 0xFFu;
-    static uint16_t sLastSensorFlags = 0xFFFFu;
-    static int32_t sPrevTextW = 0;
+    int32_t panel_w;
+    int32_t panel_h = 30;
     bool replay_cgm_mode = (gUiReplayCgmValid && gLiveBannerMode);
     bool ai_enabled = gUiAiEnabled;
-    uint8_t pred_status = PredictionAlertStatus();
-    int8_t pred_dir = PredictionAlertDir();
     cgm_preprocess_output_t out;
 
     if (!replay_cgm_mode &&
@@ -1998,41 +2191,48 @@ static void DrawGlucoseIndicator(void)
     bg_x = SECTION2_CX - (bg_w / 2);
     meta_x = SECTION2_CX - (meta_w / 2);
 
-    /* Clear center text band only when displayed values change; prevents smear without frame-by-frame flashing. */
-    text_w = bg_w;
-    if (meta_w > text_w)
+    text_w = (bg_w > meta_w) ? bg_w : meta_w;
+    panel_w = text_w + 8;
+    if (panel_w < 96)
     {
-        text_w = meta_w;
+        panel_w = 96;
     }
-    if ((!sTextBgPrimed) ||
-        (sLastBgMgdl != gUiGlucoseDisplayMgdl) ||
-        (sLastP15 != gUiPred15DisplayMgdl) ||
-        (sLastP30 != gUiPred30DisplayMgdl) ||
-        (sLastPredStatus != pred_status) ||
-        (sLastPredDir != pred_dir) ||
-        (sLastSqiPct != gUiCgmSqiPct) ||
-        (sLastSensorFlags != gUiCgmSensorFlags))
     {
-        int32_t clear_w = (text_w > sPrevTextW) ? text_w : sPrevTextW;
-        text_x0 = SECTION2_CX - (clear_w / 2) - 3;
-        text_y0 = bg_y - 2;
-        text_x1 = SECTION2_CX + (clear_w / 2) + 3;
-        text_y1 = (bg_y + 16 + 7) + 1;
-        BlitPumpBgRegion(text_x0, text_y0, text_x1, text_y1);
-        sLastBgMgdl = gUiGlucoseDisplayMgdl;
-        sLastP15 = gUiPred15DisplayMgdl;
-        sLastP30 = gUiPred30DisplayMgdl;
-        sLastPredStatus = pred_status;
-        sLastPredDir = pred_dir;
-        sLastSqiPct = gUiCgmSqiPct;
-        sLastSensorFlags = gUiCgmSensorFlags;
-        sPrevTextW = text_w;
-        sTextBgPrimed = true;
+        int32_t max_panel_w = (2 * ((TERM_X - 2) - SECTION2_CX)) + 1;
+        if (panel_w > max_panel_w)
+        {
+            panel_w = max_panel_w;
+        }
+    }
+    if (panel_w > CENTER_TEXT_CACHE_W)
+    {
+        panel_w = CENTER_TEXT_CACHE_W;
     }
 
-    /* Final center overlay text. */
-    DrawTextUiCrisp(bg_x, bg_y, 2, bg_text, RGB565(124, 255, 124));
-    DrawTextUiCrisp(meta_x, bg_y + 16, meta_scale, cgm_meta, RGB565(166, 216, 244));
+    text_x0 = SECTION2_CX - (panel_w / 2);
+    text_y0 = bg_y - 2;
+    CopyPumpBgToBuffer(text_x0, text_y0, panel_w, panel_h, gCenterTextCache, CENTER_TEXT_CACHE_W, CENTER_TEXT_CACHE_H);
+    edgeai_text5x7_draw_scaled_to_buffer(bg_x - text_x0,
+                                         bg_y - text_y0,
+                                         2,
+                                         bg_text,
+                                         RGB565(124, 255, 124),
+                                         false,
+                                         0u,
+                                         gCenterTextCache,
+                                         CENTER_TEXT_CACHE_W,
+                                         CENTER_TEXT_CACHE_H);
+    edgeai_text5x7_draw_scaled_to_buffer(meta_x - text_x0,
+                                         (bg_y + 16) - text_y0,
+                                         meta_scale,
+                                         cgm_meta,
+                                         RGB565(166, 216, 244),
+                                         false,
+                                         0u,
+                                         gCenterTextCache,
+                                         CENTER_TEXT_CACHE_W,
+                                         CENTER_TEXT_CACHE_H);
+    BlitBufferToLcd(text_x0, text_y0, panel_w, panel_h, gCenterTextCache, CENTER_TEXT_CACHE_W, CENTER_TEXT_CACHE_H);
     gPrevGlucoseMgdl = gUiGlucoseMgdl;
 }
 
@@ -2261,10 +2461,17 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
                    ((sample->anomaly_score_pct >= 35u) ? warn : okay);
     bool pumping = false;
     uint16_t pump_color = WARN_YELLOW;
+    static bool sOverlayInit = false;
+    static uint16_t sPrevRpmTenths = 0xFFFFu;
+    static uint16_t sPrevRpmMa = 0xFFFFu;
+    static uint16_t sPrevAnom = 0xFFFFu;
+    static uint8_t sPrevWear = 0xFFu;
+    static bool sPrevPumping = false;
+    static uint32_t sPrevDoseRateMlhX100 = 0xFFFFFFFFu;
+    static uint8_t sPrevReservoirPct = 0xFFu;
     (void)ai_enabled;
 
     /* Motor area (top-left icon). */
-    BlitPumpBgRegion(20, 18, 142, 102);
     now_ds = UiNowDs();
     if (!gUiRpmSchedulePrimed)
     {
@@ -2400,33 +2607,56 @@ static void DrawMedicalOverlayData(const gauge_style_preset_t *style, const powe
 
     pumping = gUiMotorRunning;
     running_ml_h = gUiMotorRunning ? (((float)gUiDoseRateUhMilli) / 100000.0f) : 0.0f;
-    snprintf(line, sizeof(line), "RPM:%2u.%1u",
-             (unsigned int)(gUiRpmTenths / 10u),
-             (unsigned int)(gUiRpmTenths % 10u));
-    DrawTextUi(22, 24, 2, line, okay);
     rpm_ma = (uint16_t)((((uint32_t)gUiRpmTenths * 95u) + 245u) / 490u); /* map 0.0..49.0 RPM to 0..95mA */
-    snprintf(line, sizeof(line), "%2umA", (unsigned int)rpm_ma);
-    DrawTextUi(34, 67, 2, line, sev);
-    /* Clear band beneath ANOM so no stale/stray text remains. */
-    BlitPumpBgRegion(8, 118, 136, 156);
-    snprintf(line, sizeof(line), "ANOM:%3u%%", (unsigned int)sample->anomaly_score_pct);
-    DrawTextUi(10, 123, 2, line, sev);
-    snprintf(line, sizeof(line), "WEAR:%3u%%", (unsigned int)sample->connector_wear_pct);
-    DrawTextUi(10, 143, 2, line, sev);
+    if ((!sOverlayInit) ||
+        (sPrevRpmTenths != gUiRpmTenths) ||
+        (sPrevRpmMa != rpm_ma) ||
+        (sPrevAnom != sample->anomaly_score_pct) ||
+        (sPrevWear != sample->connector_wear_pct))
+    {
+        BlitPumpBgRegion(20, 18, 142, 102);
+        snprintf(line, sizeof(line), "RPM:%2u.%1u",
+                 (unsigned int)(gUiRpmTenths / 10u),
+                 (unsigned int)(gUiRpmTenths % 10u));
+        DrawTextUi(22, 24, 2, line, okay);
+        snprintf(line, sizeof(line), "%2umA", (unsigned int)rpm_ma);
+        DrawTextUi(34, 67, 2, line, sev);
+        /* Clear band beneath ANOM so no stale/stray text remains. */
+        BlitPumpBgRegion(8, 118, 136, 156);
+        snprintf(line, sizeof(line), "ANOM:%3u%%", (unsigned int)sample->anomaly_score_pct);
+        DrawTextUi(10, 123, 2, line, sev);
+        snprintf(line, sizeof(line), "WEAR:%3u%%", (unsigned int)sample->connector_wear_pct);
+        DrawTextUi(10, 143, 2, line, sev);
+    }
 
     /* Pump area (bottom-left icon). */
-    /* Keep pump text clean but avoid the elapsed-time band in the center segment. */
-    BlitPumpBgRegion(30, 240, 198, 281);
-    BlitPumpBgRegion(30, 282, 169, 300);
-    snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
-    DrawTextUi(34, 246, 2, line, pump_color);
     dose_rate_mlh_x100 = (uint32_t)((running_ml_h * 100.0f) + 0.5f); /* mL/h * 100 */
-    snprintf(line, sizeof(line), "RATE:%u.%02u ML/H",
-             (unsigned int)(dose_rate_mlh_x100 / 100u),
-             (unsigned int)(dose_rate_mlh_x100 % 100u));
-    DrawTextUi(34, 262, 2, line, pump_color);
-    snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)gUiReservoirPct);
-    DrawTextUi(34, 278, 2, line, pump_color);
+    if ((!sOverlayInit) ||
+        (sPrevPumping != pumping) ||
+        (sPrevDoseRateMlhX100 != dose_rate_mlh_x100) ||
+        (sPrevReservoirPct != gUiReservoirPct))
+    {
+        /* Keep pump text clean but avoid the elapsed-time band in the center segment. */
+        BlitPumpBgRegion(30, 240, 198, 281);
+        BlitPumpBgRegion(30, 282, 169, 300);
+        snprintf(line, sizeof(line), "PUMP %s", pumping ? "ACTIVE" : "IDLE");
+        DrawTextUi(34, 246, 2, line, pump_color);
+        snprintf(line, sizeof(line), "RATE:%u.%02u ML/H",
+                 (unsigned int)(dose_rate_mlh_x100 / 100u),
+                 (unsigned int)(dose_rate_mlh_x100 % 100u));
+        DrawTextUi(34, 262, 2, line, pump_color);
+        snprintf(line, sizeof(line), "FILL:%3u%%", (unsigned int)gUiReservoirPct);
+        DrawTextUi(34, 278, 2, line, pump_color);
+    }
+
+    sPrevRpmTenths = gUiRpmTenths;
+    sPrevRpmMa = rpm_ma;
+    sPrevAnom = sample->anomaly_score_pct;
+    sPrevWear = sample->connector_wear_pct;
+    sPrevPumping = pumping;
+    sPrevDoseRateMlhX100 = dose_rate_mlh_x100;
+    sPrevReservoirPct = gUiReservoirPct;
+    sOverlayInit = true;
 
     /* Human status text is no longer drawn here; keep center area untouched. */
 }
@@ -2447,6 +2677,11 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     int32_t lit_segments;
     int32_t total_segments = 54; /* 270 degrees / 5-degree bars. */
     uint16_t ball_color = RGB565(46, 102, 190); /* medium dark blue when right-side up */
+    static bool sOrientInit = false;
+    static int32_t sPrevBallX = 0;
+    static int32_t sPrevBallY = 0;
+    static int32_t sPrevLitSegments = -1;
+    static uint16_t sPrevBallColor = 0;
     (void)style;
 
     if (gAccelValid)
@@ -2485,8 +2720,15 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
         ball_color = RGB565(255, 186, 104); /* light orange when upside down */
     }
 
-    /* Restore the full human-circle area before redrawing gauge to prevent pointer trails. */
-    BlitPumpBgRegion(ring_x0, ring_y0, ring_x1, ring_y1);
+    int32_t rw = ring_x1 - ring_x0 + 1;
+    int32_t rh = ring_y1 - ring_y0 + 1;
+
+    if ((rw <= 0) || (rh <= 0) || (rw > ORIENT_CACHE_W) || (rh > ORIENT_CACHE_H))
+    {
+        return;
+    }
+
+    CopyPumpBgToBuffer(ring_x0, ring_y0, rw, rh, gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H);
 
     /* 270-degree tach arc (vertically flipped) with top 90 degrees open.
      * Sweep: 135 -> 45 degrees (CCW), 5-degree segments:
@@ -2501,6 +2743,15 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
     if (lit_segments > total_segments)
     {
         lit_segments = total_segments;
+    }
+    if (!gForceOrientRefresh &&
+        sOrientInit &&
+        (((ball_x >= sPrevBallX) ? (ball_x - sPrevBallX) : (sPrevBallX - ball_x)) <= 1) &&
+        (((ball_y >= sPrevBallY) ? (ball_y - sPrevBallY) : (sPrevBallY - ball_y)) <= 1) &&
+        (lit_segments == sPrevLitSegments) &&
+        (ball_color == sPrevBallColor))
+    {
+        return;
     }
     for (i = 0; i < total_segments; i++)
     {
@@ -2530,13 +2781,27 @@ static void DrawHumanOrientationPointer(const gauge_style_preset_t *style)
             off_color = RGB565(72, 20, 20);
         }
         draw_color = (i < lit_segments) ? on_color : off_color;
-        DrawLine(x0, y0, x1, y1, 3, draw_color);
+        int32_t lx0 = x0 - ring_x0;
+        int32_t ly0 = y0 - ring_y0;
+        int32_t lx1 = x1 - ring_x0;
+        int32_t ly1 = y1 - ring_y0;
+        BufDrawLine(gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H, lx0, ly0, lx1, ly1, draw_color);
+        BufDrawLine(gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H, lx0 + 1, ly0, lx1 + 1, ly1, draw_color);
+        BufDrawLine(gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H, lx0, ly0 + 1, lx1, ly1 + 1, draw_color);
     }
 
     /* Draw the orientation ball marker on top of the activity arc. */
-    par_lcd_s035_draw_filled_circle(ball_x, ball_y, 6, RGB565(8, 12, 20));
-    par_lcd_s035_draw_filled_circle(ball_x, ball_y, 5, ball_color);
-    par_lcd_s035_draw_filled_circle(ball_x, ball_y, 2, RGB565(232, 242, 255));
+    BufDrawCircleFilled(gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H, ball_x - ring_x0, ball_y - ring_y0, 6, RGB565(8, 12, 20));
+    BufDrawCircleFilled(gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H, ball_x - ring_x0, ball_y - ring_y0, 5, ball_color);
+    BufDrawCircleFilled(gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H, ball_x - ring_x0, ball_y - ring_y0, 2, RGB565(232, 242, 255));
+
+    BlitBufferToLcd(ring_x0, ring_y0, rw, rh, gOrientCache, ORIENT_CACHE_W, ORIENT_CACHE_H);
+    sPrevBallX = ball_x;
+    sPrevBallY = ball_y;
+    sPrevLitSegments = lit_segments;
+    sPrevBallColor = ball_color;
+    sOrientInit = true;
+    gForceOrientRefresh = false;
 
 }
 
@@ -2590,8 +2855,17 @@ static void DrawAiPill(const gauge_style_preset_t *style, bool ai_enabled)
     int32_t th = 7 * scale;
     int32_t lx;
     int32_t ly;
+    static bool sAiPillInit = false;
+    static bool sPrevAiEnabled = false;
+    static bool sPrevAiBackendNpu = true;
 
     (void)style;
+    if (sAiPillInit &&
+        (sPrevAiEnabled == ai_enabled) &&
+        (sPrevAiBackendNpu == gUiAiBackendNpu))
+    {
+        return;
+    }
     if (tw > (x1 - x0 - 4))
     {
         scale = 1;
@@ -2602,6 +2876,9 @@ static void DrawAiPill(const gauge_style_preset_t *style, bool ai_enabled)
     ly = AI_PILL_Y0 + (((AI_PILL_Y1 - AI_PILL_Y0 + 1) - th) / 2);
     par_lcd_s035_fill_rect(x0, AI_PILL_Y0, x1, AI_PILL_Y1, fill);
     DrawTextUiCrisp(lx, ly, scale, label, txt);
+    sPrevAiEnabled = ai_enabled;
+    sPrevAiBackendNpu = gUiAiBackendNpu;
+    sAiPillInit = true;
 }
 
 static void DrawPillRect(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t fill, uint16_t edge)
@@ -2633,12 +2910,26 @@ static void DrawAiSideButtons(void)
     uint16_t help_fill = gHelpVisible ? RGB565(12, 64, 76) : RGB565(10, 44, 52);
     uint16_t help_txt = RGB565(176, 244, 255);
     uint16_t edge = RGB565(210, 214, 220);
+    static bool sButtonsInit = false;
+    static bool sPrevSettingsVisible = false;
+    static bool sPrevHelpVisible = false;
+
+    if (sButtonsInit &&
+        (sPrevSettingsVisible == gSettingsVisible) &&
+        (sPrevHelpVisible == gHelpVisible))
+    {
+        return;
+    }
 
     DrawPillRect(AI_SET_X0, AI_SET_Y0, AI_SET_X1, AI_SET_Y1, set_fill, edge);
     DrawTextUiCrisp(set_cx - (edgeai_text5x7_width(2, "*") / 2), set_cy - 7, 2, "*", set_txt);
 
     DrawPillRect(AI_HELP_X0, AI_HELP_Y0, AI_HELP_X1, AI_HELP_Y1, help_fill, edge);
     DrawTextUiCrisp(help_cx - (edgeai_text5x7_width(2, "?") / 2), help_cy - 7, 2, "?", help_txt);
+
+    sPrevSettingsVisible = gSettingsVisible;
+    sPrevHelpVisible = gHelpVisible;
+    sButtonsInit = true;
 }
 
 static void DrawPopupCloseButton(int32_t panel_x1, int32_t panel_y0)
@@ -2679,31 +2970,8 @@ static void DrawAdjustArrowIcon(int32_t x0, int32_t y0, int32_t w, int32_t h, bo
 
 static void DrawPopupModalBase(void)
 {
-    /* Dirty-region modal redraw: only repaint active popup region to reduce touch latency/flicker. */
-    if (gSettingsVisible)
-    {
-        par_lcd_s035_fill_rect(GAUGE_RENDER_SET_PANEL_X0 - 4,
-                               GAUGE_RENDER_SET_PANEL_Y0 - 4,
-                               GAUGE_RENDER_SET_PANEL_X1 + 4,
-                               GAUGE_RENDER_SET_PANEL_Y1 + 4,
-                               RGB565(6, 8, 12));
-    }
-    if (gHelpVisible)
-    {
-        par_lcd_s035_fill_rect(GAUGE_RENDER_HELP_PANEL_X0 - 4,
-                               GAUGE_RENDER_HELP_PANEL_Y0 - 4,
-                               GAUGE_RENDER_HELP_PANEL_X1 + 4,
-                               GAUGE_RENDER_HELP_PANEL_Y1 + 4,
-                               RGB565(6, 8, 12));
-    }
-    if (gLimitsVisible)
-    {
-        par_lcd_s035_fill_rect(GAUGE_RENDER_LIMIT_PANEL_X0 - 4,
-                               GAUGE_RENDER_LIMIT_PANEL_Y0 - 4,
-                               GAUGE_RENDER_LIMIT_PANEL_X1 + 4,
-                               GAUGE_RENDER_LIMIT_PANEL_Y1 + 4,
-                               RGB565(6, 8, 12));
-    }
+    /* Modal backdrop: one full-screen black fill on modal state changes. */
+    par_lcd_s035_fill_rect(0, 0, PUMP_BG_WIDTH - 1, PUMP_BG_HEIGHT - 1, RGB565(0, 0, 0));
 }
 
 static void DrawSettingsPopup(void)
@@ -2911,6 +3179,7 @@ void GaugeRender_SetProfileInfo(const char *model_name, const char *model_versio
 void GaugeRender_SetLogRateHz(uint8_t hz)
 {
     gLogRateHz = hz;
+    gModalDirty = true;
 }
 
 static void DrawLimitsPopup(void)
@@ -3114,14 +3383,11 @@ static bool IsSevereAlertCondition(const power_sample_t *sample)
 static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sample_t *sample, bool ai_enabled)
 {
     uint16_t color;
-    int32_t tx;
     bool severe;
     bool recording = !gScopePaused;
     bool training_mode = (!gLiveBannerMode && (gAnomMode == 1u) && gScopePaused);
     uint8_t status = AI_STATUS_NORMAL;
-    char detail[30];
     char human_label[24];
-    char human_cache_key[48];
     char score_line[24];
     char mae_line[24];
     const char *pred_state_txt = "NORMAL";
@@ -3130,11 +3396,22 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
     int32_t label_max_width = (ALERT_X1 - ALERT_X0 + 1) - 8;
     uint8_t pred_status = PredictionAlertStatus();
     int8_t pred_dir = PredictionAlertDir();
+    int32_t panel_w = ALERT_X1 - ALERT_X0 + 1;
+    int32_t panel_h = (ALERT_Y1 + 22) - ALERT_Y0 + 1;
+    int32_t alert_h = ALERT_Y1 - ALERT_Y0 + 1;
+    int32_t score_y0 = (ALERT_Y1 + 2) - ALERT_Y0;
+    int32_t tx_local;
+    int32_t ty_local;
+
+    if ((panel_w > ALERT_PANEL_CACHE_W) || (panel_h > ALERT_PANEL_CACHE_H))
+    {
+        return;
+    }
 
     if (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive)
     {
-        gAlertVisualValid = false;
-        par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
+        BlitPumpBgRegion(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1 + 22);
+        gUiForceAlertOverlayRefresh = false;
         return;
     }
 
@@ -3144,7 +3421,6 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         status = AI_STATUS_NORMAL;
         severe = false;
         snprintf(human_label, sizeof(human_label), "%s", "AI OFF");
-        snprintf(detail, sizeof(detail), "%s", "AI OFF");
     }
     else
     {
@@ -3183,12 +3459,8 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         {
             snprintf(human_label, sizeof(human_label), "%s", ActivityHeadlineText(gActivityStage, gActivityPct));
         }
-        /* Always show upcoming prediction values + state (HYPO/HYPER/NORMAL). */
-        snprintf(detail, sizeof(detail), "%s P15 %3u P30 %3u",
-                 pred_state_txt,
-                 (unsigned int)gUiPred15Mgdl,
-                 (unsigned int)gUiPred30Mgdl);
     }
+
     if ((gUiPredEvalCount == 0u) && (gUiPredTolTotalCount == 0u))
     {
         snprintf(score_line, sizeof(score_line), "PRED SCORE -- E0");
@@ -3206,7 +3478,7 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
                  (unsigned int)(mae_tenths / 10u),
                  (unsigned int)(mae_tenths % 10u));
     }
-    snprintf(human_cache_key, sizeof(human_cache_key), "%s", human_label);
+
     label_width = edgeai_text5x7_width(2, human_label);
     if (label_width > label_max_width)
     {
@@ -3214,134 +3486,99 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         label_width = edgeai_text5x7_width(1, human_label);
     }
 
-    if (recording)
+    CopyPumpBgToBuffer(ALERT_X0, ALERT_Y0, panel_w, panel_h, gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H);
+    BufFillRect(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, 0, 0, panel_w - 1, panel_h - 1, RGB565(2, 3, 5));
+
+    if (recording || training_mode || (ai_enabled && gUiWarmupThinking))
     {
-        if (gAlertVisualValid &&
-            gAlertVisualRecording &&
-            (strcmp(gAlertVisualDetail, "RECORDING") == 0))
-        {
-            return;
-        }
-
-        par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(3, "RECORDING")) / 2;
-        DrawTextUi(tx, ALERT_Y0 + 10, 3, "RECORDING", ALERT_RED);
-        gAlertVisualValid = true;
-        gAlertVisualStatus = status;
-        gAlertVisualSevere = false;
-        gAlertVisualAiEnabled = ai_enabled;
-        gAlertVisualRecording = true;
-        snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", "RECORDING");
-        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", "RECORDING");
-        return;
-    }
-
-    if (training_mode)
-    {
-        if (gAlertVisualValid &&
-            !gAlertVisualRecording &&
-            (strcmp(gAlertVisualDetail, "TRAINING") == 0))
-        {
-            return;
-        }
-
-        par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(3, "TRAINING")) / 2;
-        DrawTextUi(tx, ALERT_Y0 + 10, 3, "TRAINING", WARN_YELLOW);
-        gAlertVisualValid = true;
-        gAlertVisualStatus = status;
-        gAlertVisualSevere = false;
-        gAlertVisualAiEnabled = ai_enabled;
-        gAlertVisualRecording = false;
-        snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", "TRAINING");
-        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", "TRAINING");
-        return;
-    }
-
-    if (ai_enabled && gUiWarmupThinking)
-    {
-        if (gAlertVisualValid &&
-            !gAlertVisualRecording &&
-            (strcmp(gAlertVisualDetail, "THINKING") == 0))
-        {
-            return;
-        }
-
-        par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
-        tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - edgeai_text5x7_width(3, "THINKING")) / 2;
-        DrawTextUi(tx, ALERT_Y0 + 10, 3, "THINKING", WARN_YELLOW);
-        gAlertVisualValid = true;
-        gAlertVisualStatus = AI_STATUS_WARNING;
-        gAlertVisualSevere = false;
-        gAlertVisualAiEnabled = ai_enabled;
-        gAlertVisualRecording = false;
-        snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", "THINKING");
-        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", "THINKING");
-        return;
-    }
-
-    if (gAlertVisualValid &&
-        (gAlertVisualStatus == status) &&
-        (gAlertVisualSevere == severe) &&
-        (gAlertVisualAiEnabled == ai_enabled) &&
-        (gAlertVisualRecording == recording) &&
-        (strcmp(gAlertVisualHeadline, human_cache_key) == 0) &&
-        (strcmp(gAlertVisualDetail, detail) == 0))
-    {
-        /* score line can change independently; still refresh score strip. */
+        const char *mode_txt = recording ? "RECORDING" : (training_mode ? "TRAINING" : "THINKING");
+        uint16_t mode_color = recording ? ALERT_RED : WARN_YELLOW;
+        tx_local = (panel_w - edgeai_text5x7_width(3, mode_txt)) / 2;
+        ty_local = 10;
+        edgeai_text5x7_draw_scaled_to_buffer(tx_local,
+                                             ty_local,
+                                             3,
+                                             mode_txt,
+                                             mode_color,
+                                             false,
+                                             0u,
+                                             gAlertPanelCache,
+                                             ALERT_PANEL_CACHE_W,
+                                             ALERT_PANEL_CACHE_H);
     }
     else
     {
-        par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y1, RGB565(2, 3, 5));
         if (status == AI_STATUS_NORMAL)
         {
             color = ActivityColor(style, gActivityStage);
-            par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(6, 16, 10));
-            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
-            DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
-            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
-            DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
-            tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
-            DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, RGB565(220, 255, 220));
+            BufFillRect(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, 1, 1, panel_w - 2, alert_h - 2, RGB565(6, 16, 10));
         }
         else
         {
             color = severe ? ALERT_RED : AiStatusColor(style, status);
-            par_lcd_s035_fill_rect(ALERT_X0 + 1, ALERT_Y0 + 1, ALERT_X1 - 1, ALERT_Y1 - 1, RGB565(18, 3, 7));
-            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X1, ALERT_Y0, 2, color);
-            DrawLine(ALERT_X0, ALERT_Y1, ALERT_X1, ALERT_Y1, 2, color);
-            DrawLine(ALERT_X0, ALERT_Y0, ALERT_X0, ALERT_Y1, 2, color);
-            DrawLine(ALERT_X1, ALERT_Y0, ALERT_X1, ALERT_Y1, 2, color);
-            tx = ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1) - label_width) / 2;
-            DrawTextUiCrisp(tx, ALERT_Y0 + ((label_scale == 2) ? 12 : 16), label_scale, human_label, color);
+            BufFillRect(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, 1, 1, panel_w - 2, alert_h - 2, RGB565(18, 3, 7));
         }
 
-        gAlertVisualValid = true;
-        gAlertVisualStatus = status;
-        gAlertVisualSevere = severe;
-        gAlertVisualAiEnabled = ai_enabled;
-        gAlertVisualRecording = recording;
-        snprintf(gAlertVisualHeadline, sizeof(gAlertVisualHeadline), "%s", human_cache_key);
-        snprintf(gAlertVisualDetail, sizeof(gAlertVisualDetail), "%s", detail);
+        BufDrawLine(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, 0, 0, panel_w - 1, 0, color);
+        BufDrawLine(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, 0, alert_h - 1, panel_w - 1, alert_h - 1, color);
+        BufDrawLine(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, 0, 0, 0, alert_h - 1, color);
+        BufDrawLine(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, panel_w - 1, 0, panel_w - 1, alert_h - 1, color);
+
+        tx_local = (panel_w - label_width) / 2;
+        ty_local = (label_scale == 2) ? 12 : 16;
+        edgeai_text5x7_draw_scaled_to_buffer(tx_local,
+                                             ty_local,
+                                             label_scale,
+                                             human_label,
+                                             (status == AI_STATUS_NORMAL) ? RGB565(220, 255, 220) : color,
+                                             false,
+                                             0u,
+                                             gAlertPanelCache,
+                                             ALERT_PANEL_CACHE_W,
+                                             ALERT_PANEL_CACHE_H);
     }
 
-    /* Score strip below activity/warning box. */
-    par_lcd_s035_fill_rect(ALERT_X0, ALERT_Y1 + 2, ALERT_X1, ALERT_Y1 + 22, RGB565(2, 3, 5));
-    DrawTextUi(ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1 - edgeai_text5x7_width(1, score_line)) / 2),
-               ALERT_Y1 + 5,
-               1,
-               score_line,
-               ai_enabled ? RGB565(178, 240, 198) : RGB565(140, 154, 160));
-    DrawTextUi(ALERT_X0 + ((ALERT_X1 - ALERT_X0 + 1 - edgeai_text5x7_width(1, mae_line)) / 2),
-               ALERT_Y1 + 13,
-               1,
-               mae_line,
-               ai_enabled ? RGB565(190, 210, 255) : RGB565(128, 138, 148));
+    /* Full-width score strip directly under warning panel (eliminates side slivers). */
+    BufFillRect(gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H, 0, score_y0, panel_w - 1, panel_h - 1, RGB565(2, 3, 5));
+    tx_local = (panel_w - edgeai_text5x7_width(1, score_line)) / 2;
+    ty_local = score_y0 + 3;
+    edgeai_text5x7_draw_scaled_to_buffer(tx_local,
+                                         ty_local,
+                                         1,
+                                         score_line,
+                                         ai_enabled ? RGB565(178, 240, 198) : RGB565(140, 154, 160),
+                                         false,
+                                         0u,
+                                         gAlertPanelCache,
+                                         ALERT_PANEL_CACHE_W,
+                                         ALERT_PANEL_CACHE_H);
+    tx_local = (panel_w - edgeai_text5x7_width(1, mae_line)) / 2;
+    ty_local = score_y0 + 11;
+    edgeai_text5x7_draw_scaled_to_buffer(tx_local,
+                                         ty_local,
+                                         1,
+                                         mae_line,
+                                         ai_enabled ? RGB565(190, 210, 255) : RGB565(128, 138, 148),
+                                         false,
+                                         0u,
+                                         gAlertPanelCache,
+                                         ALERT_PANEL_CACHE_W,
+                                         ALERT_PANEL_CACHE_H);
+
+    BlitBufferToLcd(ALERT_X0, ALERT_Y0, panel_w, panel_h, gAlertPanelCache, ALERT_PANEL_CACHE_W, ALERT_PANEL_CACHE_H);
+
+    (void)pred_state_txt;
+    gUiForceAlertOverlayRefresh = false;
+    gAlertVisualValid = false;
 }
 
 static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_sample_t *sample, uint16_t cpu_pct, bool ai_enabled)
 {
     char line[48];
+    int32_t tx0 = TERM_X + 3;
+    int32_t ty0 = TERM_Y + 3;
+    int32_t tw = (TERM_X + TERM_W - 3) - tx0 + 1;
+    int32_t th = (TERM_Y + 163) - ty0 + 1;
     int16_t gx10 = gGyroValid ? gGyroXdps : 0;
     int16_t gy10 = gGyroValid ? gGyroYdps : 0;
     int16_t gz10 = gGyroValid ? gGyroZdps : 0;
@@ -3374,28 +3611,38 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     ai_color = AiStatusColor(style, status);
     status_text = ai_enabled ? AiStatusText(status) : "OFF";
 
-    /* Refresh header band from background image to keep terminal visually transparent. */
+    if ((tw > TERMINAL_CACHE_W) || (th > TERMINAL_CACHE_H))
     {
-        int32_t y;
-        for (y = TERM_Y + 3; y <= (TERM_Y + 16); y++)
-        {
-            par_lcd_s035_blit_rect(TERM_X + 3, y, TERM_X + TERM_W - 3, y,
-                                   (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + TERM_X + 3]);
-        }
+        return;
     }
-    DrawTextUi(TERM_X + 6, TERM_Y + 6, 1, "STATUS", style->palette.text_primary);
-    DrawLine(TERM_X + 6, TERM_Y + 16, TERM_X + TERM_W - 6, TERM_Y + 16, 1, RGB565(110, 20, 30));
+    CopyPumpBgToBuffer(tx0, ty0, tw, th, gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H);
+    DrawTextUiToBuffer((TERM_X + 6) - tx0,
+                       (TERM_Y + 6) - ty0,
+                       1,
+                       "STATUS",
+                       style->palette.text_primary,
+                       gTerminalCache,
+                       TERMINAL_CACHE_W,
+                       TERMINAL_CACHE_H);
+    BufDrawLine(gTerminalCache,
+                TERMINAL_CACHE_W,
+                TERMINAL_CACHE_H,
+                (TERM_X + 6) - tx0,
+                (TERM_Y + 16) - ty0,
+                (TERM_X + TERM_W - 6) - tx0,
+                (TERM_Y + 16) - ty0,
+                RGB565(110, 20, 30));
 
     (void)cpu_pct;
 
     snprintf(line, sizeof(line), "AI %s", status_text);
-    DrawTerminalLine(TERM_Y + 26, line, ai_color);
+    DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 26) - ty0, line, ai_color);
 
     snprintf(line, sizeof(line), "MODE %s SYS %s", mode_text, sys_text);
-    DrawTerminalLine(TERM_Y + 42, line, style->palette.text_secondary);
+    DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 42) - ty0, line, style->palette.text_secondary);
 
     FormatTempCF(line, sizeof(line), DisplayTempC10(sample));
-    DrawTerminalLine(TERM_Y + 58, line, style->palette.text_primary);
+    DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 58) - ty0, line, style->palette.text_primary);
 
     snprintf(line, sizeof(line),
              "GYR X%c%4d.%1d Y%c%4d.%1d Z%c%4d.%1d",
@@ -3408,7 +3655,7 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
              (gz10 < 0) ? '-' : '+',
              (int)(gz_abs / 10),
              (int)(gz_abs % 10));
-    DrawTerminalLine(TERM_Y + 74, line, RGB565(170, 240, 255));
+    DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 74) - ty0, line, RGB565(170, 240, 255));
 
     if (gLinAccelValid)
     {
@@ -3418,25 +3665,30 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
     {
         snprintf(line, sizeof(line), "ACC +0.000 +0.000 +1.000g");
     }
-    DrawTerminalLine(TERM_Y + 90, line, RGB565(170, 240, 255));
+    DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 90) - ty0, line, RGB565(170, 240, 255));
     FormatShieldEnvCompact(line, sizeof(line));
-    DrawTerminalLine(TERM_Y + 106, line, RGB565(176, 218, 238));
+    DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 106) - ty0, line, RGB565(176, 218, 238));
 
     snprintf(line, sizeof(line), "SIM SQI %3u %s F%02X",
              (unsigned int)gUiCgmSqiPct,
              cgm_conf,
              (unsigned int)(gUiCgmSensorFlags & 0xFFu));
-    DrawTerminalLine(TERM_Y + 122, line, RGB565(176, 218, 238));
+    DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 122) - ty0, line, RGB565(176, 218, 238));
 
     snprintf(line, sizeof(line), "TRN %s %2u ACT %3u %s", transport_text,
              (unsigned int)gTransportConfidencePct,
              (unsigned int)gActivityPct,
              anom_text);
-    DrawTerminalLine(TERM_Y + 138, line, (gActivityStage >= ACTIVITY_ACTIVE) ? ActivityColor(style, gActivityStage) : anom_color);
+    DrawTerminalLineToBuffer(gTerminalCache,
+                             TERMINAL_CACHE_W,
+                             TERMINAL_CACHE_H,
+                             (TERM_Y + 138) - ty0,
+                             line,
+                             (gActivityStage >= ACTIVITY_ACTIVE) ? ActivityColor(style, gActivityStage) : anom_color);
 
     if (gHelpVisible)
     {
-        DrawTerminalLine(TERM_Y + 154, "*:SET ?:HELP", RGB565(180, 220, 248));
+        DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 154) - ty0, "*:SET ?:HELP", RGB565(180, 220, 248));
     }
     else
     {
@@ -3448,8 +3700,9 @@ static void DrawTerminalDynamic(const gauge_style_preset_t *style, const power_s
                  (trend10 < 0) ? '-' : '+',
                  (unsigned int)(trend_abs10 / 10),
                  (unsigned int)(trend_abs10 % 10));
-        DrawTerminalLine(TERM_Y + 154, line, RGB565(164, 222, 244));
+        DrawTerminalLineToBuffer(gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H, (TERM_Y + 154) - ty0, line, RGB565(164, 222, 244));
     }
+    BlitBufferToLcd(tx0, ty0, tw, th, gTerminalCache, TERMINAL_CACHE_W, TERMINAL_CACHE_H);
 }
 
 static void DrawBatteryIndicatorFrame(const gauge_style_preset_t *style)
@@ -3480,6 +3733,13 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
     char line[8];
     int32_t text_x;
     uint16_t fill_color = style->palette.accent_green;
+    static bool sBattInit = false;
+    static uint8_t sPrevBattSoc = 0xFFu;
+
+    if (sBattInit && (sPrevBattSoc == soc))
+    {
+        return;
+    }
 
     if (soc < 25u)
     {
@@ -3501,6 +3761,8 @@ static void DrawBatteryIndicatorDynamic(const gauge_style_preset_t *style, uint8
     text_x = BATT_X + ((BATT_W - edgeai_text5x7_width(1, line)) / 2);
     DrawTextUi(text_x, inner_y0 + ((inner_h - 7) / 2), 1, line, style->palette.text_primary);
     DrawTextUi(text_x_lbl, text_y_lbl, 1, "BATT", style->palette.text_secondary);
+    sPrevBattSoc = soc;
+    sBattInit = true;
 }
 
 static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
@@ -3509,52 +3771,104 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
     int32_t py0 = SCOPE_Y + 18;
     int32_t pw = SCOPE_W - 12;
     int32_t ph = SCOPE_H - 24;
-    int32_t y_bottom = py0 + ph - 1;
     uint16_t axis_color = RGB565(120, 120, 128);
     uint16_t n = (gTraceCount < SCOPE_TRACE_POINTS) ? gTraceCount : SCOPE_TRACE_POINTS;
-    uint16_t max_start = (gTraceCount > SCOPE_TRACE_POINTS) ? (gTraceCount - SCOPE_TRACE_POINTS) : 0u;
-    uint16_t start = max_start;
-    int32_t prev_x = 0;
-    int32_t prev_ax = 0;
-    int32_t prev_ay = 0;
-    int32_t prev_az = 0;
-    int32_t prev_gx = 0;
-    int32_t prev_gy = 0;
-    int32_t prev_gz = 0;
-    int32_t prev_tp = 0;
-    int32_t prev_bp = 0;
+    uint16_t idx;
+    int32_t y_ax;
+    int32_t y_ay;
+    int32_t y_az;
+    int32_t y_gx;
+    int32_t y_gy;
+    int32_t y_gz;
+    int32_t y_tp;
+    int32_t y_bp;
     uint16_t ax_color = TRACE_AX_COLOR;
     uint16_t ay_color = TRACE_AY_COLOR;
     uint16_t az_color = TRACE_AZ_COLOR;
     uint16_t gx_color = TRACE_GX_COLOR;
     uint16_t gy_color = TRACE_GY_COLOR;
     uint16_t gz_color = TRACE_GZ_COLOR;
-    uint16_t i;
-    int32_t y_min = py0 + 1;
-    int32_t y_max = y_bottom - 1;
-    (void)ai_enabled;
+    int32_t y_min = 1;
+    int32_t y_max = ph - 2;
+    static bool sScopeCacheInit = false;
+    static int32_t sScopeWriteX = 1;
+    static int32_t sPrevAx = 0;
+    static int32_t sPrevAy = 0;
+    static int32_t sPrevAz = 0;
+    static int32_t sPrevGx = 0;
+    static int32_t sPrevGy = 0;
+    static int32_t sPrevGz = 0;
+    static int32_t sPrevTp = 0;
+    static int32_t sPrevBp = 0;
+    static bool sPrevPlotValid = false;
+    static bool sTimelineInit = false;
+    static bool sLastLiveMode = false;
+    static bool sLastScopePaused = false;
+    static bool sLastAiEnabled = false;
+    (void)style;
 
-    par_lcd_s035_fill_rect(px0, py0, px0 + pw, py0 + ph, RGB565(4, 6, 8));
-    DrawLine(px0, py0, px0, py0 + ph - 1, 1, axis_color);
-    DrawLine(px0, py0 + ph - 1, px0 + pw - 1, py0 + ph - 1, 1, axis_color);
-
-    if (n == 0u)
+    if ((pw > SCOPE_PLOT_CACHE_W) || (ph > SCOPE_PLOT_CACHE_H))
     {
         return;
     }
 
-    for (i = 0u; i < n; i++)
+    if (!sScopeCacheInit)
     {
-        int32_t x = px0 + ((int32_t)i * (pw - 1)) / (int32_t)((n > 1u) ? (n - 1u) : 1u);
-        uint16_t idx = (uint16_t)(start + i);
-        int32_t y_ax = y_bottom - (int32_t)((gTraceAx[idx] * (uint32_t)(ph - 4)) / 255u);
-        int32_t y_ay = y_bottom - (int32_t)((gTraceAy[idx] * (uint32_t)(ph - 4)) / 255u);
-        int32_t y_az = y_bottom - (int32_t)((gTraceAz[idx] * (uint32_t)(ph - 4)) / 255u);
-        int32_t y_gx = y_bottom - (int32_t)((gTraceGx[idx] * (uint32_t)(ph - 4)) / 255u);
-        int32_t y_gy = y_bottom - (int32_t)((gTraceGy[idx] * (uint32_t)(ph - 4)) / 255u);
-        int32_t y_gz = y_bottom - (int32_t)((gTraceGz[idx] * (uint32_t)(ph - 4)) / 255u);
-        int32_t y_tp = y_bottom - (int32_t)((gTraceTemp[idx] * (uint32_t)(ph - 4)) / 255u);
-        int32_t y_bp = y_bottom - (int32_t)((gTraceBaro[idx] * (uint32_t)(ph - 4)) / 255u);
+        uint16_t i;
+        uint16_t plot_n = (gTraceCount < SCOPE_TRACE_POINTS) ? gTraceCount : SCOPE_TRACE_POINTS;
+        int32_t last_x = 1;
+        BufFillRect(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, 0, 0, pw - 1, ph - 1, RGB565(4, 6, 8));
+        BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, 0, 0, 0, ph - 1, axis_color);
+        BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, 0, ph - 1, pw - 1, ph - 1, axis_color);
+        if (plot_n > 1u)
+        {
+            for (i = 1u; i < plot_n; i++)
+            {
+                int32_t px_prev = (int32_t)(((i - 1u) * (uint32_t)(pw - 2)) / (uint32_t)(plot_n - 1u)) + 1;
+                int32_t px_cur = (int32_t)((i * (uint32_t)(pw - 2)) / (uint32_t)(plot_n - 1u)) + 1;
+                int32_t ay_prev = ClampI32((ph - 1) - (int32_t)((gTraceAy[i - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+                int32_t ay_cur = ClampI32((ph - 1) - (int32_t)((gTraceAy[i] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+                int32_t ax_prev = ClampI32((ph - 1) - (int32_t)((gTraceAx[i - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+                int32_t ax_cur = ClampI32((ph - 1) - (int32_t)((gTraceAx[i] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+                BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, px_prev, ay_prev, px_cur, ay_cur, ay_color);
+                BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, px_prev, ax_prev, px_cur, ax_cur, ax_color);
+                last_x = px_cur;
+            }
+            sPrevAx = ClampI32((ph - 1) - (int32_t)((gTraceAx[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevAy = ClampI32((ph - 1) - (int32_t)((gTraceAy[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevAz = ClampI32((ph - 1) - (int32_t)((gTraceAz[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevGx = ClampI32((ph - 1) - (int32_t)((gTraceGx[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevGy = ClampI32((ph - 1) - (int32_t)((gTraceGy[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevGz = ClampI32((ph - 1) - (int32_t)((gTraceGz[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevTp = ClampI32((ph - 1) - (int32_t)((gTraceTemp[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevBp = ClampI32((ph - 1) - (int32_t)((gTraceBaro[plot_n - 1u] * (uint32_t)(ph - 4)) / 255u), y_min, y_max);
+            sPrevPlotValid = true;
+            sScopeWriteX = last_x + 1;
+            if (sScopeWriteX >= (pw - 1))
+            {
+                sScopeWriteX = 1;
+                sPrevPlotValid = false;
+            }
+        }
+        else
+        {
+            sScopeWriteX = 1;
+            sPrevPlotValid = false;
+        }
+        sScopeCacheInit = true;
+    }
+
+    if (n > 0u)
+    {
+        idx = (uint16_t)(gTraceCount - 1u);
+        y_ax = (ph - 1) - (int32_t)((gTraceAx[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_ay = (ph - 1) - (int32_t)((gTraceAy[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_az = (ph - 1) - (int32_t)((gTraceAz[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_gx = (ph - 1) - (int32_t)((gTraceGx[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_gy = (ph - 1) - (int32_t)((gTraceGy[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_gz = (ph - 1) - (int32_t)((gTraceGz[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_tp = (ph - 1) - (int32_t)((gTraceTemp[idx] * (uint32_t)(ph - 4)) / 255u);
+        y_bp = (ph - 1) - (int32_t)((gTraceBaro[idx] * (uint32_t)(ph - 4)) / 255u);
         y_ax = ClampI32(y_ax, y_min, y_max);
         y_ay = ClampI32(y_ay, y_min, y_max);
         y_az = ClampI32(y_az, y_min, y_max);
@@ -3564,40 +3878,65 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
         y_tp = ClampI32(y_tp, y_min, y_max);
         y_bp = ClampI32(y_bp, y_min, y_max);
 
-        if (i > 0u)
+        if (sScopeWriteX >= (pw - 1))
         {
-            uint16_t tp_color = TempTraceColorFromScaled(gTraceTemp[idx]);
-            DrawLine(prev_x, prev_ax, x, y_ax, 1, ax_color);
-            DrawLine(prev_x, prev_ay, x, y_ay, 1, ay_color);
-            DrawLine(prev_x, prev_az, x, y_az, 1, az_color);
-            DrawLine(prev_x, prev_gx, x, y_gx, 1, gx_color);
-            DrawLine(prev_x, prev_gy, x, y_gy, 1, gy_color);
-            DrawLine(prev_x, prev_gz, x, y_gz, 1, gz_color);
-            DrawLine(prev_x, prev_tp, x, y_tp, 1, tp_color);
-            DrawLine(prev_x, prev_bp, x, y_bp, 1, TRACE_BARO_COLOR);
+            BufFillRect(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, 1, 1, pw - 2, ph - 2, RGB565(4, 6, 8));
+            sScopeWriteX = 1;
+            sPrevPlotValid = false;
         }
 
-        prev_x = x;
-        prev_ax = y_ax;
-        prev_ay = y_ay;
-        prev_az = y_az;
-        prev_gx = y_gx;
-        prev_gy = y_gy;
-        prev_gz = y_gz;
-        prev_tp = y_tp;
-        prev_bp = y_bp;
+        {
+            int32_t x0 = sScopeWriteX - 1;
+            int32_t x1 = sScopeWriteX + 1;
+            if (x0 < 1)
+            {
+                x0 = 1;
+            }
+            if (x1 > (pw - 2))
+            {
+                x1 = pw - 2;
+            }
+            BufFillRect(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, x0, 1, x1, ph - 2, RGB565(4, 6, 8));
+        }
+
+        if (sPrevPlotValid)
+        {
+            uint16_t tp_color = TempTraceColorFromScaled(gTraceTemp[idx]);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevAx, sScopeWriteX, y_ax, ax_color);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevAy, sScopeWriteX, y_ay, ay_color);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevAz, sScopeWriteX, y_az, az_color);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevGx, sScopeWriteX, y_gx, gx_color);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevGy, sScopeWriteX, y_gy, gy_color);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevGz, sScopeWriteX, y_gz, gz_color);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevTp, sScopeWriteX, y_tp, tp_color);
+            BufDrawLine(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, sScopeWriteX - 1, sPrevBp, sScopeWriteX, y_bp, TRACE_BARO_COLOR);
+        }
+        else
+        {
+            gScopePlotCache[(y_ax * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = ax_color;
+            gScopePlotCache[(y_ay * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = ay_color;
+            gScopePlotCache[(y_az * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = az_color;
+            gScopePlotCache[(y_gx * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = gx_color;
+            gScopePlotCache[(y_gy * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = gy_color;
+            gScopePlotCache[(y_gz * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = gz_color;
+            gScopePlotCache[(y_tp * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = TempTraceColorFromScaled(gTraceTemp[idx]);
+            gScopePlotCache[(y_bp * SCOPE_PLOT_CACHE_W) + sScopeWriteX] = TRACE_BARO_COLOR;
+        }
+        sPrevAx = y_ax;
+        sPrevAy = y_ay;
+        sPrevAz = y_az;
+        sPrevGx = y_gx;
+        sPrevGy = y_gy;
+        sPrevGz = y_gz;
+        sPrevTp = y_tp;
+        sPrevBp = y_bp;
+        sPrevPlotValid = true;
+        sScopeWriteX++;
     }
 
-    if (gPlayheadValid)
     {
-        int32_t head_x = px0 + ((int32_t)gPlayheadPos * (pw - 1)) / 99;
-        uint16_t head_color = gScopePaused ? RGB565(80, 255, 120) : RGB565(255, 88, 88);
-        DrawLine(head_x, py0 + 1, head_x, py0 + ph - 2, 1, head_color);
-    }
-
-    {
-        int32_t rec_x = px0 + pw - 8;
-        int32_t rec_y = py0 + 8;
+        int32_t rec_x = pw - 8;
+        int32_t rec_y = 8;
         uint16_t ring;
         uint16_t fill;
         if (gLiveBannerMode)
@@ -3610,8 +3949,21 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
             ring = gScopePaused ? RGB565(0, 48, 0) : RGB565(70, 0, 0);
             fill = gScopePaused ? RGB565(48, 255, 96) : RGB565(255, 28, 28);
         }
-        par_lcd_s035_draw_filled_circle(rec_x, rec_y, 4, ring);
-        par_lcd_s035_draw_filled_circle(rec_x, rec_y, 3, fill);
+        BufFillRect(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, rec_x - 5, rec_y - 5, rec_x + 5, rec_y + 5, RGB565(4, 6, 8));
+        BufDrawCircleFilled(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, rec_x, rec_y, 4, ring);
+        BufDrawCircleFilled(gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H, rec_x, rec_y, 3, fill);
+    }
+    BlitBufferToLcd(px0, py0, pw, ph, gScopePlotCache, SCOPE_PLOT_CACHE_W, SCOPE_PLOT_CACHE_H);
+
+    {
+        bool timeline_changed = (!sTimelineInit) ||
+                                (sLastLiveMode != gLiveBannerMode) ||
+                                (sLastScopePaused != gScopePaused) ||
+                                (sLastAiEnabled != ai_enabled);
+        if (!timeline_changed)
+        {
+            return;
+        }
     }
 
     {
@@ -3621,35 +3973,76 @@ static void DrawScopeDynamic(const gauge_style_preset_t *style, bool ai_enabled)
         int32_t lx1 = mid - 1;
         int32_t rx0 = mid;
         int32_t rx1 = TIMELINE_X1;
+        int32_t tw = TIMELINE_X1 - TIMELINE_X0 + 1;
+        int32_t th = TIMELINE_Y1 - TIMELINE_Y0 + 1;
+        if ((tw > TIMELINE_CACHE_W) || (th > TIMELINE_CACHE_H))
+        {
+            return;
+        }
+        BufFillRect(gTimelineCache, TIMELINE_CACHE_W, TIMELINE_CACHE_H, 0, 0, tw - 1, th - 1, RGB565(20, 28, 34));
         if (gLiveBannerMode)
         {
-            par_lcd_s035_fill_rect(TIMELINE_X0 + 1, TIMELINE_Y0 + 1, TIMELINE_X1 - 1, TIMELINE_Y1 - 1, RGB565(22, 78, 112));
-            DrawLine(TIMELINE_X0 + 1, TIMELINE_Y0 + 2, TIMELINE_X1 - 1, TIMELINE_Y0 + 2, 1, RGB565(120, 220, 255));
-            DrawLine(TIMELINE_X0 + 1, TIMELINE_Y1 - 2, TIMELINE_X1 - 1, TIMELINE_Y1 - 2, 1, RGB565(70, 170, 220));
+            BufFillRect(gTimelineCache, TIMELINE_CACHE_W, TIMELINE_CACHE_H, 1, 1, tw - 2, th - 2, RGB565(22, 78, 112));
+            BufDrawLine(gTimelineCache, TIMELINE_CACHE_W, TIMELINE_CACHE_H, 1, 2, tw - 2, 2, RGB565(120, 220, 255));
+            BufDrawLine(gTimelineCache, TIMELINE_CACHE_W, TIMELINE_CACHE_H, 1, th - 3, tw - 2, th - 3, RGB565(70, 170, 220));
             ty = TIMELINE_Y0 + ((TIMELINE_Y1 - TIMELINE_Y0 - 7) / 2);
-            DrawTextUi(TIMELINE_X0 + ((TIMELINE_X1 - TIMELINE_X0 + 1 - edgeai_text5x7_width(1, "LIVE")) / 2),
-                       ty,
-                       1,
-                       "LIVE",
-                       RGB565(192, 242, 255));
+            edgeai_text5x7_draw_scaled_to_buffer((tw - edgeai_text5x7_width(1, "LIVE")) / 2,
+                                                 ty - TIMELINE_Y0,
+                                                 1,
+                                                 "LIVE",
+                                                 RGB565(192, 242, 255),
+                                                 false,
+                                                 0u,
+                                                 gTimelineCache,
+                                                 TIMELINE_CACHE_W,
+                                                 TIMELINE_CACHE_H);
         }
         else
         {
-            par_lcd_s035_fill_rect(TIMELINE_X0 + 1, TIMELINE_Y0 + 1, TIMELINE_X1 - 1, TIMELINE_Y1 - 1, RGB565(20, 28, 34));
-            par_lcd_s035_fill_rect(lx0 + 1,
-                                   TIMELINE_Y0 + 1,
-                                   lx1 - 1,
-                                   TIMELINE_Y1 - 1,
-                                   gScopePaused ? RGB565(20, 180, 36) : RGB565(24, 82, 210));
-            par_lcd_s035_fill_rect(rx0 + 1, TIMELINE_Y0 + 1, rx1 - 1, TIMELINE_Y1 - 1, RGB565(220, 24, 24));
+            BufFillRect(gTimelineCache, TIMELINE_CACHE_W, TIMELINE_CACHE_H, 1, 1, tw - 2, th - 2, RGB565(20, 28, 34));
+            BufFillRect(gTimelineCache,
+                        TIMELINE_CACHE_W,
+                        TIMELINE_CACHE_H,
+                        (lx0 + 1) - TIMELINE_X0,
+                        1,
+                        (lx1 - 1) - TIMELINE_X0,
+                        th - 2,
+                        gScopePaused ? RGB565(20, 180, 36) : RGB565(24, 82, 210));
+            BufFillRect(gTimelineCache,
+                        TIMELINE_CACHE_W,
+                        TIMELINE_CACHE_H,
+                        (rx0 + 1) - TIMELINE_X0,
+                        1,
+                        (rx1 - 1) - TIMELINE_X0,
+                        th - 2,
+                        RGB565(220, 24, 24));
             ty = TIMELINE_Y0 + ((TIMELINE_Y1 - TIMELINE_Y0 - 7) / 2);
-            DrawTextUi(lx0 + ((lx1 - lx0 + 1 - edgeai_text5x7_width(1, gScopePaused ? "PLAY" : "STOP")) / 2),
-                       ty,
-                       1,
-                       gScopePaused ? "PLAY" : "STOP",
-                       gScopePaused ? RGB565(232, 255, 232) : RGB565(210, 236, 255));
-            DrawTextUi(rx0 + ((rx1 - rx0 + 1 - edgeai_text5x7_width(1, "REC")) / 2), ty, 1, "REC", RGB565(255, 232, 232));
+            edgeai_text5x7_draw_scaled_to_buffer(((lx0 + ((lx1 - lx0 + 1 - edgeai_text5x7_width(1, gScopePaused ? "PLAY" : "STOP")) / 2)) - TIMELINE_X0),
+                                                 ty - TIMELINE_Y0,
+                                                 1,
+                                                 gScopePaused ? "PLAY" : "STOP",
+                                                 gScopePaused ? RGB565(232, 255, 232) : RGB565(210, 236, 255),
+                                                 false,
+                                                 0u,
+                                                 gTimelineCache,
+                                                 TIMELINE_CACHE_W,
+                                                 TIMELINE_CACHE_H);
+            edgeai_text5x7_draw_scaled_to_buffer(((rx0 + ((rx1 - rx0 + 1 - edgeai_text5x7_width(1, "REC")) / 2)) - TIMELINE_X0),
+                                                 ty - TIMELINE_Y0,
+                                                 1,
+                                                 "REC",
+                                                 RGB565(255, 232, 232),
+                                                 false,
+                                                 0u,
+                                                 gTimelineCache,
+                                                 TIMELINE_CACHE_W,
+                                                 TIMELINE_CACHE_H);
         }
+        BlitBufferToLcd(TIMELINE_X0, TIMELINE_Y0, tw, th, gTimelineCache, TIMELINE_CACHE_W, TIMELINE_CACHE_H);
+        sLastLiveMode = gLiveBannerMode;
+        sLastScopePaused = gScopePaused;
+        sLastAiEnabled = ai_enabled;
+        sTimelineInit = true;
     }
 
 }
@@ -3705,29 +4098,65 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t f
     bool low_fill = (fill_pct < 20u);
     bool warn_fill = (fill_pct < 40u);
     char line[20];
-    int32_t y;
     int32_t label_y = PUMP_BG_HEIGHT - 16;
     int32_t label_scale = 1;
     int32_t label_x1;
+    int32_t region_x0 = BAR_X0;
+    int32_t region_y0 = BAR_Y0;
+    int32_t region_x1 = BAR_X0 + 170;
+    int32_t region_y1 = label_y + 11;
+    int32_t rw;
+    int32_t rh;
 
     if (((uint8_t)level == gPrevBarLevel) && (fill_pct == gPrevFillPct))
     {
         return;
     }
 
-    for (y = label_y - 2; y <= BAR_Y1 + 1; y++)
+    if (region_y1 >= PUMP_BG_HEIGHT)
     {
-        if ((y >= 0) && (y < PUMP_BG_HEIGHT))
-        {
-            par_lcd_s035_blit_rect(BAR_X0, y, BAR_X0 + 170, y,
-                                   (uint16_t *)&g_pump_bg_rgb565[(y * PUMP_BG_WIDTH) + BAR_X0]);
-        }
+        region_y1 = PUMP_BG_HEIGHT - 1;
     }
+    rw = region_x1 - region_x0 + 1;
+    rh = region_y1 - region_y0 + 1;
+    if ((rw <= 0) || (rh <= 0) || (rw > LEFTBAR_CACHE_W) || (rh > LEFTBAR_CACHE_H))
+    {
+        return;
+    }
+    CopyPumpBgToBuffer(region_x0, region_y0, rw, rh, gLeftBarCache, LEFTBAR_CACHE_W, LEFTBAR_CACHE_H);
 
-    DrawLine(BAR_X0, BAR_Y0, BAR_X1, BAR_Y0, 1, style->palette.text_primary);
-    DrawLine(BAR_X0, BAR_Y1, BAR_X1, BAR_Y1, 1, style->palette.text_primary);
-    DrawLine(BAR_X0, BAR_Y0, BAR_X0, BAR_Y1, 1, style->palette.text_primary);
-    DrawLine(BAR_X1, BAR_Y0, BAR_X1, BAR_Y1, 1, style->palette.text_primary);
+    BufDrawLine(gLeftBarCache,
+                LEFTBAR_CACHE_W,
+                LEFTBAR_CACHE_H,
+                BAR_X0 - region_x0,
+                BAR_Y0 - region_y0,
+                BAR_X1 - region_x0,
+                BAR_Y0 - region_y0,
+                style->palette.text_primary);
+    BufDrawLine(gLeftBarCache,
+                LEFTBAR_CACHE_W,
+                LEFTBAR_CACHE_H,
+                BAR_X0 - region_x0,
+                BAR_Y1 - region_y0,
+                BAR_X1 - region_x0,
+                BAR_Y1 - region_y0,
+                style->palette.text_primary);
+    BufDrawLine(gLeftBarCache,
+                LEFTBAR_CACHE_W,
+                LEFTBAR_CACHE_H,
+                BAR_X0 - region_x0,
+                BAR_Y0 - region_y0,
+                BAR_X0 - region_x0,
+                BAR_Y1 - region_y0,
+                style->palette.text_primary);
+    BufDrawLine(gLeftBarCache,
+                LEFTBAR_CACHE_W,
+                LEFTBAR_CACHE_H,
+                BAR_X1 - region_x0,
+                BAR_Y0 - region_y0,
+                BAR_X1 - region_x0,
+                BAR_Y1 - region_y0,
+                style->palette.text_primary);
 
     for (i = 0; i < BAR_SEGMENTS; i++)
     {
@@ -3768,7 +4197,14 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t f
             }
         }
 
-        par_lcd_s035_fill_rect(inner_x0, seg_top, inner_x1, seg_bot, color);
+        BufFillRect(gLeftBarCache,
+                    LEFTBAR_CACHE_W,
+                    LEFTBAR_CACHE_H,
+                    inner_x0 - region_x0,
+                    seg_top - region_y0,
+                    inner_x1 - region_x0,
+                    seg_bot - region_y0,
+                    color);
     }
 
     {
@@ -3784,8 +4220,31 @@ static void DrawLeftBargraphDynamic(const gauge_style_preset_t *style, uint8_t f
                  (int)(f_abs % 10));
     }
     label_x1 = (BAR_X0 + 2) + edgeai_text5x7_width(label_scale, line) + edgeai_text5x7_width(label_scale, "  ");
-    par_lcd_s035_fill_rect(BAR_X0, label_y - 2, label_x1, label_y + 11, TRACE_AX_COLOR);
-    DrawTextUi120(BAR_X0 + 2, label_y, line, low_fill ? style->palette.accent_red : RGB565(4, 18, 26));
+    BufFillRect(gLeftBarCache,
+                LEFTBAR_CACHE_W,
+                LEFTBAR_CACHE_H,
+                BAR_X0 - region_x0,
+                (label_y - 2) - region_y0,
+                label_x1 - region_x0,
+                (label_y + 11) - region_y0,
+                TRACE_AX_COLOR);
+    DrawTextUiToBuffer((BAR_X0 + 2) - region_x0,
+                       label_y - region_y0,
+                       1,
+                       line,
+                       low_fill ? style->palette.accent_red : RGB565(4, 18, 26),
+                       gLeftBarCache,
+                       LEFTBAR_CACHE_W,
+                       LEFTBAR_CACHE_H);
+    DrawTextUiToBuffer((BAR_X0 + 3) - region_x0,
+                       label_y - region_y0,
+                       1,
+                       line,
+                       low_fill ? style->palette.accent_red : RGB565(4, 18, 26),
+                       gLeftBarCache,
+                       LEFTBAR_CACHE_W,
+                       LEFTBAR_CACHE_H);
+    BlitBufferToLcd(region_x0, region_y0, rw, rh, gLeftBarCache, LEFTBAR_CACHE_W, LEFTBAR_CACHE_H);
 
     gPrevBarLevel = (uint8_t)level;
     gPrevFillPct = fill_pct;
@@ -3833,8 +4292,7 @@ bool GaugeRender_Init(void)
         DrawStaticDashboard(style, POWER_REPLAY_PROFILE_WIRED);
         gStaticReady = true;
         gDynamicReady = false;
-        gTraceCount = 0u;
-        gTraceReady = false;
+        PrefillScopeTraceFromReplayWindow();
         gFrameCounter = 0u;
         gPrevBarLevel = 255u;
         gPrevFillPct = 255u;
@@ -3968,6 +4426,7 @@ void GaugeRender_SetLimitInfo(uint16_t g_warn_mg,
     gLimitTempLowC10 = temp_low_c10;
     gLimitTempHighC10 = temp_high_c10;
     gLimitGyroDps = gyro_limit_dps;
+    gModalDirty = true;
 }
 
 void GaugeRender_SetAnomalyInfo(uint8_t mode,
@@ -3994,6 +4453,7 @@ void GaugeRender_SetAnomalyInfo(uint8_t mode,
 void GaugeRender_SetHelpVisible(bool visible)
 {
     gHelpVisible = visible;
+    gModalDirty = true;
     if (visible)
     {
         gSettingsVisible = false;
@@ -4004,16 +4464,19 @@ void GaugeRender_SetHelpVisible(bool visible)
 void GaugeRender_SetHelpPage(uint8_t page)
 {
     gHelpPage = (page > 1u) ? 1u : page;
+    gModalDirty = true;
 }
 
 void GaugeRender_NextHelpPage(void)
 {
     gHelpPage = (uint8_t)((gHelpPage == 0u) ? 1u : 0u);
+    gModalDirty = true;
 }
 
 void GaugeRender_SetSettingsVisible(bool visible)
 {
     gSettingsVisible = visible;
+    gModalDirty = true;
     if (visible)
     {
         gHelpVisible = false;
@@ -4024,6 +4487,7 @@ void GaugeRender_SetSettingsVisible(bool visible)
 void GaugeRender_SetLimitsVisible(bool visible)
 {
     gLimitsVisible = visible;
+    gModalDirty = true;
     if (visible)
     {
         gHelpVisible = false;
@@ -4039,6 +4503,7 @@ bool GaugeRender_IsLimitsVisible(void)
 void GaugeRender_SetLiveBannerMode(bool enabled)
 {
     gLiveBannerMode = enabled;
+    gModalDirty = true;
 }
 
 bool GaugeRender_IsLiveBannerMode(void)
@@ -4049,6 +4514,7 @@ bool GaugeRender_IsLiveBannerMode(void)
 void GaugeRender_SetAiBackendNpu(bool use_npu)
 {
     gUiAiBackendNpu = use_npu;
+    gModalDirty = true;
 }
 
 void GaugeRender_SetWarmupThinking(bool enabled)
@@ -4177,6 +4643,10 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     style = GaugeStyle_GetCockpitPreset();
     power_w = DisplayPowerW(sample);
     modal_active = (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive);
+    if (modal_active && !gModalWasActive)
+    {
+        gModalDirty = true;
+    }
 
     if (gModalWasActive && !modal_active)
     {
@@ -4193,6 +4663,10 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevAiEnabled = !ai_enabled;
         gPrevAiBackendNpu = gUiAiBackendNpu;
         gAlertVisualValid = false;
+        gUiForceAlertOverlayRefresh = true;
+        gCenterTextCacheValid = false;
+        gRtcTextCacheValid = false;
+        gForceOrientRefresh = true;
     }
 
     if (!gStaticReady)
@@ -4214,7 +4688,10 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         gPrevThermalRisk = 65535u;
         gPrevDrift = 255u;
         gAlertVisualValid = false;
+        gUiForceAlertOverlayRefresh = true;
         gUiBallFiltPrimed = false;
+        gCenterTextCacheValid = false;
+        gRtcTextCacheValid = false;
     }
 
     cpu_pct = (uint16_t)(20u + (sample->current_mA / 1400u) + (sample->temp_c / 2u));
@@ -4227,18 +4704,23 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
 
     if (gSettingsVisible || gHelpVisible || gLimitsVisible)
     {
-        DrawPopupModalBase();
-        if (gSettingsVisible)
+        if (gModalDirty)
         {
-            DrawSettingsPopup();
-        }
-        if (gHelpVisible)
-        {
-            DrawHelpPopup();
-        }
-        if (gLimitsVisible)
-        {
-            DrawLimitsPopup();
+            DrawPopupModalBase();
+            DrawAiSideButtons();
+            if (gSettingsVisible)
+            {
+                DrawSettingsPopup();
+            }
+            if (gHelpVisible)
+            {
+                DrawHelpPopup();
+            }
+            if (gLimitsVisible)
+            {
+                DrawLimitsPopup();
+            }
+            gModalDirty = false;
         }
         gModalWasActive = modal_active;
         return;
@@ -4247,6 +4729,9 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     {
         char rtc_line[20];
         int32_t rtc_x;
+        const int32_t rtc_x0 = 170;
+        const int32_t rtc_y0 = RTC_TEXT_Y - 2;
+        const uint16_t rtc_bg = RGB565(2, 3, 5);
 
         if (gRtcValid)
         {
@@ -4259,9 +4744,28 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         {
             snprintf(rtc_line, sizeof(rtc_line), "----:--:--");
         }
-        par_lcd_s035_fill_rect(170, RTC_TEXT_Y - 2, 308, RTC_TEXT_Y + 15, RGB565(2, 3, 5));
-        rtc_x = ((PANEL_X0 + PANEL_X1) / 2) - (edgeai_text5x7_width(2, rtc_line) / 2);
-        DrawTextUi(rtc_x, RTC_TEXT_Y, 2, rtc_line, RGB565(160, 220, 255));
+        if ((!gRtcTextCacheValid) || (strncmp(gRtcTextCacheLine, rtc_line, sizeof(gRtcTextCacheLine)) != 0))
+        {
+            int32_t i;
+            for (i = 0; i < (RTC_TEXT_CACHE_W * RTC_TEXT_CACHE_H); i++)
+            {
+                gRtcTextCache[i] = rtc_bg;
+            }
+            rtc_x = ((PANEL_X0 + PANEL_X1) / 2) - (edgeai_text5x7_width(2, rtc_line) / 2);
+            edgeai_text5x7_draw_scaled_to_buffer(rtc_x - rtc_x0,
+                                                 RTC_TEXT_Y - rtc_y0,
+                                                 2,
+                                                 rtc_line,
+                                                 RGB565(160, 220, 255),
+                                                 false,
+                                                 0u,
+                                                 gRtcTextCache,
+                                                 RTC_TEXT_CACHE_W,
+                                                 RTC_TEXT_CACHE_H);
+            snprintf(gRtcTextCacheLine, sizeof(gRtcTextCacheLine), "%s", rtc_line);
+            gRtcTextCacheValid = true;
+        }
+        BlitBufferToLcd(rtc_x0, rtc_y0, RTC_TEXT_CACHE_W, RTC_TEXT_CACHE_H, gRtcTextCache, RTC_TEXT_CACHE_W, RTC_TEXT_CACHE_H);
     }
 
     PushScopeSample();
@@ -4269,26 +4773,33 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     DrawScopeDynamic(style, ai_enabled);
     gDynamicReady = true;
 
-    par_lcd_s035_fill_rect(TERM_X, SCOPE_Y + SCOPE_H + 1, TERM_X + TERM_W, TERM_Y - 1, RGB565(2, 3, 5));
     {
+        static bool sLegendInit = false;
+        static uint16_t sLastLegendTempColor = 0u;
         int32_t lx = SCOPE_X + 8;
         int32_t ly = SCOPE_Y + SCOPE_H + 1;
         uint16_t t_color = TempTraceColorFromC10(DisplayTempC10(sample));
-        DrawTextUi(lx, ly, 1, "AX", TRACE_AX_COLOR);
-        lx += edgeai_text5x7_width(1, "AX ");
-        DrawTextUi(lx, ly, 1, "AY", TRACE_AY_COLOR);
-        lx += edgeai_text5x7_width(1, "AY ");
-        DrawTextUi(lx, ly, 1, "AZ", TRACE_AZ_COLOR);
-        lx += edgeai_text5x7_width(1, "AZ ");
-        DrawTextUi(lx, ly, 1, "T", t_color);
-        lx += edgeai_text5x7_width(1, "T ");
-        DrawTextUi(lx, ly, 1, "GX", TRACE_GX_COLOR);
-        lx += edgeai_text5x7_width(1, "GX ");
-        DrawTextUi(lx, ly, 1, "GY", TRACE_GY_COLOR);
-        lx += edgeai_text5x7_width(1, "GY ");
-        DrawTextUi(lx, ly, 1, "GZ", TRACE_GZ_COLOR);
-        lx += edgeai_text5x7_width(1, "GZ ");
-        DrawTextUi(lx, ly, 1, "BP", TRACE_BARO_COLOR);
+        if ((!sLegendInit) || (sLastLegendTempColor != t_color))
+        {
+            par_lcd_s035_fill_rect(TERM_X, SCOPE_Y + SCOPE_H + 1, TERM_X + TERM_W, TERM_Y - 1, RGB565(2, 3, 5));
+            DrawTextUi(lx, ly, 1, "AX", TRACE_AX_COLOR);
+            lx += edgeai_text5x7_width(1, "AX ");
+            DrawTextUi(lx, ly, 1, "AY", TRACE_AY_COLOR);
+            lx += edgeai_text5x7_width(1, "AY ");
+            DrawTextUi(lx, ly, 1, "AZ", TRACE_AZ_COLOR);
+            lx += edgeai_text5x7_width(1, "AZ ");
+            DrawTextUi(lx, ly, 1, "T", t_color);
+            lx += edgeai_text5x7_width(1, "T ");
+            DrawTextUi(lx, ly, 1, "GX", TRACE_GX_COLOR);
+            lx += edgeai_text5x7_width(1, "GX ");
+            DrawTextUi(lx, ly, 1, "GY", TRACE_GY_COLOR);
+            lx += edgeai_text5x7_width(1, "GY ");
+            DrawTextUi(lx, ly, 1, "GZ", TRACE_GZ_COLOR);
+            lx += edgeai_text5x7_width(1, "GZ ");
+            DrawTextUi(lx, ly, 1, "BP", TRACE_BARO_COLOR);
+            sLastLegendTempColor = t_color;
+            sLegendInit = true;
+        }
     }
     DrawHumanOrientationPointer(style);
     if (!(gSettingsVisible || gHelpVisible || gLimitsVisible))
@@ -4325,7 +4836,6 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     gModalWasActive = modal_active;
 
     DrawAiPill(style, ai_enabled);
-    DrawAiSideButtons();
 
     /* Keep center CGM text as the final dynamic layer to avoid overdraw flicker. */
     DrawGlucoseIndicator();

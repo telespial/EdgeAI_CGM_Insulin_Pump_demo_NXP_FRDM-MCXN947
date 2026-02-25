@@ -1,5 +1,6 @@
 #include "text5x7.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "par_lcd_s035.h"
@@ -129,6 +130,73 @@ static void edgeai_draw_char5x7_scaled(int32_t x, int32_t y, int32_t scale, char
                 par_lcd_s035_fill_rect(x0, y0, x0 + scale - 1, y0 + scale - 1, color);
             }
         }
+    }
+}
+
+static void edgeai_buf_put_px(uint16_t *buf, int32_t buf_w, int32_t buf_h, int32_t x, int32_t y, uint16_t c)
+{
+    if ((buf == NULL) || (x < 0) || (y < 0) || (x >= buf_w) || (y >= buf_h))
+    {
+        return;
+    }
+    buf[(y * buf_w) + x] = c;
+}
+
+void edgeai_text5x7_draw_scaled_to_buffer(int32_t x,
+                                          int32_t y,
+                                          int32_t scale,
+                                          const char *s,
+                                          uint16_t fg_rgb565,
+                                          bool opaque,
+                                          uint16_t bg_rgb565,
+                                          uint16_t *buf_rgb565,
+                                          int32_t buf_w,
+                                          int32_t buf_h)
+{
+    int32_t cx;
+
+    if ((s == NULL) || (buf_rgb565 == NULL) || (buf_w <= 0) || (buf_h <= 0))
+    {
+        return;
+    }
+    if (scale < 1)
+    {
+        scale = 1;
+    }
+
+    cx = x;
+    while (*s != '\0')
+    {
+        const uint8_t *g = edgeai_glyph5x7(*s);
+        int32_t row;
+        int32_t col;
+
+        for (row = 0; row < 7; row++)
+        {
+            uint8_t bits = g[row];
+            for (col = 0; col < 6; col++)
+            {
+                bool pixel_on = (col < 5) ? ((bits & (1u << (4 - col))) != 0u) : false;
+                if (opaque || pixel_on)
+                {
+                    int32_t sy;
+                    int32_t sx;
+                    uint16_t color = pixel_on ? fg_rgb565 : bg_rgb565;
+                    int32_t x0 = cx + (col * scale);
+                    int32_t y0 = y + (row * scale);
+                    for (sy = 0; sy < scale; sy++)
+                    {
+                        for (sx = 0; sx < scale; sx++)
+                        {
+                            edgeai_buf_put_px(buf_rgb565, buf_w, buf_h, x0 + sx, y0 + sy, color);
+                        }
+                    }
+                }
+            }
+        }
+
+        cx += (6 * scale);
+        s++;
     }
 }
 

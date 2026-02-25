@@ -230,21 +230,31 @@ void par_lcd_s035_fill_rect(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint
     if (x1 >= (int32_t)EDGEAI_LCD_WIDTH) x1 = (int32_t)EDGEAI_LCD_WIDTH - 1;
     if (y1 >= (int32_t)EDGEAI_LCD_HEIGHT) y1 = (int32_t)EDGEAI_LCD_HEIGHT - 1;
 
-    uint32_t w = (uint32_t)(x1 - x0 + 1);
-    if (w > EDGEAI_LCD_WIDTH) w = EDGEAI_LCD_WIDTH;
-
-    static uint16_t row[EDGEAI_LCD_WIDTH];
-    for (uint32_t i = 0; i < w; i++)
     {
-        row[i] = rgb565;
-    }
+        uint32_t w = (uint32_t)(x1 - x0 + 1);
+        uint32_t h = (uint32_t)(y1 - y0 + 1);
+        uint32_t remaining = w * h;
+        enum
+        {
+            FILL_CHUNK_PIXELS = 4096u
+        };
+        static uint16_t chunk[FILL_CHUNK_PIXELS];
+        uint32_t i;
 
-    for (int32_t y = y0; y <= y1; y++)
-    {
-        ST7796S_SelectArea(&s_lcdHandle, (uint16_t)x0, (uint16_t)y, (uint16_t)x1, (uint16_t)y);
-        s_memWriteDone = false;
-        ST7796S_WritePixels(&s_lcdHandle, row, w);
-        lcd_wait_write_done();
+        for (i = 0; i < FILL_CHUNK_PIXELS; i++)
+        {
+            chunk[i] = rgb565;
+        }
+
+        ST7796S_SelectArea(&s_lcdHandle, (uint16_t)x0, (uint16_t)y0, (uint16_t)x1, (uint16_t)y1);
+        while (remaining > 0u)
+        {
+            uint32_t send = (remaining > FILL_CHUNK_PIXELS) ? FILL_CHUNK_PIXELS : remaining;
+            s_memWriteDone = false;
+            ST7796S_WritePixels(&s_lcdHandle, chunk, send);
+            lcd_wait_write_done();
+            remaining -= send;
+        }
     }
 }
 

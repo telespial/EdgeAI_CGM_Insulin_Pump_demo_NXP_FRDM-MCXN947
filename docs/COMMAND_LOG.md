@@ -1525,3 +1525,154 @@ Format:
 [2026-02-24T09:06:55-08:00] Ran git add/commit for README sync + state/log updates
 [2026-02-24T09:06:55-08:00] Ran git push origin main (rejected: non-fast-forward)
 [2026-02-24T09:06:55-08:00] Ran git pull --rebase origin main and git push origin main (PASS)
+[2026-02-24T19:23:21-08:00] Ran pwd/ls/git status in project root to validate working tree before creating restore checkpoint
+[2026-02-24T19:23:21-08:00] Ran docs/failsafe inventory and recent git log inspection to select current checkpoint base
+[2026-02-24T19:23:21-08:00] Ran tail on docs/COMMAND_LOG.md and docs/PROJECT_STATE.md to follow project logging format
+[2026-02-24T19:23:21-08:00] Created git restore refs at current commit: tag restore-cgm-20260224-192316 and branch restore/cgm-20260224-192316
+[2026-02-24T19:23:39-08:00] Appended restore-checkpoint details to docs/PROJECT_STATE.md with explicit rollback commands
+[2026-02-24T19:23:39-08:00] Pushed restore branch restore/cgm-20260224-192316 to origin
+[2026-02-24T19:23:39-08:00] Pushed restore tag restore-cgm-20260224-192316 to origin
+[2026-02-24T19:23:47-08:00] Ran git status --short --branch after checkpoint creation and remote push
+[2026-02-24T19:24:52-08:00] Ran rg scan across src/ to locate clear/redraw and display blit/fill paths for CGM flicker reduction work
+[2026-02-24T19:24:52-08:00] Inspected src/gauge_render.c text rendering helpers and center text redraw region logic (sed 1540-1668, 1840-2060)
+[2026-02-24T19:25:03-08:00] Inspected popup dirty-region redraw and frame render ordering in src/gauge_render.c (sed 2648-2768, 4140-4425)
+[2026-02-24T19:27:11-08:00] Edited src/text5x7.h and src/text5x7.c to add buffered RGB565 text renderer: edgeai_text5x7_draw_scaled_to_buffer(...)
+[2026-02-24T19:27:11-08:00] Edited src/gauge_render.c to add center-text and RTC cache buffers with atomic row blits (compose in RAM, then par_lcd_s035_blit_rect)
+[2026-02-24T19:27:11-08:00] Edited src/gauge_render.c to invalidate text caches on static/modal background resets
+[2026-02-24T19:27:28-08:00] Ran ./scripts/build.sh (PASS) after buffered-render changes; build output reports m_text 486628 B (61.96% of 767 KB)
+[2026-02-24T19:27:43-08:00] Ran ./scripts/flash.sh (PASS) to program FRDM-MCXN947 with buffered-render build
+[2026-02-24T19:27:59-08:00] Appended buffered-render implementation + build/flash verification summary to docs/PROJECT_STATE.md
+[2026-02-24T19:28:07-08:00] Ran git status and rg symbol check to verify modified files and buffered-render callsites
+[2026-02-24T19:28:36-08:00] Inspected scope/timeline/bargraph draw pipeline in src/gauge_render.c (rg + sed 3520-4168) to identify remaining flicker sources
+[2026-02-24T19:30:37-08:00] Edited src/gauge_render.c to add scope/timeline offscreen composition buffers and buffer draw helpers (line, rect, circle)
+[2026-02-24T19:30:37-08:00] Ran ./scripts/build.sh (FAIL): compile errors in src/gauge_render.c (AbsI32 implicit declaration, unused y_bottom)
+[2026-02-24T19:30:37-08:00] Patched src/gauge_render.c to remove AbsI32 dependency in buffer line helper and remove unused y_bottom variable
+[2026-02-24T19:31:04-08:00] Ran ./scripts/build.sh after scope/timeline buffer patch (PASS)
+[2026-02-24T19:31:04-08:00] Ran ./scripts/flash.sh after scope/timeline buffer patch (PASS)
+[2026-02-24T19:31:12-08:00] Appended scope/timeline buffered-render implementation and verification to docs/PROJECT_STATE.md
+[2026-02-24T19:31:21-08:00] Ran git status and rg symbol checks after second anti-flicker pass
+[2026-02-24T19:32:20-08:00] Inspected src/par_lcd_s035.c transfer behavior and current dynamic fill/draw call density in src/gauge_render.c (rg + sed)
+[2026-02-24T19:33:34-08:00] Searched ST7796S TE/teConfig enums and inspected driver write path to diagnose persistent raster/flash behavior
+[2026-02-24T19:33:34-08:00] Edited src/par_lcd_s035.c: rewrote par_lcd_s035_fill_rect to stream full rect in one selected area using chunked writes (no per-row SelectArea loop)
+[2026-02-24T19:33:34-08:00] Ran ./scripts/build.sh after LCD fill streaming change (PASS)
+[2026-02-24T19:33:34-08:00] Ran ./scripts/flash.sh after LCD fill streaming change (PASS)
+[2026-02-24T19:33:44-08:00] Appended LCD fill streaming optimization summary to docs/PROJECT_STATE.md
+[2026-02-24T19:36:09-08:00] Inspected DrawTerminalDynamic block and implemented terminal offscreen composition path in src/gauge_render.c
+[2026-02-24T19:36:09-08:00] Added terminal buffer helpers (DrawTextUiToBuffer/DrawTerminalLineToBuffer) and terminal cache region constants
+[2026-02-24T19:36:09-08:00] Ran ./scripts/build.sh after terminal buffer conversion (PASS)
+[2026-02-24T19:36:09-08:00] Ran ./scripts/flash.sh after terminal buffer conversion (PASS)
+[2026-02-24T19:36:17-08:00] Appended terminal buffered-render implementation and verification to docs/PROJECT_STATE.md
+[2026-02-24T19:42:13-08:00] Attempted full DrawScopeDynamic replacement patch; initial apply failed due function drift, then reapplied using current source block
+[2026-02-24T19:42:13-08:00] Refactored DrawScopeDynamic to incremental scope plotting (column update model) and timeline redraw-on-change gating
+[2026-02-24T19:42:13-08:00] Ran ./scripts/build.sh after incremental scope refactor (PASS)
+[2026-02-24T19:42:13-08:00] Ran ./scripts/flash.sh after incremental scope refactor (PASS)
+[2026-02-24T19:45:59-08:00] Inspected middle/left render paths (DrawMedicalOverlayData, DrawAiAlertOverlay, DrawLeftBargraphDynamic, DrawHumanOrientationPointer)
+[2026-02-24T19:45:59-08:00] Edited src/gauge_render.c: moved human-orientation widget draw to offscreen buffer (gOrientCache) + single region blit
+[2026-02-24T19:45:59-08:00] Edited src/gauge_render.c: moved left bar dynamic draw to offscreen buffer (gLeftBarCache) + single region blit
+[2026-02-24T19:45:59-08:00] Edited src/gauge_render.c: gated alert score-strip redraw to value changes (no unconditional per-frame redraw)
+[2026-02-24T19:45:59-08:00] Ran ./scripts/build.sh after middle/left anti-raster patch (PASS)
+[2026-02-24T19:45:59-08:00] Ran ./scripts/flash.sh after middle/left anti-raster patch (PASS)
+[2026-02-24T19:51:08-08:00] Inspected trace initialization/replay sources (rg + sed on src/gauge_render.c, src/replay_trace_generated.h, src/power_data_source.*)
+[2026-02-24T19:51:08-08:00] Edited src/gauge_render.c: added replay-window scope prefill helper (PrefillScopeTraceFromReplayWindow)
+[2026-02-24T19:51:08-08:00] Edited src/gauge_render.c: change-gated DrawMedicalOverlayData redraws for motor/pump/ANOM/WEAR text bands
+[2026-02-24T19:51:08-08:00] Edited src/gauge_render.c: seeded DrawScopeDynamic cache from prefilled trace history on first render
+[2026-02-24T19:51:08-08:00] Edited src/gauge_render.c: added orientation redraw gating (skip blit on negligible ball/segment change)
+[2026-02-24T19:51:08-08:00] Edited src/gauge_render.c: called PrefillScopeTraceFromReplayWindow() during GaugeRender_Init startup
+[2026-02-24T19:51:08-08:00] Ran ./scripts/build.sh after startup-prefill + left/middle gating changes (PASS)
+[2026-02-24T19:51:08-08:00] Ran ./scripts/flash.sh after startup-prefill + left/middle gating changes (PASS)
+[2026-02-24T19:58:03-08:00] Ran git status --short to confirm pending changes before final flash/log update
+[2026-02-24T19:58:03-08:00] Ran ./scripts/flash.sh (PASS): flashed FRDM-MCXN947 via linkserver using current build artifacts
+[2026-02-24T19:58:03-08:00] Ran tail on docs/COMMAND_LOG.md and docs/PROJECT_STATE.md to inspect latest documented entries before appending this update
+[2026-02-24T19:58:03-08:00] Ran date --iso-8601=seconds to timestamp latest project-state/log entries
+[2026-02-24T19:58:03-08:00] Documented latest anti-flicker and graph-preload adjustments in docs/PROJECT_STATE.md
+[2026-02-24T19:59:28-08:00] Ran rg in src/gauge_render.c for missing mg/dL/PRED, warning, and accuracy draw paths after user regression report
+[2026-02-24T19:59:35-08:00] Inspected DrawMedicalOverlayData, DrawAiAlertOverlay, and main frame draw order in src/gauge_render.c via sed slices
+[2026-02-24T19:59:39-08:00] Inspected DrawGlucoseIndicator implementation for mg/dL/PRED disappearance regression
+[2026-02-24T19:59:47-08:00] Inspected remaining DrawGlucoseIndicator cache/blit logic (post-2265)
+[2026-02-24T19:59:52-08:00] Queried center_dirty declaration/usages to verify center text blit gating behavior
+[2026-02-24T20:00:03-08:00] Inspected DrawAiAlertOverlay lower block where warning text and accuracy strip are rendered
+[2026-02-24T20:00:34-08:00] Queried layout constants for alert/terminal/panel and overlay text regions to check overlap issues
+[2026-02-24T20:00:40-08:00] Inspected layout constants block (including panel/alert geometry) in gauge_render.c
+[2026-02-24T20:00:59-08:00] Patched src/gauge_render.c: always blit center CGM text cache; invalidate score-strip cache on modal/record/train/thinking paths; switched alert headline draw to DrawTextUi for reliable rendering
+[2026-02-24T20:01:11-08:00] Ran ./scripts/build.sh (FAIL): src/gauge_render.c unused variable center_dirty in DrawGlucoseIndicator after cache-blit change
+[2026-02-24T20:01:17-08:00] Patched src/gauge_render.c to remove now-unused center_dirty variable/assignments after making center cache blit unconditional
+[2026-02-24T20:01:30-08:00] Ran ./scripts/build.sh (PASS) after alert/center-text regression fix; memory m_text 62.50%, m_data 76.97%
+[2026-02-24T20:01:45-08:00] Ran ./scripts/flash.sh (PASS) after mg/dL-PRED and alert rendering fixes
+[2026-02-24T20:01:52-08:00] Appended regression-fix summary to docs/PROJECT_STATE.md (center text + warning/accuracy strip restore)
+[2026-02-24T20:01:56-08:00] Ran git status --short to verify files touched for this regression fix batch
+[2026-02-24T20:04:41-08:00] Started focused regression analysis for warning text, *?/touch marker flicker, mg/dL-PRED flash, and disappearing score strip
+[2026-02-24T20:04:45-08:00] Inspected DrawMedicalOverlayData clear/draw rectangles for overlap with alert and center text zones
+[2026-02-24T20:04:52-08:00] Queried side-button geometry constants to validate overlap with alert/score areas
+[2026-02-24T20:05:10-08:00] Inspected modal close/static redraw flow in GaugeRender_DrawFrame to hook force-redraw invalidation
+[2026-02-24T20:05:30-08:00] Captured current DrawAiSideButtons/DrawGlucoseIndicator/DrawAiAlertOverlay blocks before targeted cache-invalidation patch
+[2026-02-24T20:06:43-08:00] Patched gauge_render.c: center-text cache rebuild on invalidation with dirty-only blit, static-gated DrawAiSideButtons, and alert overlay refactor to keep score strip visible (including RECORD/TRAIN/THINK) with redraw trigger propagation
+[2026-02-24T20:06:55-08:00] Ran ./scripts/build.sh (PASS) after alert/score persistence and static touch-marker redraw gating fixes; memory m_text 62.53%, m_data 76.97%
+[2026-02-24T20:07:13-08:00] Ran ./scripts/flash.sh (PASS) after regression pass for warning text, score strip persistence, and static *?/touch markers
+[2026-02-24T20:07:22-08:00] Appended PROJECT_STATE.md entry for alert/score persistence + static touch-marker redraw gating fix set
+[2026-02-24T20:11:40-08:00] Patch context lookup via rg after apply_patch mismatch (alert overlay refresh + warning text draw path)
+[2026-02-24T20:11:46-08:00] Inspected exact blocks for globals, DrawAiAlertOverlay, and static/modal redraw invalidation points
+[2026-02-24T20:12:00-08:00] Patched gauge_render.c: added force-refresh flag for alert/score overlay after static/modal redraw, and switched warning/activity headline text back to DrawTextUi to remove dithered appearance
+[2026-02-24T20:12:12-08:00] Ran ./scripts/build.sh (PASS) after alert-force-refresh and warning-text render-path fix; memory m_text 62.54%, m_data 76.97%
+[2026-02-24T20:12:29-08:00] Ran ./scripts/flash.sh (PASS) for alert/score persistence and warning-font rendering fix build
+[2026-02-24T20:12:36-08:00] Appended PROJECT_STATE.md entry for warning-font and score-strip persistence fix (force overlay refresh on static redraw)
+[2026-02-24T20:15:07-08:00] Inspected scope/timeline frame+dynamic rectangle math for width mismatch and sliver artifacts
+[2026-02-24T20:15:52-08:00] Reviewed current DrawAiAlertOverlay branches before converting to deterministic redraw behavior
+[2026-02-24T20:16:04-08:00] Re-ran sed with correct workdir after path typo while inspecting DrawAiAlertOverlay tail
+[2026-02-24T20:16:57-08:00] Patched DrawAiAlertOverlay to deterministic redraw (warning+score each frame path) and patched DrawScopeFrame inclusive bounds to remove +1 width mismatch artifacts
+[2026-02-24T20:17:10-08:00] Ran ./scripts/build.sh (PASS) after deterministic warning/score redraw + scope frame bounds fix; memory m_text 62.51%, m_data 76.97%
+[2026-02-24T20:17:29-08:00] Ran ./scripts/flash.sh (PASS) after artifact-focused redraw pass; appended PROJECT_STATE.md + command log entries
+[2026-02-24T20:20:49-08:00] Replaced DrawAiAlertOverlay with single-buffer full-panel composition/blit (alert+score full width) and added gAlertPanelCache to eliminate side fragments/half-fill artifacts
+[2026-02-24T20:21:07-08:00] Inspected top-level alert cache globals after build error for exact removal patching
+[2026-02-24T20:21:17-08:00] Removed obsolete unused alert cache globals after offscreen alert panel conversion (fixed -Werror unused-variable build break)
+[2026-02-24T20:21:28-08:00] Ran ./scripts/build.sh (PASS) after single-blit alert+score panel conversion; data usage increased to 86.54% due new alert panel cache buffer
+[2026-02-24T20:21:48-08:00] Ran ./scripts/flash.sh (PASS) after full-width single-blit alert+score panel conversion; appended PROJECT_STATE/COMMAND_LOG updates
+[2026-02-24T20:23:14-08:00] Inspected current DrawGlucoseIndicator center text caching path before converting to deterministic offscreen composite render
+[2026-02-24T20:23:20-08:00] Queried center text cache dimensions/constants before deterministic center panel conversion
+[2026-02-24T20:23:58-08:00] Converted DrawGlucoseIndicator center mg/dL+PRED text to deterministic offscreen panel composition and single blit each frame (fixed-width panel)
+[2026-02-24T20:24:13-08:00] Ran build and captured -Werror unused variable failures after center panel conversion
+[2026-02-24T20:24:27-08:00] Patched gauge_render.c to remove unused legacy center cache coord globals and unused local text_x1/text_y1 after center offscreen panel conversion
+[2026-02-24T20:24:39-08:00] Ran ./scripts/build.sh (PASS) after center mg/dL+PRED single-panel render conversion; memory m_text 62.35%, m_data 86.53%
+[2026-02-24T20:25:01-08:00] Ran ./scripts/flash.sh (PASS) after center mg/dL+PRED offscreen panel conversion; appended PROJECT_STATE/COMMAND_LOG entries
+[2026-02-24T20:26:55-08:00] Started AI pill redraw-gating task: locating DrawAiPill state dependencies (AI enable/backend)
+[2026-02-24T20:27:02-08:00] Inspected DrawAiPill implementation and nearby callsites for adding state-change redraw gate
+[2026-02-24T20:27:20-08:00] Patched DrawAiPill with cached-state redraw gating: repaint only when AI enabled state or backend (MCU/NPU) changes
+[2026-02-24T20:27:51-08:00] Ran ./scripts/build.sh + ./scripts/flash.sh (PASS) after DrawAiPill redraw-gating change; updated PROJECT_STATE and logged task commands
+[2026-02-24T20:29:25-08:00] Patched DrawGlucoseIndicator center-panel width to dynamic clamped size that cannot overlap terminal region (fixes ACC/B row leading-char erasure)
+[2026-02-24T20:29:52-08:00] Completed build+flash PASS after center-panel/terminal overlap clamp fix; updated PROJECT_STATE and COMMAND_LOG
+[2026-02-24T20:31:36-08:00] Investigating slow settings/help open path and missing black modal background in popup renderer
+[2026-02-24T20:31:46-08:00] Inspected modal base and DrawFrame modal branches for duplicate popup rendering / missing black backdrop paths
+[2026-02-24T20:32:10-08:00] Inspected popup content dependencies and touch handler to add modal draw-on-demand invalidation safely
+[2026-02-24T20:32:19-08:00] Inspected GaugeRender_HandleTouch modal path for popup interaction/render invalidation behavior
+[2026-02-24T20:33:26-08:00] Located exact SetLogRateHz and SetLimitInfo signatures for modal-redraw invalidation patch
+[2026-02-24T20:33:43-08:00] Added modal redraw invalidation in SetLogRateHz and SetLimitInfo so settings/limits updates repaint popup on demand without per-frame redraw
+[2026-02-24T20:34:12-08:00] Completed build+flash PASS for modal background + on-demand popup redraw optimization; updated PROJECT_STATE and COMMAND_LOG
+[2026-02-24T20:34:59-08:00] Inspected popup open/touch flow in edgeai_medical_device_demo.c to diagnose missing modal background and slow-open behavior
+[2026-02-24T20:35:52-08:00] Patched DrawPopupModalBase to use expanded per-panel black backdrop regions (settings/help/limits) instead of full-screen fill to improve popup load latency while restoring black background
+[2026-02-24T20:36:20-08:00] Built+flashed PASS after modal backdrop region fill optimization (black background + faster popup open) and logged updates
+[2026-02-24T20:38:35-08:00] Investigating UI loop/frame cadence and modal open-close redraw triggers due reported 10s popup latency and missing */? after close
+[2026-02-24T20:39:34-08:00] Gathered exact modal signature/backdrop/DrawFrame blocks for incremental patching after large patch drift
+[2026-02-24T20:40:12-08:00] Inspected modal-render state in src/gauge_render.c (DrawPopupModalBase, ModalRenderSignature, modal branch in GaugeRender_DrawFrame, and popup setters) to diagnose slow popup open/close and missing ?/* background
+[2026-02-24T20:41:08-08:00] Patched src/gauge_render.c to remove modal signature/pending gating, force deterministic popup redraw while modal is visible, and expand modal black backdrop from top edge through popup bottom so ?/* render on black
+[2026-02-24T20:41:31-08:00] Ran ./scripts/build.sh (PASS) after modal redraw/backdrop fix; memory m_text 62.37%, m_data 86.53%
+[2026-02-24T20:41:47-08:00] Ran ./scripts/flash.sh (PASS) after modal redraw/backdrop fix build
+[2026-02-24T20:42:40-08:00] Appended docs/PROJECT_STATE.md with modal redraw/backdrop fix verification summary
+[2026-02-24T20:43:02-08:00] Investigated unresolved popup issue by tracing touch->modal flow (rg/sed over src/edgeai_medical_device_demo.c and src/gauge_render.c)
+[2026-02-24T20:44:20-08:00] Patched src/gauge_render.c modal path to draw-on-change (new gModalDirty), repainted ?/* buttons in modal, and changed modal backdrop to panel-region + top-button strip fills
+[2026-02-24T20:44:45-08:00] Ran ./scripts/build.sh (FAIL) due comment token "?/*" in C comment triggering -Werror=comment
+[2026-02-24T20:44:55-08:00] Patched offending comment in src/gauge_render.c and reran ./scripts/build.sh (PASS); memory m_text 62.42%, m_data 86.53%
+[2026-02-24T20:45:15-08:00] Ran ./scripts/flash.sh (PASS) for modal dirty-redraw + ?/* black-backing fix
+[2026-02-24T20:45:50-08:00] Appended docs/PROJECT_STATE.md summary for modal dirty-redraw responsiveness fix and verification
+[2026-02-24T20:46:10-08:00] Queried final line references in src/gauge_render.c for gModalDirty/backdrop/modal-branch updates (rg -n)
+[2026-02-24T20:47:11-08:00] Investigated popup-unreadable + post-popup missing ball regression; inspected DrawHumanOrientationPointer redraw gate and modal branch behavior in src/gauge_render.c
+[2026-02-24T20:47:50-08:00] Patched src/gauge_render.c: modal branch now redraws popup panels every modal frame (backdrop remains dirty-gated), added one-shot gForceOrientRefresh to force ball redraw immediately after modal close
+[2026-02-24T20:48:15-08:00] Ran ./scripts/build.sh (PASS) after popup readability + orientation redraw patch; memory m_text 62.43%, m_data 86.53%
+[2026-02-24T20:48:30-08:00] Ran ./scripts/flash.sh (PASS) after popup readability + orientation redraw patch
+[2026-02-24T20:48:45-08:00] Appended docs/PROJECT_STATE.md with popup readability and post-modal ball redraw fix summary
+[2026-02-24T20:49:31-08:00] Patched modal popup pipeline in src/gauge_render.c: DrawPopupModalBase now does single full-screen black modal fill; modal branch now renders settings/help/limits only when gModalDirty (no per-frame popup redraw)
+[2026-02-24T20:50:06-08:00] Ran ./scripts/build.sh (PASS) after full-backdrop + dirty-only popup redraw change; memory m_text 62.38%, m_data 86.53%
+[2026-02-24T20:50:28-08:00] Ran ./scripts/flash.sh (PASS) after modal backdrop/performance patch
+[2026-02-24T20:50:52-08:00] Appended docs/PROJECT_STATE.md with full-backdrop and popup-performance fix summary
+[2026-02-24T20:51:30-08:00] Ran git status/docs inspection to prepare requested docs+TODO update and golden restore-point promotion
+[2026-02-24T20:52:20-08:00] Updated docs/TODO.md with dedicated settings/help popup bug tracking section and current progress
+[2026-02-24T20:52:54-08:00] Updated docs/PROJECT_STATE.md restore header to R8 and appended popup-bug progress + restore-point update entry
+[2026-02-24T20:53:09-08:00] Staged R8 restore artifacts by copying current built bin to failsafe/ golden+failsafe filenames

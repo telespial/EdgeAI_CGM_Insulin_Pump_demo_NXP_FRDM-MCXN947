@@ -1,6 +1,6 @@
 # TODO
 
-Last updated: 2026-02-24
+Last updated: 2026-02-25
 
 ## Next Phase: Realism + Validation
 
@@ -16,3 +16,11 @@ Last updated: 2026-02-24
 10. [ ] Add hard safety interlocks for dosing assist (SQI gate, sensor-fault gate, max correction/window).
 11. [x] Create and stage updated golden/failsafe restore points after model-quality improvements.
 12. [x] Commit and push the updated project state to GitHub.
+
+## UI Popup Bug Track (Settings/Help)
+
+1. [x] Reproduce and log popup regression: missing black background, slow open/close, and `?`/`*` artifacts.
+2. [x] Add modal redraw gating (`gModalDirty`) and modal invalidation points for settings/help/limits state changes.
+3. [x] Restore full black modal backdrop during popup transitions to eliminate partial/missing background.
+4. [x] Fix post-popup center-ball disappearance with one-shot orientation force redraw after modal close.
+5. [ ] Validate on-device that settings/help text remains readable with full background and no long popup latency.
