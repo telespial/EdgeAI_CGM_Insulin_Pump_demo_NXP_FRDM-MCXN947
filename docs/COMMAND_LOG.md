@@ -2088,3 +2088,15 @@ Format:
 [2026-02-25T15:26:16-08:00] CMD: update docs/PROJECT_STATE.md (R11 promotion + docs sync + no-preroll-popup note)
 
 [2026-02-25T15:26:21-08:00] CMD: git status --short before commit
+
+[2026-02-25T15:26:32-08:00] CMD: git add code/docs and add -f failsafe R11 artifacts
+
+[2026-02-25T15:26:32-08:00] CMD: git commit -m "Finalize model-score realism tuning, remove preroll popup, and promote R11 restore points"
+
+[2026-02-25T15:26:34-08:00] CMD: git push origin main
+
+[2026-02-25T15:26:41-08:00] CMD: git tag -f GOLDEN-2026-02-25-R11 0f3c7bc && git tag -f FAILSAFE-2026-02-25-R11 0f3c7bc
+
+[2026-02-25T15:26:43-08:00] CMD: git push origin GOLDEN-2026-02-25-R11 FAILSAFE-2026-02-25-R11 --force
+
+[2026-02-25T15:26:54-08:00] CMD: git status --short after commit/tag push
