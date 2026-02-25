@@ -1676,3 +1676,6 @@ Format:
 [2026-02-24T20:52:20-08:00] Updated docs/TODO.md with dedicated settings/help popup bug tracking section and current progress
 [2026-02-24T20:52:54-08:00] Updated docs/PROJECT_STATE.md restore header to R8 and appended popup-bug progress + restore-point update entry
 [2026-02-24T20:53:09-08:00] Staged R8 restore artifacts by copying current built bin to failsafe/ golden+failsafe filenames
+[2026-02-24T20:54:20-08:00] Attempted git add/commit including R8 failsafe artifacts; add failed because failsafe binaries are ignored by .gitignore
+[2026-02-24T20:54:58-08:00] Re-ran git add with -f for R8 failsafe artifacts and committed docs+renderer updates as "Document popup bug progress and promote R8 golden restore point" (23fd05d)
+[2026-02-24T20:55:28-08:00] Created annotated restore tags GOLDEN-2026-02-24-R8 and FAILSAFE-2026-02-24-R8; pushed main and both tags to origin
