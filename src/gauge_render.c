@@ -11,6 +11,9 @@
 #include "pump_bg.h"
 #include "text5x7.h"
 
+#define GAUGE_WARMUP_PRESEED_DS (2u * 60u * 60u * 10u)
+#define PRED_SCORE_MIN_STEADY_EVAL 12u
+
 static bool gLcdReady = false;
 static bool gStaticReady = false;
 static bool gDynamicReady = false;
@@ -54,7 +57,6 @@ static bool gClearFlashRequest = false;
 static bool gModalWasActive = false;
 static bool gModalDirty = true;
 static bool gAiSideButtonsDirty = true;
-static bool gWarmupBgOnlyShown = false;
 static bool gForceBatteryRedraw = true;
 static uint8_t gPlayheadPos = 99u;
 static bool gPlayheadValid = false;
@@ -189,6 +191,8 @@ static bool gUiAiEnabled = true;
 static bool gUiForceAlertOverlayRefresh = false;
 static bool gUiAiBackendNpu = true;
 static bool gUiWarmupThinking = false;
+static bool gUiWarmupScoreWindowStarted = false;
+static bool gUiPredModelEligible = false;
 static uint8_t gUiPredAccuracyPct = 0u;
 static float gUiPredMae15 = 15.0f;
 static float gUiPredMae30 = 18.0f;
@@ -372,10 +376,40 @@ static uint16_t AbsDiffU16(uint16_t a, uint16_t b)
     return (a > b) ? (uint16_t)(a - b) : (uint16_t)(b - a);
 }
 
-static uint16_t PredTolerance10PctMgdl(uint16_t ref_mgdl)
+static uint16_t PredTolerance5PctMgdl(uint16_t ref_mgdl)
 {
-    uint16_t tol = (uint16_t)((ref_mgdl + 5u) / 10u); /* rounded 10% */
-    return (tol == 0u) ? 1u : tol;
+    uint16_t tol = (uint16_t)((ref_mgdl + 10u) / 20u); /* rounded 5% */
+    if (tol < 3u)
+    {
+        tol = 3u;
+    }
+    return tol;
+}
+
+static uint8_t ComputeModelScorePct(void)
+{
+    float tol_pct;
+    float mae_blend;
+    float mae_pct;
+    float conf_pct;
+    float score;
+
+    if ((gUiPredTolTotalSteadyCount < PRED_SCORE_MIN_STEADY_EVAL) ||
+        (gUiPredEvalSteadyCount < PRED_SCORE_MIN_STEADY_EVAL))
+    {
+        return 0u;
+    }
+
+    tol_pct = ((float)gUiPredTolHitSteadyCount * 100.0f) / (float)gUiPredTolTotalSteadyCount;
+    mae_blend = (0.6f * gUiPredMae15) + (0.4f * gUiPredMae30);
+    /* MAE quality map: <=8 mg/dL is strong, >=26 mg/dL is poor. */
+    mae_pct = (26.0f - mae_blend) * (100.0f / 18.0f);
+    mae_pct = ClampF32(mae_pct, 0.0f, 100.0f);
+    conf_pct = ClampF32((float)gUiPredModelConfPct, 0.0f, 100.0f);
+
+    /* Weighted realism score to prevent easy saturation. */
+    score = (0.50f * tol_pct) + (0.35f * mae_pct) + (0.15f * conf_pct);
+    return (uint8_t)ClampF32(score, 0.0f, 99.0f);
 }
 
 static void PredEvalPush(prediction_eval_slot_t *ring, uint16_t *head, uint16_t *tail, uint32_t due_ds, uint16_t pred_mgdl)
@@ -437,6 +471,8 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
                                float *mae,
                                bool count_for_score)
 {
+    uint32_t now_ui_ds = UiNowDs();
+    bool in_preeval_warmup = gUiWarmupThinking && (now_ui_ds < GAUGE_WARMUP_PRESEED_DS);
     while (*tail != head)
     {
         prediction_eval_slot_t *slot = &ring[*tail];
@@ -454,7 +490,7 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
         {
             eval_actual = PredEvalActualAtDue(slot->due_ds, prev_ds, prev_mgdl, now_ds, now_mgdl);
             float err = (float)AbsDiffU16(eval_actual, slot->pred_mgdl);
-            uint16_t tol = PredTolerance10PctMgdl(slot->pred_mgdl);
+            uint16_t tol = PredTolerance5PctMgdl(slot->pred_mgdl);
             uint16_t abs_err = AbsDiffU16(eval_actual, slot->pred_mgdl);
             if (!gUiPredMaePrimed)
             {
@@ -466,7 +502,7 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
             }
             if (count_for_score)
             {
-                if (gUiWarmupThinking)
+                if (in_preeval_warmup)
                 {
                     gUiPredTolTotalWarmCount++;
                 }
@@ -478,7 +514,7 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
                 if (abs_err <= tol)
                 {
                     gUiPredTolHitCount++;
-                    if (gUiWarmupThinking)
+                    if (in_preeval_warmup)
                     {
                         gUiPredTolHitWarmCount++;
                     }
@@ -492,7 +528,7 @@ static void PredEvalConsumeDue(prediction_eval_slot_t *ring,
         if (count_for_score)
         {
             gUiPredEvalCount++;
-            if (gUiWarmupThinking)
+            if (in_preeval_warmup)
             {
                 gUiPredEvalWarmCount++;
             }
@@ -511,7 +547,14 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
     bool issue_allowed = gUiAiEnabled &&
                          (!gUiCgmPredictionBlocked) &&
                          (gUiCgmSqiPct >= 60u) &&
-                         (gUiPredModelConfPct >= 55u);
+                         gUiPredModelEligible;
+
+    if (gUiWarmupThinking && !gUiWarmupScoreWindowStarted && (now_ds >= GAUGE_WARMUP_PRESEED_DS))
+    {
+        /* 2-hour pre-eval complete: start the 2-hour scoring window with clean counters. */
+        GaugeRender_ResetPredictionMetrics();
+        gUiWarmupScoreWindowStarted = true;
+    }
 
     if (!gPredEvalPrevValid)
     {
@@ -556,22 +599,13 @@ static void UpdatePredictionAccuracy(uint32_t now_ds)
         gUiPredMaePrimed = true;
     }
 
-    if (gUiPredMaePrimed)
+    if (!gUiPredMaePrimed)
     {
-        float tol_pct = 0.0f;
-        if (gUiPredTolTotalSteadyCount > 0u)
-        {
-            tol_pct = ((float)gUiPredTolHitSteadyCount * 100.0f) / (float)gUiPredTolTotalSteadyCount;
-        }
-        else if (gUiPredTolTotalWarmCount > 0u)
-        {
-            tol_pct = ((float)gUiPredTolHitWarmCount * 100.0f) / (float)gUiPredTolTotalWarmCount;
-        }
-        gUiPredAccuracyPct = (uint8_t)ClampF32(tol_pct, 0.0f, 99.0f);
+        gUiPredAccuracyPct = 0u;
     }
     else
     {
-        gUiPredAccuracyPct = 0u;
+        gUiPredAccuracyPct = ComputeModelScorePct();
     }
 
     gPredEvalPrevDs = now_ds;
@@ -643,6 +677,7 @@ static void UpdatePredictionModelAndAlerts(uint32_t now_ds)
     in.epoch_ds = now_ds;
     model_ok = CgmModel_Predict(&in, &model_pred15, &model_pred30, &model_conf);
     gUiPredModelConfPct = model_ok ? model_conf : 0u;
+    gUiPredModelEligible = model_ok && (model_conf >= 45u);
 
     if (model_ok && (model_conf >= 45u))
     {
@@ -3562,17 +3597,20 @@ static void DrawAiAlertOverlay(const gauge_style_preset_t *style, const power_sa
         }
     }
 
-    if ((gUiPredEvalCount == 0u) && (gUiPredTolTotalCount == 0u))
+    if (!gUiPredModelEligible ||
+        (gUiPredEvalSteadyCount < PRED_SCORE_MIN_STEADY_EVAL) ||
+        (gUiPredTolTotalSteadyCount < PRED_SCORE_MIN_STEADY_EVAL))
     {
-        snprintf(score_line, sizeof(score_line), "PRED SCORE -- E0");
+        snprintf(score_line, sizeof(score_line), "MODEL SCORE -- E%lu",
+                 (unsigned long)gUiPredEvalSteadyCount);
         snprintf(mae_line, sizeof(mae_line), "MAE --.- mg/dL");
     }
     else
     {
-        uint32_t eval_disp = (gUiPredEvalSteadyCount > 0u) ? gUiPredEvalSteadyCount : gUiPredEvalWarmCount;
+        uint32_t eval_disp = gUiPredEvalSteadyCount;
         float mae_blend = (0.6f * gUiPredMae15) + (0.4f * gUiPredMae30);
         uint16_t mae_tenths = (uint16_t)ClampF32((mae_blend * 10.0f) + 0.5f, 0.0f, 9999.0f);
-        snprintf(score_line, sizeof(score_line), "PRED SCORE %2u%% E%lu",
+        snprintf(score_line, sizeof(score_line), "MODEL SCORE %2u%% E%lu",
                  (unsigned int)gUiPredAccuracyPct,
                  (unsigned long)eval_disp);
         snprintf(mae_line, sizeof(mae_line), "MAE %u.%u mg/dL",
@@ -4687,12 +4725,12 @@ void GaugeRender_SetWarmupThinking(bool enabled)
 
 void GaugeRender_PrimePredictionScore(void)
 {
-    uint32_t total = (gUiPredTolTotalSteadyCount > 0u) ? gUiPredTolTotalSteadyCount : gUiPredTolTotalWarmCount;
-    uint32_t hit = (gUiPredTolTotalSteadyCount > 0u) ? gUiPredTolHitSteadyCount : gUiPredTolHitWarmCount;
+    uint32_t total = gUiPredTolTotalSteadyCount;
+    uint32_t hit = gUiPredTolHitSteadyCount;
 
-    if (gUiPredEvalCount < 1u)
+    if ((gUiPredEvalSteadyCount < PRED_SCORE_MIN_STEADY_EVAL) ||
+        (gUiPredTolTotalSteadyCount < PRED_SCORE_MIN_STEADY_EVAL))
     {
-        /* Do not synthesize an accuracy score from default MAE seeds. */
         gUiPredMaePrimed = false;
         gUiPredAccuracyPct = 0u;
         return;
@@ -4704,7 +4742,37 @@ void GaugeRender_PrimePredictionScore(void)
         tol_pct = ((float)hit * 100.0f) / (float)total;
     }
     gUiPredMaePrimed = true;
-    gUiPredAccuracyPct = (uint8_t)ClampF32(tol_pct, 0.0f, 99.0f);
+    (void)tol_pct;
+    gUiPredAccuracyPct = ComputeModelScorePct();
+}
+
+void GaugeRender_ResetPredictionMetrics(void)
+{
+    memset(gPredEval15, 0, sizeof(gPredEval15));
+    memset(gPredEval30, 0, sizeof(gPredEval30));
+    gPredEval15Head = 0u;
+    gPredEval15Tail = 0u;
+    gPredEval30Head = 0u;
+    gPredEval30Tail = 0u;
+    gPredEvalPrevDs = 0u;
+    gPredEvalPrevMgdl = 0u;
+    gPredEvalPrevValid = false;
+    gUiPredEvalCount = 0u;
+    gUiPredTolHitCount = 0u;
+    gUiPredTolTotalCount = 0u;
+    gUiPredEvalWarmCount = 0u;
+    gUiPredEvalSteadyCount = 0u;
+    gUiPredTolHitWarmCount = 0u;
+    gUiPredTolHitSteadyCount = 0u;
+    gUiPredTolTotalWarmCount = 0u;
+    gUiPredTolTotalSteadyCount = 0u;
+    gUiPredAccuracyNextIssueDs = 0u;
+    gUiPredMae15 = 15.0f;
+    gUiPredMae30 = 18.0f;
+    gUiPredMaePrimed = false;
+    gUiPredAccuracyPct = 0u;
+    gUiPredModelEligible = false;
+    gUiWarmupScoreWindowStarted = false;
 }
 
 void GaugeRender_IngestReplayCgmSample(uint32_t ts_ds, uint16_t glucose_mgdl, bool valid)
@@ -4807,23 +4875,7 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
     power_w = DisplayPowerW(sample);
     modal_active = (gSettingsVisible || gHelpVisible || gLimitsVisible || gRecordConfirmActive);
 
-    if (gUiWarmupThinking)
-    {
-        if (!gWarmupBgOnlyShown)
-        {
-            DrawSpaceboxBackground();
-            gWarmupBgOnlyShown = true;
-        }
-        gModalWasActive = modal_active;
-        return;
-    }
-    if (gWarmupBgOnlyShown)
-    {
-        gWarmupBgOnlyShown = false;
-        gStaticReady = false;
-        gDynamicReady = false;
-        gForceBatteryRedraw = true;
-    }
+    (void)gUiWarmupThinking;
     if (modal_active && !gModalWasActive)
     {
         DrawPopupModalBase();

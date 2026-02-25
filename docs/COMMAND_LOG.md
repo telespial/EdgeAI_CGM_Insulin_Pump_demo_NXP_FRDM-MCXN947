@@ -1863,3 +1863,228 @@ Format:
 - 2026-02-25T18:07:22Z CMD: appended docs/PROJECT_STATE.md restore-point promotion entry for R10
 - 2026-02-25T18:07:28Z CMD: git status --short before R10 commit/tag
 - 2026-02-25T18:07:45Z CMD: git add src/docs + force-add failsafe R10 artifacts; git commit -m "Promote R10 golden/failsafe restore points and persist modal UI fixes"; git tag -f GOLDEN-2026-02-25-R10 FAILSAFE-2026-02-25-R10; git push origin main and both tags
+- 2026-02-25T18:22:24Z CMD: inspect warmup completion and runtime clock handoff blocks in edgeai_medical_device_demo.c:4680-4865
+- 2026-02-25T18:22:46Z CMD: inspect warmup force-complete block in edgeai_medical_device_demo.c:4488-4538
+- 2026-02-25T18:23:43Z CMD: ./scripts/build.sh && ./scripts/flash.sh (preroll runtime clock handoff clamp at RECPLAY_WARMUP_TARGET_DS)
+- 2026-02-25T18:23:52Z CMD: append PROJECT_STATE update for preroll runtime counter handoff clamp fix
+- 2026-02-25T18:24:50Z CMD: inspect replay play_ds delta computation around warmup handoff in edgeai_medical_device_demo.c:4700-4765
+- 2026-02-25T18:25:23Z CMD: ./scripts/build.sh && ./scripts/flash.sh (clamp post-warmup replay delta to 10min to prevent 4h->23h runtime jump)
+- 2026-02-25T18:25:31Z CMD: append PROJECT_STATE update for post-preroll elapsed-time jump clamp fix
+- 2026-02-25T18:26:42Z CMD: ./scripts/build.sh && ./scripts/flash.sh (force warmup handoff runtime to exact RECPLAY_WARMUP_TARGET_DS)
+- 2026-02-25T18:26:52Z CMD: append PROJECT_STATE update for exact warmup handoff runtime clamp fix
+- 2026-02-25T18:30:49Z CMD: ./scripts/build.sh && ./scripts/flash.sh (runtime anti-jump guard across fallback/live/replay clock paths)
+- 2026-02-25T18:30:57Z CMD: append PROJECT_STATE update for global runtime anti-jump guard
+- 2026-02-25T18:34:00Z CMD: inspect replay multipliers and post-preroll timing constants in edgeai_medical_device_demo.c
+- 2026-02-25T18:35:00Z CMD: ./scripts/build.sh && ./scripts/flash.sh (post-preroll live mode replay_steps=1 + immediate real-time cadence/anchor init)
+
+[2026-02-25T10:35:50-08:00] CMD: ls -la docs
+
+[2026-02-25T10:35:50-08:00] CMD: git status --short
+
+[2026-02-25T10:36:00-08:00] CMD: rg runtime timing symbols src/edgeai_medical_device_demo.c
+
+[2026-02-25T10:36:00-08:00] CMD: sed -n 1,260 src/edgeai_medical_device_demo.c
+
+[2026-02-25T10:36:13-08:00] CMD: sed -n 1080,1320 src/edgeai_medical_device_demo.c
+
+[2026-02-25T10:36:13-08:00] CMD: rg timebase symbols src/edgeai_medical_device_demo.c
+
+[2026-02-25T10:36:38-08:00] CMD: apply_patch timebase hz acceptance broadened (1k..1MHz) in src/edgeai_medical_device_demo.c
+
+[2026-02-25T10:36:43-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:36:57-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:37:03-08:00] CMD: update docs/PROJECT_STATE.md (timebase frequency selection fix)
+
+[2026-02-25T10:37:12-08:00] CMD: git status --short (post-fix)
+
+[2026-02-25T10:38:22-08:00] CMD: sed -n 4460,4865 src/edgeai_medical_device_demo.c
+
+[2026-02-25T10:38:22-08:00] CMD: rg warmup/preroll/loading symbols
+
+[2026-02-25T10:38:31-08:00] CMD: sed -n 4620,4860 src/gauge_render.c
+
+[2026-02-25T10:38:31-08:00] CMD: rg warmup rendering symbols gauge_render
+
+[2026-02-25T10:38:47-08:00] CMD: rg runtime clock vars in gauge_render.c
+
+[2026-02-25T10:38:48-08:00] CMD: sed -n 120,260 src/gauge_render.c
+
+[2026-02-25T10:38:53-08:00] CMD: sed -n 2960,3070 src/gauge_render.c
+
+[2026-02-25T10:39:09-08:00] CMD: sed -n 1,130 src/gauge_render.c
+
+[2026-02-25T10:39:44-08:00] CMD: apply_patch src/gauge_render.c (preroll progress overlay on warmup screen)
+[2026-02-25T10:39:44-08:00] CMD: apply_patch src/edgeai_medical_device_demo.c (RECPLAY_WARMUP_MULTIPLIER 120->300)
+
+[2026-02-25T10:39:54-08:00] CMD: rg rect helpers in src/gauge_render.c after build error
+
+[2026-02-25T10:40:10-08:00] CMD: apply_patch src/gauge_render.c (replace DrawRect with DrawLine border)
+
+[2026-02-25T10:40:14-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:40:30-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:40:37-08:00] CMD: update docs/PROJECT_STATE.md (preroll progress/speed improvements)
+
+[2026-02-25T10:40:37-08:00] CMD: git status --short
+
+[2026-02-25T10:41:39-08:00] CMD: apply_patch src/edgeai_medical_device_demo.c (RECPLAY_WARMUP_MULTIPLIER 300->3000)
+
+[2026-02-25T10:41:43-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:41:55-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:42:00-08:00] CMD: update docs/PROJECT_STATE.md (preroll throughput 10x)
+
+[2026-02-25T10:44:19-08:00] CMD: sed -n 4808,4898 src/gauge_render.c
+
+[2026-02-25T10:44:58-08:00] CMD: apply_patch src/gauge_render.c (centered preroll panel + visual style refresh)
+
+[2026-02-25T10:45:03-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:45:18-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:45:25-08:00] CMD: update docs/PROJECT_STATE.md (centered preroll UI styling refresh)
+
+[2026-02-25T10:45:25-08:00] CMD: git status --short
+
+[2026-02-25T10:46:32-08:00] CMD: sed -n 1,320 src/ext_flash_recorder.c
+
+[2026-02-25T10:46:32-08:00] CMD: rg playback APIs across recorder/demo
+
+[2026-02-25T10:46:40-08:00] CMD: sed -n 540,700 src/ext_flash_recorder.c
+
+[2026-02-25T10:47:08-08:00] CMD: sed -n state vars + replay fail block src/edgeai_medical_device_demo.c
+
+[2026-02-25T10:47:37-08:00] CMD: rg playback_cgm_index reset points
+
+[2026-02-25T10:47:45-08:00] CMD: apply_patch src/edgeai_medical_device_demo.c (LIVE playback read-fail retry/recovery to protect warmup accuracy at high speed)
+
+[2026-02-25T10:47:49-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:48:10-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:48:18-08:00] CMD: update docs/PROJECT_STATE.md (high-speed preroll read-failure recovery)
+
+[2026-02-25T10:49:51-08:00] CMD: apply_patch src/edgeai_medical_device_demo.c (RECPLAY_WARMUP_MULTIPLIER 3000->1200)
+
+[2026-02-25T10:49:55-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:50:08-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:50:16-08:00] CMD: update docs/PROJECT_STATE.md (preroll multiplier tuned to 1200 / 10x baseline)
+
+[2026-02-25T10:51:49-08:00] CMD: apply_patch src/edgeai_medical_device_demo.c (disable replay step clamp during warmup)
+
+[2026-02-25T10:51:53-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:52:13-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:53:05-08:00] CMD: locate +1 anti-jump clamp sites
+
+[2026-02-25T10:53:12-08:00] CMD: inspect clamp blocks before patch
+
+[2026-02-25T10:53:30-08:00] CMD: apply_patch src/edgeai_medical_device_demo.c (anti-jump clamp uses +RUNTIME_MAX_STEP_DS, not +1ds)
+
+[2026-02-25T10:53:34-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T10:53:46-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T10:53:53-08:00] CMD: update docs/PROJECT_STATE.md (anti-jump clamp +1ds -> +RUNTIME_MAX_STEP_DS)
+
+[2026-02-25T14:16:07-08:00] CMD: sed score calculation blocks in src/gauge_render.c
+
+[2026-02-25T14:16:07-08:00] CMD: rg prediction score/accuracy symbols
+
+[2026-02-25T14:29:42-08:00] CMD: sed -n 340,620 src/gauge_render.c
+
+[2026-02-25T14:29:42-08:00] CMD: sed -n 3490,3615 src/gauge_render.c
+
+[2026-02-25T14:31:14-08:00] CMD: sed -n 3428,3474 src/edgeai_medical_device_demo.c
+
+[2026-02-25T14:31:52-08:00] CMD: apply_patch src/gauge_render.h/.c + src/edgeai_medical_device_demo.c (restore 2h preeval + 2h scoring, model-score reset logic)
+
+[2026-02-25T14:31:57-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T14:32:11-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T14:32:19-08:00] CMD: update docs/PROJECT_STATE.md (restore 2h preeval + 2h scoring and model score gate)
+
+[2026-02-25T14:34:12-08:00] CMD: apply_patch src/gauge_render.c (model-eligible-only scoring and display gate)
+
+[2026-02-25T14:34:18-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T14:34:36-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T14:34:42-08:00] CMD: update docs/PROJECT_STATE.md (strict model-eligible score wiring)
+
+[2026-02-25T14:46:44-08:00] CMD: apply_patch src/gauge_render.c (model score tolerance 10%->5%, min 3 mg/dL)
+
+[2026-02-25T14:46:48-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T14:47:02-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T14:47:11-08:00] CMD: update docs/PROJECT_STATE.md (MODEL SCORE tolerance 10%->5%)
+
+[2026-02-25T14:52:06-08:00] CMD: apply_patch src/gauge_render.c (realism-weighted MODEL SCORE, min steady eval 24)
+
+[2026-02-25T14:52:11-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T14:52:26-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T14:52:39-08:00] CMD: update docs/PROJECT_STATE.md (realism-weighted MODEL SCORE tuning)
+
+[2026-02-25T14:53:50-08:00] CMD: apply_patch src/gauge_render.c (score gate min eval 24->12, model eligible conf 55->45)
+
+[2026-02-25T14:53:54-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T14:54:07-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T14:54:15-08:00] CMD: update docs/PROJECT_STATE.md (score/MAE gate relaxation for visibility)
+
+[2026-02-25T14:55:17-08:00] CMD: locate preroll popup hooks in src/gauge_render.c
+
+[2026-02-25T14:55:22-08:00] CMD: sed -n 4868,4975 src/gauge_render.c
+
+[2026-02-25T14:55:29-08:00] CMD: usage scan warmup vars/macros
+
+[2026-02-25T14:56:03-08:00] CMD: apply_patch src/gauge_render.c (remove preroll popup/background-only warmup render path)
+
+[2026-02-25T14:56:10-08:00] CMD: ./scripts/build.sh (result=PASS)
+
+[2026-02-25T14:56:26-08:00] CMD: ./scripts/flash.sh (result=PASS)
+
+[2026-02-25T14:56:32-08:00] CMD: update docs/PROJECT_STATE.md (remove preroll popup render path)
+
+[2026-02-25T15:24:26-08:00] CMD: git status --short
+
+[2026-02-25T15:24:26-08:00] CMD: rg restore tooling/docs references
+
+[2026-02-25T15:24:38-08:00] CMD: sed -n 1,220 docs/START_HERE.md
+
+[2026-02-25T15:24:38-08:00] CMD: sed -n 1,260 docs/OPS_RUNBOOK.md
+
+[2026-02-25T15:24:38-08:00] CMD: sed -n 1,260 README.md
+
+[2026-02-25T15:24:44-08:00] CMD: read docs/TODO.md
+
+[2026-02-25T15:24:44-08:00] CMD: read STATUS.md
+
+[2026-02-25T15:24:51-08:00] CMD: list failsafe artifacts
+
+[2026-02-25T15:24:56-08:00] CMD: read docs/HARDWARE_SETUP.md
+
+[2026-02-25T15:25:57-08:00] CMD: cp build bin to failsafe/*_2026-02-25-R11.bin (golden + failsafe)
+
+[$(date -Iseconds)] CMD: apply_patch docs/START_HERE.md (promote active restore baseline to R11)
+[$(date -Iseconds)] CMD: apply_patch docs/OPS_RUNBOOK.md (promote active restore baseline to R11)
+[$(date -Iseconds)] CMD: apply_patch docs/HARDWARE_SETUP.md (update recovery artifact/command to R11)
+[$(date -Iseconds)] CMD: apply_patch STATUS.md (status+restore points to R11)
+[$(date -Iseconds)] CMD: apply_patch README.md (score-policy update + active restore baseline R11)
+[2026-02-25T15:26:16-08:00] CMD: backfill log entries for docs baseline updates (R11)
+
+[2026-02-25T15:26:16-08:00] CMD: update docs/PROJECT_STATE.md (R11 promotion + docs sync + no-preroll-popup note)
+
+[2026-02-25T15:26:21-08:00] CMD: git status --short before commit

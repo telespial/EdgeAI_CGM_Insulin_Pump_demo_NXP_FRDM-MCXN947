@@ -82,9 +82,17 @@ The Embedded Intelligence Layer is the model/inference subsystem that sits on to
   - `PRED 15M:xxx 30M:xxx`
 
 Scoring policy (current baseline):
-- prediction score uses `+15m` only
-- hit tolerance: `±10%`
-- `+30m` remains displayed but excluded from hit-rate scoring until a dedicated +30 model policy is promoted
+- scoring window uses the intended warmup split:
+  - first 2 hours: pre-eval (no final score)
+  - next 2 hours: model scoring window
+- score is model-eligible only (`model_ok` with confidence gate), not fallback-trend-only paths
+- `MODEL SCORE` is realism-weighted:
+  - 50% tolerance-hit rate (from `+15m` evaluated horizon)
+  - 35% MAE quality mapping
+  - 15% model confidence
+- tolerance window for hit scoring: `±5%` (minimum 3 mg/dL)
+- minimum steady eval count required before showing score
+- `+30m` remains displayed and contributes to MAE blend, but does not drive hit-rate numerator/denominator
 
 ## Human Activity States And Real-World Integration
 
@@ -187,17 +195,17 @@ Direct board tooling:
 
 ## Active Restore Baseline
 
-- Golden: `GOLDEN-2026-02-24-R7`
-- Failsafe: `FAILSAFE-2026-02-24-R7`
+- Golden: `GOLDEN-2026-02-25-R11`
+- Failsafe: `FAILSAFE-2026-02-25-R11`
 
 Artifacts:
-- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-24-R7.bin`
-- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-25-R11.bin`
+- `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R11.bin`
 
 Failsafe restore:
 
 ```bash
-./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-24-R7.bin
+./tools/flash_failsafe.sh failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R11.bin
 ```
 
 ## Controls

@@ -91,10 +91,14 @@
 #define POWER_TICK_PERIOD_US 1000000u
 #define DISPLAY_REFRESH_PERIOD_US 100000u
 #define RECPLAY_TICK_PERIOD_US 100000u
-#define RECPLAY_WARMUP_MULTIPLIER 120u
+#define RECPLAY_WARMUP_MULTIPLIER 1200u
 #define RECPLAY_WARMUP_PRESEED_DS (2u * 60u * 60u * 10u)
 #define RECPLAY_WARMUP_SCORE_DS (2u * 60u * 60u * 10u)
 #define RECPLAY_WARMUP_TARGET_DS (RECPLAY_WARMUP_PRESEED_DS + RECPLAY_WARMUP_SCORE_DS)
+/* Guard against replay timestamp discontinuities after preroll handoff. */
+#define RECPLAY_POST_WARMUP_MAX_DELTA_DS (10u * 60u * 10u)
+/* Global runtime anti-jump guard: never advance elapsed clock by a huge single step. */
+#define RUNTIME_MAX_STEP_DS 50u
 #define RECPLAY_FULLRUN_MULTIPLIER 120u
 #define REPLAY_DEFAULT_STEP_DS 3000u /* 5 minutes between CGM points */
 #define ACCEL_BUFFER_SAMPLE_PERIOD_US 10000u
@@ -622,6 +626,16 @@ static void ClockFromDeciseconds(uint32_t ds_total, uint16_t *hh, uint8_t *mm, u
     }
 }
 
+static void SetRuntimeClockFromDs(uint32_t ds_total)
+{
+    uint16_t hh;
+    uint8_t mm;
+    uint8_t ss;
+    uint8_t ds;
+    ClockFromDeciseconds(ds_total, &hh, &mm, &ss, &ds);
+    GaugeRender_SetRuntimeClock(hh, mm, ss, ds, true);
+}
+
 static uint8_t ChannelLevelPct(anomaly_level_t lvl)
 {
     if (lvl >= ANOMALY_LEVEL_MAJOR)
@@ -1142,10 +1156,10 @@ static bool TimebaseInit(void)
 {
     status_t st = CLOCK_SetupOsc32KClocking(kCLOCK_Osc32kToWake);
     const uint32_t nominal_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ;
-    const uint32_t min_cfg_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ - 2048u;  /* 30720 */
-    const uint32_t max_cfg_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ + 2048u;  /* 34816 */
-    const uint32_t min_meas_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ / 8u;     /* 4096  */
-    const uint32_t max_meas_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ * 2u;     /* 65536 */
+    const uint32_t min_cfg_hz = 1000u;
+    const uint32_t max_cfg_hz = 1000000u;
+    const uint32_t min_meas_hz = 1000u;
+    const uint32_t max_meas_hz = 1000000u;
     uint32_t cfg_hz;
     uint32_t raw_hz;
     uint32_t dec_hz;
@@ -3443,6 +3457,8 @@ static void ConfigurePlaybackWarmup(bool playback_active,
             PRINTF("AI_WARMUP: phases preseed=%u ds score=%u ds\r\n",
                    (unsigned int)RECPLAY_WARMUP_PRESEED_DS,
                    (unsigned int)RECPLAY_WARMUP_SCORE_DS);
+            /* Start each warmup run with a clean model-score window. */
+            GaugeRender_ResetPredictionMetrics();
         }
         *warmup_active = true;
         GaugeRender_SetWarmupThinking(true);
@@ -3633,6 +3649,7 @@ int main(void)
     uint32_t playback_rt_anchor_ds = 0u;
     uint64_t playback_rt_anchor_ticks = 0u;
     uint32_t playback_cgm_index = 0u;
+    uint8_t playback_read_fail_streak = 0u;
     ext_flash_sample_t playback_sample;
     uint32_t data_tick_accum_us = 0u;
     uint32_t recplay_tick_accum_us = 0u;
@@ -4504,15 +4521,21 @@ int main(void)
                 (runtime_displayed_ds != UINT32_MAX) &&
                 (runtime_displayed_ds >= RECPLAY_WARMUP_TARGET_DS))
             {
+                uint32_t handoff_ds = RECPLAY_WARMUP_TARGET_DS;
                 playback_warmup_active = false;
                 playback_warmup_complete = true;
                 GaugeRender_SetWarmupThinking(false);
                 GaugeRender_PrimePredictionScore();
                 playback_prev_ts_valid = false;
                 playback_prev_src_ts_valid = false;
-                playback_period_us = RECPLAY_TICK_PERIOD_US;
+                playback_period_us = (uint32_t)((uint64_t)REPLAY_DEFAULT_STEP_DS * 100000ull);
+                playback_rt_anchor_ds = handoff_ds;
+                playback_rt_anchor_ticks = TimebaseNowTicks();
+                runtime_elapsed_ds = handoff_ds;
+                runtime_displayed_ds = handoff_ds;
+                SetRuntimeClockFromDs(handoff_ds);
                 PRINTF("AI_WARMUP: force_complete at %u ds from display timeline\r\n",
-                       (unsigned int)runtime_displayed_ds);
+                       (unsigned int)handoff_ds);
             }
             if (!record_mode && !playback_active && !playback_run_complete)
             {
@@ -4531,6 +4554,11 @@ int main(void)
                 {
                     /* Enforce monotonic runtime display outside explicit mode resets. */
                     runtime_elapsed_ds = runtime_displayed_ds;
+                }
+                if ((runtime_displayed_ds != UINT32_MAX) &&
+                    (runtime_elapsed_ds > (runtime_displayed_ds + RUNTIME_MAX_STEP_DS)))
+                {
+                    runtime_elapsed_ds = runtime_displayed_ds + RUNTIME_MAX_STEP_DS;
                 }
                 if (runtime_elapsed_ds != runtime_displayed_ds)
                 {
@@ -4557,6 +4585,11 @@ int main(void)
                 if ((runtime_displayed_ds != UINT32_MAX) && (rt_ds < runtime_displayed_ds))
                 {
                     rt_ds = runtime_displayed_ds;
+                }
+                if ((runtime_displayed_ds != UINT32_MAX) &&
+                    (rt_ds > (runtime_displayed_ds + RUNTIME_MAX_STEP_DS)))
+                {
+                    rt_ds = runtime_displayed_ds + RUNTIME_MAX_STEP_DS;
                 }
                 if (rt_ds != runtime_displayed_ds)
                 {
@@ -4691,6 +4724,10 @@ int main(void)
             else if (playback_active)
             {
                 uint32_t replay_steps = playback_warmup_active ? RECPLAY_WARMUP_MULTIPLIER : RECPLAY_FULLRUN_MULTIPLIER;
+                if (!playback_warmup_active && GaugeRender_IsLiveBannerMode())
+                {
+                    replay_steps = 1u;
+                }
                 if (replay_steps == 0u)
                 {
                     replay_steps = 1u;
@@ -4699,6 +4736,7 @@ int main(void)
                 {
                     if (ExtFlashRecorder_ReadNextSample(&playback_sample))
                     {
+                        playback_read_fail_streak = 0u;
                         if (CGM_REPLAY_SUBJECT001_LEN > 0u)
                         {
                             uint16_t replay_glucose = kCgmReplaySubject001Mgdl[playback_cgm_index % CGM_REPLAY_SUBJECT001_LEN];
@@ -4722,6 +4760,10 @@ int main(void)
                                 {
                                     delta_ds = playback_sample.ts_ds - playback_prev_src_ts_ds;
                                 }
+                                if (!playback_warmup_active && (delta_ds > RECPLAY_POST_WARMUP_MAX_DELTA_DS))
+                                {
+                                    delta_ds = RECPLAY_POST_WARMUP_MAX_DELTA_DS;
+                                }
                                 play_ds = (runtime_displayed_ds == UINT32_MAX) ? delta_ds : (runtime_displayed_ds + delta_ds);
                             }
                             playback_prev_src_ts_ds = playback_sample.ts_ds;
@@ -4731,11 +4773,20 @@ int main(void)
                                 /* Avoid display-clock stalls on duplicate/non-monotonic replay timestamps. */
                                 play_ds = runtime_displayed_ds + 1u;
                             }
+                            if (!playback_warmup_active &&
+                                (runtime_displayed_ds != UINT32_MAX) &&
+                                (play_ds > (runtime_displayed_ds + RUNTIME_MAX_STEP_DS)))
+                            {
+                                play_ds = runtime_displayed_ds + RUNTIME_MAX_STEP_DS;
+                            }
                             ClockFromDeciseconds(play_ds, &ch, &cm, &cs, &cds);
                             GaugeRender_SetRuntimeClock(ch, cm, cs, cds, true);
                             runtime_displayed_ds = play_ds;
                             if (playback_warmup_active && (play_ds >= RECPLAY_WARMUP_TARGET_DS))
                             {
+                                play_ds = RECPLAY_WARMUP_TARGET_DS;
+                                runtime_displayed_ds = play_ds;
+                                SetRuntimeClockFromDs(play_ds);
                                 playback_warmup_active = false;
                                 playback_warmup_complete = true;
                                 GaugeRender_SetWarmupThinking(false);
@@ -4744,7 +4795,9 @@ int main(void)
                                        (unsigned int)play_ds);
                                 playback_prev_ts_valid = false;
                 playback_prev_src_ts_valid = false;
-                                playback_period_us = RECPLAY_TICK_PERIOD_US;
+                                playback_period_us = (uint32_t)((uint64_t)REPLAY_DEFAULT_STEP_DS * 100000ull);
+                                playback_rt_anchor_ds = play_ds;
+                                playback_rt_anchor_ticks = TimebaseNowTicks();
                                 break;
                             }
                             if (GaugeRender_IsLiveBannerMode() && !playback_warmup_active)
@@ -4783,17 +4836,45 @@ int main(void)
                     {
                         if (GaugeRender_IsLiveBannerMode())
                         {
-                            playback_active = false;
-                            playback_run_complete = true;
-                            playback_warmup_active = false;
-                            GaugeRender_IngestReplayCgmSample(0u, 0u, false);
-                            GaugeRender_SetWarmupThinking(false);
-                            GaugeRender_PrimePredictionScore();
-                            GaugeRender_SetPlayhead(100u, true);
-                            playback_prev_ts_valid = false;
-                playback_prev_src_ts_valid = false;
-                            playback_period_us = RECPLAY_TICK_PERIOD_US;
-                            PRINTF("EXT_FLASH_PLAY: complete_final_score_hold\r\n");
+                            playback_read_fail_streak++;
+                            if (playback_read_fail_streak < 3u)
+                            {
+                                PRINTF("EXT_FLASH_PLAY: read_retry streak=%u\r\n", (unsigned int)playback_read_fail_streak);
+                            }
+                            else
+                            {
+                                bool restarted = ext_flash_ok && ExtFlashRecorder_StartPlayback();
+                                if (restarted)
+                                {
+                                    playback_active = true;
+                                    playback_run_complete = false;
+                                    playback_cgm_index = 0u;
+                                    playback_prev_ts_valid = false;
+                                    playback_prev_src_ts_valid = false;
+                                    playback_period_us = RECPLAY_TICK_PERIOD_US;
+                                    ConfigurePlaybackWarmup(playback_active,
+                                                            GaugeRender_IsLiveBannerMode(),
+                                                            &playback_warmup_active,
+                                                            &playback_warmup_complete);
+                                    playback_read_fail_streak = 0u;
+                                    PRINTF("EXT_FLASH_PLAY: recovered_after_read_fail\r\n");
+                                }
+                                else
+                                {
+                                    playback_active = false;
+                                    playback_run_complete = true;
+                                    playback_warmup_active = false;
+                                    GaugeRender_IngestReplayCgmSample(0u, 0u, false);
+                                    GaugeRender_SetWarmupThinking(false);
+                                    GaugeRender_PrimePredictionScore();
+                                    GaugeRender_SetPlayhead(100u, true);
+                                    playback_prev_ts_valid = false;
+                                    playback_prev_src_ts_valid = false;
+                                    playback_period_us = RECPLAY_TICK_PERIOD_US;
+                                    playback_read_fail_streak = 0u;
+                                    PRINTF("EXT_FLASH_PLAY: complete_final_score_hold\r\n");
+                                }
+                            }
                         }
                         else
                         {

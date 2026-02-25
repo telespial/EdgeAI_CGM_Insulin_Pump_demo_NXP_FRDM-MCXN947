@@ -3628,3 +3628,137 @@ Last updated: 2026-02-25
   - `./scripts/build.sh` PASS
   - `./scripts/flash.sh` PASS
 - Result: `R10` is now the active golden/failsafe restore point set.
+
+## Update 2026-02-25
+- Change: Fixed runtime counter handoff at preroll completion.
+  - `src/edgeai_medical_device_demo.c`
+    - Added `SetRuntimeClockFromDs(...)` helper.
+    - On warmup completion (normal and force-complete paths), runtime display now clamps to at least `RECPLAY_WARMUP_TARGET_DS` and updates clock immediately.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result:
+  - Counter starts from preroll boundary (~4:00:00) after warmup handoff, not from 0.
+
+## Update 2026-02-25
+- Change: Fixed post-preroll elapsed-time jump (4:00:00 -> ~23:54:00).
+  - `src/edgeai_medical_device_demo.c`
+    - Added `RECPLAY_POST_WARMUP_MAX_DELTA_DS` (10-minute cap).
+    - After warmup handoff, replay timestamp deltas are clamped before adding to displayed runtime.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result:
+  - After preroll ends near `4:00:00`, elapsed time advances smoothly without large jumps.
+
+## Update 2026-02-25
+- Change: Forced exact runtime handoff at warmup completion.
+  - `src/edgeai_medical_device_demo.c`
+    - warmup completion now always sets runtime to `RECPLAY_WARMUP_TARGET_DS` exactly (4h), both for normal and force-complete paths.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result:
+  - elapsed time should remain at `0004:00:00` at handoff and then advance forward normally.
+
+## Update 2026-02-25
+- Change: Added global elapsed-time anti-jump guard.
+  - `src/edgeai_medical_device_demo.c`
+    - added `RUNTIME_MAX_STEP_DS` and applied it to all runtime clock update paths (fallback/runtime, live-anchor, replay timeline).
+    - if any path attempts a large single-step jump, elapsed increments by one decisecond tick instead.
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Expected result:
+  - no sudden jump from preroll boundary to ~23:55; runtime advances smoothly.
+
+## Update 2026-02-25
+- Change: Fixed elapsed-time acceleration after preroll by accepting real OSTIMER frequencies (1 kHz..1 MHz) in `TimebaseInit()` instead of forcing near-32 kHz selection; this prevents ~30x runtime clock scaling when OSTIMER runs near 1 MHz.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Improved preroll UX and speed in LIVE warmup path.
+  - Added on-screen preroll panel during warmup (`PREROLL LOADING`) with elapsed `TIME hh:mm:ss` and progress `%` against 4-hour target.
+  - Increased replay warmup throughput by changing `RECPLAY_WARMUP_MULTIPLIER` from 120 to 300 for faster preroll completion.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Increased preroll throughput by 10x by raising `RECPLAY_WARMUP_MULTIPLIER` from 300 to 3000 in `src/edgeai_medical_device_demo.c`.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Preroll warmup panel visual polish in `src/gauge_render.c`.
+  - Centered the panel on screen.
+  - Updated typography hierarchy and palette (title, subtitle, time, percent).
+  - Added framed card styling and refined progress bar colors.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Improved high-speed preroll robustness to protect model accuracy.
+  - In LIVE playback mode, transient `ExtFlashRecorder_ReadNextSample()` failures no longer immediately force final-score completion.
+  - Added retry streak and playback recovery restart path before declaring completion.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Tuned preroll speed from aggressive 25x to true 10x baseline by setting `RECPLAY_WARMUP_MULTIPLIER` to `1200` (from `3000`) to reduce warmup-induced accuracy regression risk.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Relaxed runtime anti-jump clamp from `+1 ds` creep to `+RUNTIME_MAX_STEP_DS` in key runtime/playback paths.
+  - Prevents overly slow timeline catch-up that can freeze alert/activity dynamics.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Restored warmup scoring semantics to match original intent.
+  - 0-2h warmup treated as pre-evaluation only.
+  - 2-4h warmup treated as scoring window.
+  - Added `GaugeRender_ResetPredictionMetrics()` and invoke at warmup start for clean runs.
+  - Added explicit 2h boundary reset inside prediction-accuracy updater so second window scoring is isolated.
+  - Score display now uses `MODEL SCORE` label and requires minimum steady eval count before showing a percentage.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Tightened score wiring to model-eligible predictions only.
+  - Added model-eligibility state (`model_ok && conf>=55`) for score issuance.
+  - `MODEL SCORE` display now requires current model-eligible state plus minimum steady eval count; otherwise shows `--` with eval count.
+  - Prevents stale/fallback-driven score from appearing as active model quality.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Tightened MODEL SCORE error tolerance from +/-10% to +/-5% (with 3 mg/dL minimum window) in prediction evaluation.
+  - Goal: avoid persistent 99% saturation and make score more discriminative/realistic.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Tuned MODEL SCORE for realistic behavior.
+  - Increased minimum steady evaluation threshold from 8 to 24 samples.
+  - Replaced raw hit-rate-only score with weighted realism score:
+    - 50% tolerance-hit rate
+    - 35% MAE quality mapping (8 mg/dL strong to 26 mg/dL poor)
+    - 15% model confidence
+  - Score remains bounded to 0..99.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Unstuck model metrics visibility by relaxing strict score gates.
+  - Minimum steady eval threshold reduced from 24 to 12.
+  - Model-eligibility confidence threshold reduced from 55 to 45.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Removed preroll popup/background-only warmup render path.
+  - Boot now renders normal dashboard/data display immediately while warmup runs in background.
+- Result: build PASS, flash PASS (`./scripts/build.sh`, `./scripts/flash.sh`).
+
+## Update 2026-02-25
+- Change: Finalized current firmware/docs package as restore baseline `R11` and removed preroll popup UI path.
+  - boot now goes directly to live dashboard rendering while warmup runs in background
+  - model-score pipeline remains model-eligible + realism-weighted with MAE/confidence integration
+- Restore points promoted:
+  - Golden: `GOLDEN-2026-02-25-R11`
+  - Failsafe: `FAILSAFE-2026-02-25-R11`
+- Staged artifacts:
+  - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-25-R11.bin`
+  - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-25-R11.bin`
+- Docs synchronized:
+  - `README.md`, `STATUS.md`, `docs/START_HERE.md`, `docs/OPS_RUNBOOK.md`, `docs/HARDWARE_SETUP.md`
