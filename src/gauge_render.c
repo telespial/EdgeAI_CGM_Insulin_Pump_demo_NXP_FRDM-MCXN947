@@ -3151,7 +3151,7 @@ static void DrawSettingsPopup(void)
         int32_t by0 = GAUGE_RENDER_SET_MODE_Y0;
         int32_t bx1 = bx0 + GAUGE_RENDER_SET_MODE_W - 1;
         int32_t by1 = by0 + GAUGE_RENDER_SET_MODE_H - 1;
-        bool sel = (i == 0) ? !gPrevAiEnabled : gPrevAiEnabled;
+        bool sel = (i == 0) ? !gUiAiEnabled : gUiAiEnabled;
         const char *t = (i == 0) ? "OFF" : "ON";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
@@ -3205,7 +3205,7 @@ static void DrawSettingsPopup(void)
         int32_t by0 = GAUGE_RENDER_SET_AI_Y0;
         int32_t bx1 = bx0 + GAUGE_RENDER_SET_AI_W - 1;
         int32_t by1 = by0 + GAUGE_RENDER_SET_AI_H - 1;
-        bool sel = (i == 0) ? !gPrevAiBackendNpu : gPrevAiBackendNpu;
+        bool sel = (i == 0) ? !gUiAiBackendNpu : gUiAiBackendNpu;
         const char *t = (i == 0) ? "MCU" : "NPU";
         uint16_t f = sel ? button_selected : button_idle;
         uint16_t tc = sel ? text_selected : body;
@@ -4943,7 +4943,10 @@ void GaugeRender_DrawFrame(const power_sample_t *sample, bool ai_enabled, power_
         /* Modal view owns the display and is static until modal state changes. */
         if (gModalDirty)
         {
-            DrawPopupModalBase();
+            if (!gModalWasActive)
+            {
+                DrawPopupModalBase();
+            }
             if (gSettingsVisible)
             {
                 DrawSettingsPopup();

@@ -1,16 +1,82 @@
 # Project State
 
-Last updated: 2026-02-25
+Last updated: 2026-02-26
 
 ## Restore Point
-- Golden: `GOLDEN-2026-02-25-R10`
-- Failsafe: `FAILSAFE-2026-02-25-R10`
+- Golden: `GOLDEN-2026-02-26-R12`
+- Failsafe: `FAILSAFE-2026-02-26-R12`
 - Status: active
 
 ## Current Status
 - Project framework scaffold created.
 - Build/flash workflow scripts added.
 - Git repository initialized locally.
+
+## Update 2026-02-26
+- Change: Fixed settings/help modal touch handling so popup controls use the same tap-edge path as the main UI (removes modal-only edge gating that could ignore button taps).
+  - `src/edgeai_medical_device_demo.c`
+    - replaced modal-specific press-edge gate with unified `touch_press_edge` based on `s_touch_was_down`
+    - removed unused `s_modal_touch_was_down` state
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: settings popup buttons should respond to touch again (not only close `X`).
+
+## Update 2026-02-26
+- Change: Reduced modal redraw latency and fixed stale settings selection state.
+  - `src/gauge_render.c`
+    - settings button selection now uses live state (`gUiAiEnabled`, `gUiAiBackendNpu`) for AI ON/OFF and MCU/NPU
+    - modal redraw no longer clears full-screen black on every modal refresh; full clear remains on modal entry
+  - `src/edgeai_medical_device_demo.c`
+    - settings/limits updates now mark a dirty flag and defer `SaveUiSettingsIfReady(...)` until modal closes
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: settings/help interaction should be faster and top setting rows should update correctly when tapped.
+
+## Update 2026-02-26
+- Change: Expanded touch hitboxes for UI controls to improve small/misaligned tap behavior.
+  - `src/edgeai_medical_device_demo.c`
+    - added `TouchInRectExpanded(...)` helper
+    - increased tap padding for top-row `*` / `?`, settings/help close controls, NEXT button, settings rows, limits panel controls, and +/- adjust regions
+    - widened panel bounds slightly to reduce accidental close on near-edge taps
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: touch targets are more forgiving across settings/help/limits controls.
+
+## Update 2026-02-26
+- Change: Fixed `SENS` row touch masking by reducing vertical padding overlap between stacked settings rows.
+  - `src/edgeai_medical_device_demo.c`
+    - reduced settings row hitbox padding (`MODE`, `RUN`, `SENS`, `MCU/NPU`) from `(pad_x=10,pad_y=8)` to `(pad_x=8,pad_y=3)`
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: `SENS` taps should no longer be intercepted by adjacent rows.
+
+## Update 2026-02-26
+- Change: Enlarged settings modal window and spread controls for better tap separation.
+  - `src/gauge_render.h`
+    - expanded settings panel bounds (`X0/X1: 16/464`, `Y0/Y1: 24/308`)
+    - widened and re-spaced button groups (`AI`, `RUN`, `SENS`, `MCU/NPU`)
+    - widened `OPEN LIMITS`, `CLEAR FLASH`, and `LOG` controls
+- Verification:
+  - `./scripts/build.sh` PASS
+  - `./scripts/flash.sh` PASS
+- Result: larger grey settings box with more separated, easier touch targets.
+
+## Update 2026-02-26
+- Change: Promoted current settings-touch UX build to new restore baseline `R12`.
+  - tags:
+    - `GOLDEN-2026-02-26-R12`
+    - `FAILSAFE-2026-02-26-R12`
+  - artifacts:
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_golden_2026-02-26-R12.bin`
+    - `failsafe/edgeai_medical_device_demo_cm33_core0_failsafe_2026-02-26-R12.bin`
+- Verification:
+  - source binary: `mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin`
+  - based on latest flashed build from 2026-02-26 settings/touch updates
+- Result: `R12` is now the active golden/failsafe restore target.
 
 ## Update 2026-02-24
 - Change: Promoted verified +15m-only `±10%` scoring policy build as active restore baseline `R5`.

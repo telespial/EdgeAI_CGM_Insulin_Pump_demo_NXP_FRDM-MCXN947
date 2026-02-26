@@ -2106,3 +2106,42 @@ Format:
 [2026-02-25T15:27:26-08:00] CMD: final sync commit for command log cleanliness after R11 publication
 
 [2026-02-25T15:27:38-08:00] CMD: retag R11 restore tags to latest commit a9b0e34
+
+[2026-02-25T16:04:34-08:00] CMD: rg settings touch paths in source
+
+[2026-02-25T16:04:34-08:00] CMD: sed -n 4990,5215 src/gauge_render.c
+2026-02-25T16:08:21-08:00 | rg -n touch/settings/help src
+2026-02-25T16:08:21-08:00 | sed -n 3860,4185p src/edgeai_medical_device_demo.c
+2026-02-25T16:08:21-08:00 | sed -n 3040,3335p src/edgeai_medical_device_demo.c
+2026-02-25T16:08:21-08:00 | sed -n 1,240p src/gauge_render.h
+2026-02-25T16:08:21-08:00 | apply_patch src/edgeai_medical_device_demo.c (touch edge unification)
+2026-02-25T16:08:21-08:00 | ./scripts/build.sh
+2026-02-25T16:08:21-08:00 | ./scripts/flash.sh
+2026-02-25T16:08:36-08:00 | git status --short && git diff -- src/edgeai_medical_device_demo.c
+2026-02-25T16:13:50-08:00 | apply_patch src/gauge_render.c (settings selection state + modal repaint optimization)
+2026-02-25T16:13:50-08:00 | apply_patch src/edgeai_medical_device_demo.c (defer settings save until modal close)
+2026-02-25T16:14:25-08:00 | ./scripts/build.sh
+2026-02-25T16:14:25-08:00 | ./scripts/flash.sh
+2026-02-25T16:14:54-08:00 | apply_patch docs/PROJECT_STATE.md (modal responsiveness + settings state update)
+2026-02-25T16:14:59-08:00 | git diff -- src/gauge_render.c src/edgeai_medical_device_demo.c
+2026-02-25T16:20:08-08:00 | sed/rg inspect touch handlers
+2026-02-25T16:20:08-08:00 | apply_patch src/edgeai_medical_device_demo.c (expanded hitbox helper + padding across touch regions)
+2026-02-25T16:20:37-08:00 | ./scripts/build.sh
+2026-02-25T16:20:37-08:00 | ./scripts/flash.sh
+2026-02-25T16:20:49-08:00 | apply_patch docs/PROJECT_STATE.md (expanded touch hitboxes update)
+2026-02-25T16:22:12-08:00 | apply_patch src/edgeai_medical_device_demo.c (reduce settings row pad overlap for SENS)
+2026-02-25T16:22:39-08:00 | ./scripts/build.sh
+2026-02-25T16:22:39-08:00 | ./scripts/flash.sh
+2026-02-25T16:22:39-08:00 | apply_patch src/edgeai_medical_device_demo.c (reduce row pad overlap so SENS is not masked)
+2026-02-25T16:22:50-08:00 | apply_patch docs/PROJECT_STATE.md (SENS touch overlap fix update)
+2026-02-25T16:25:23-08:00 | apply_patch src/gauge_render.h (enlarge settings panel and spread button geometry)
+2026-02-25T16:25:54-08:00 | ./scripts/build.sh
+2026-02-25T16:25:54-08:00 | ./scripts/flash.sh
+2026-02-25T16:26:09-08:00 | apply_patch docs/PROJECT_STATE.md (larger settings box + spread controls update)
+2026-02-25T16:29:18-08:00 | cp mcuxsdk_ws/build/edgeai_medical_device_demo_cm33_core0.bin -> failsafe/*_2026-02-26-R12.bin
+2026-02-25T16:29:41-08:00 | apply_patch docs/PROJECT_STATE.md (promote R12 restore point)
+2026-02-25T16:29:41-08:00 | apply_patch STATUS.md (set R12 active)
+2026-02-25T16:29:48-08:00 | git status --short
+2026-02-25T16:29:56-08:00 | sed -n 1,200p .gitignore
+2026-02-25T16:30:02-08:00 | git add tracked changes + force-add R12 failsafe bins
+2026-02-25T16:30:09-08:00 | git status --short; git add docs/COMMAND_LOG.md; git status --short

@@ -128,7 +128,6 @@
 static gt911_handle_t s_touch_handle;
 static bool s_touch_ready = false;
 static bool s_touch_was_down = false;
-static bool s_modal_touch_was_down = false;
 static uint32_t s_touch_recover_backoff = 0u;
 static bool s_timebase_ready = false;
 static uint32_t s_timebase_hz = EDGEAI_TIMEBASE_CRYSTAL_HZ;
@@ -3190,34 +3189,50 @@ static bool TouchGetPoint(int32_t *x_out, int32_t *y_out)
     return true;
 }
 
+static bool TouchInRectExpanded(int32_t x, int32_t y, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t pad_x, int32_t pad_y)
+{
+    if (x0 > x1)
+    {
+        int32_t t = x0;
+        x0 = x1;
+        x1 = t;
+    }
+    if (y0 > y1)
+    {
+        int32_t t = y0;
+        y0 = y1;
+        y1 = t;
+    }
+    x0 -= pad_x;
+    x1 += pad_x;
+    y0 -= pad_y;
+    y1 += pad_y;
+    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+}
+
 static bool TouchInAiSet(int32_t x, int32_t y)
 {
-    return (x >= GAUGE_RENDER_AI_SET_X0) && (x <= GAUGE_RENDER_AI_SET_X1) &&
-           (y >= GAUGE_RENDER_AI_SET_Y0) && (y <= GAUGE_RENDER_AI_SET_Y1);
+    return TouchInRectExpanded(x, y, GAUGE_RENDER_AI_SET_X0, GAUGE_RENDER_AI_SET_Y0, GAUGE_RENDER_AI_SET_X1, GAUGE_RENDER_AI_SET_Y1, 14, 10);
 }
 
 static bool TouchInAiHelp(int32_t x, int32_t y)
 {
-    return (x >= GAUGE_RENDER_AI_HELP_X0) && (x <= GAUGE_RENDER_AI_HELP_X1) &&
-           (y >= GAUGE_RENDER_AI_HELP_Y0) && (y <= GAUGE_RENDER_AI_HELP_Y1);
+    return TouchInRectExpanded(x, y, GAUGE_RENDER_AI_HELP_X0, GAUGE_RENDER_AI_HELP_Y0, GAUGE_RENDER_AI_HELP_X1, GAUGE_RENDER_AI_HELP_Y1, 14, 10);
 }
 
 static bool __attribute__((unused)) TouchInSettingsPanel(int32_t x, int32_t y)
 {
-    return (x >= GAUGE_RENDER_SET_PANEL_X0) && (x <= GAUGE_RENDER_SET_PANEL_X1) &&
-           (y >= GAUGE_RENDER_SET_PANEL_Y0) && (y <= GAUGE_RENDER_SET_PANEL_Y1);
+    return TouchInRectExpanded(x, y, GAUGE_RENDER_SET_PANEL_X0, GAUGE_RENDER_SET_PANEL_Y0, GAUGE_RENDER_SET_PANEL_X1, GAUGE_RENDER_SET_PANEL_Y1, 4, 4);
 }
 
 static bool TouchInHelpPanel(int32_t x, int32_t y)
 {
-    return (x >= GAUGE_RENDER_HELP_PANEL_X0) && (x <= GAUGE_RENDER_HELP_PANEL_X1) &&
-           (y >= GAUGE_RENDER_HELP_PANEL_Y0) && (y <= GAUGE_RENDER_HELP_PANEL_Y1);
+    return TouchInRectExpanded(x, y, GAUGE_RENDER_HELP_PANEL_X0, GAUGE_RENDER_HELP_PANEL_Y0, GAUGE_RENDER_HELP_PANEL_X1, GAUGE_RENDER_HELP_PANEL_Y1, 4, 4);
 }
 
 static bool TouchInSettingsClose(int32_t x, int32_t y)
 {
-    return (x >= GAUGE_RENDER_SETTINGS_CLOSE_X0) && (x <= GAUGE_RENDER_SETTINGS_CLOSE_X1) &&
-           (y >= GAUGE_RENDER_SETTINGS_CLOSE_Y0) && (y <= GAUGE_RENDER_SETTINGS_CLOSE_Y1);
+    return TouchInRectExpanded(x, y, GAUGE_RENDER_SETTINGS_CLOSE_X0, GAUGE_RENDER_SETTINGS_CLOSE_Y0, GAUGE_RENDER_SETTINGS_CLOSE_X1, GAUGE_RENDER_SETTINGS_CLOSE_Y1, 12, 10);
 }
 
 static bool TouchInHelpClose(int32_t x, int32_t y)
@@ -3226,13 +3241,12 @@ static bool TouchInHelpClose(int32_t x, int32_t y)
     int32_t bx0 = bx1 - 22;
     int32_t by0 = GAUGE_RENDER_HELP_PANEL_Y0 + 8;
     int32_t by1 = by0 + 22;
-    return (x >= bx0) && (x <= bx1) && (y >= by0) && (y <= by1);
+    return TouchInRectExpanded(x, y, bx0, by0, bx1, by1, 12, 10);
 }
 
 static bool TouchInHelpNext(int32_t x, int32_t y)
 {
-    return (x >= GAUGE_RENDER_HELP_NEXT_X0) && (x <= GAUGE_RENDER_HELP_NEXT_X1) &&
-           (y >= GAUGE_RENDER_HELP_NEXT_Y0) && (y <= GAUGE_RENDER_HELP_NEXT_Y1);
+    return TouchInRectExpanded(x, y, GAUGE_RENDER_HELP_NEXT_X0, GAUGE_RENDER_HELP_NEXT_Y0, GAUGE_RENDER_HELP_NEXT_X1, GAUGE_RENDER_HELP_NEXT_Y1, 12, 10);
 }
 
 static bool __attribute__((unused)) TouchInSettingsModeIndex(int32_t x, int32_t y, uint8_t idx)
@@ -3241,7 +3255,7 @@ static bool __attribute__((unused)) TouchInSettingsModeIndex(int32_t x, int32_t 
     int32_t x1 = x0 + GAUGE_RENDER_SET_MODE_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_MODE_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_MODE_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 8, 3);
 }
 
 static bool __attribute__((unused)) TouchInSettingsRunIndex(int32_t x, int32_t y, uint8_t idx)
@@ -3250,7 +3264,7 @@ static bool __attribute__((unused)) TouchInSettingsRunIndex(int32_t x, int32_t y
     int32_t x1 = x0 + GAUGE_RENDER_SET_RUN_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_RUN_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_RUN_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 8, 3);
 }
 
 static bool __attribute__((unused)) TouchInSettingsTuneIndex(int32_t x, int32_t y, uint8_t idx)
@@ -3259,7 +3273,7 @@ static bool __attribute__((unused)) TouchInSettingsTuneIndex(int32_t x, int32_t 
     int32_t x1 = x0 + GAUGE_RENDER_SET_TUNE_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_TUNE_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_TUNE_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 8, 3);
 }
 
 static bool __attribute__((unused)) TouchInSettingsAiIndex(int32_t x, int32_t y, uint8_t idx)
@@ -3268,7 +3282,7 @@ static bool __attribute__((unused)) TouchInSettingsAiIndex(int32_t x, int32_t y,
     int32_t x1 = x0 + GAUGE_RENDER_SET_AI_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_AI_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_AI_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 8, 3);
 }
 
 static bool __attribute__((unused)) TouchInSettingsLimitsButton(int32_t x, int32_t y)
@@ -3277,7 +3291,7 @@ static bool __attribute__((unused)) TouchInSettingsLimitsButton(int32_t x, int32
     int32_t x1 = x0 + GAUGE_RENDER_SET_LIMIT_BTN_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_LIMIT_BTN_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_LIMIT_BTN_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 10, 8);
 }
 
 static bool __attribute__((unused)) TouchInSettingsClearButton(int32_t x, int32_t y)
@@ -3286,7 +3300,7 @@ static bool __attribute__((unused)) TouchInSettingsClearButton(int32_t x, int32_
     int32_t x1 = x0 + GAUGE_RENDER_SET_CLEAR_BTN_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_CLEAR_BTN_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_CLEAR_BTN_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 10, 8);
 }
 
 static bool __attribute__((unused)) TouchInSettingsLogDec(int32_t x, int32_t y)
@@ -3295,7 +3309,7 @@ static bool __attribute__((unused)) TouchInSettingsLogDec(int32_t x, int32_t y)
     int32_t x1 = x0 + GAUGE_RENDER_SET_LOG_DEC_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_LOG_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_LOG_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 12, 10);
 }
 
 static bool __attribute__((unused)) TouchInSettingsLogInc(int32_t x, int32_t y)
@@ -3304,7 +3318,7 @@ static bool __attribute__((unused)) TouchInSettingsLogInc(int32_t x, int32_t y)
     int32_t x1 = x0 + GAUGE_RENDER_SET_LOG_INC_W - 1;
     int32_t y0 = GAUGE_RENDER_SET_LOG_Y0;
     int32_t y1 = y0 + GAUGE_RENDER_SET_LOG_H - 1;
-    return (x >= x0) && (x <= x1) && (y >= y0) && (y <= y1);
+    return TouchInRectExpanded(x, y, x0, y0, x1, y1, 12, 10);
 }
 
 static uint8_t ClampLogRateHz(uint8_t hz)
@@ -3351,8 +3365,7 @@ static uint8_t __attribute__((unused)) NextLogRateHz(uint8_t hz, bool increase)
 
 static bool TouchInLimitsPanel(int32_t x, int32_t y)
 {
-    return (x >= GAUGE_RENDER_LIMIT_PANEL_X0) && (x <= GAUGE_RENDER_LIMIT_PANEL_X1) &&
-           (y >= GAUGE_RENDER_LIMIT_PANEL_Y0) && (y <= GAUGE_RENDER_LIMIT_PANEL_Y1);
+    return TouchInRectExpanded(x, y, GAUGE_RENDER_LIMIT_PANEL_X0, GAUGE_RENDER_LIMIT_PANEL_Y0, GAUGE_RENDER_LIMIT_PANEL_X1, GAUGE_RENDER_LIMIT_PANEL_Y1, 4, 4);
 }
 
 static bool TouchInLimitsClose(int32_t x, int32_t y)
@@ -3361,7 +3374,7 @@ static bool TouchInLimitsClose(int32_t x, int32_t y)
     int32_t bx0 = bx1 - 22;
     int32_t by0 = GAUGE_RENDER_LIMIT_PANEL_Y0 + 8;
     int32_t by1 = by0 + 22;
-    return (x >= bx0) && (x <= bx1) && (y >= by0) && (y <= by1);
+    return TouchInRectExpanded(x, y, bx0, by0, bx1, by1, 12, 10);
 }
 
 static bool TouchInLimitsAdjust(int32_t x, int32_t y, uint8_t *idx_out, bool *increase_out)
@@ -3380,13 +3393,13 @@ static bool TouchInLimitsAdjust(int32_t x, int32_t y, uint8_t *idx_out, bool *in
             continue;
         }
 
-        if ((x >= minus_x0) && (x <= minus_x1))
+        if (TouchInRectExpanded(x, y, minus_x0, y0, minus_x1, y1, 8, 6))
         {
             *idx_out = idx;
             *increase_out = false;
             return true;
         }
-        if ((x >= plus_x0) && (x <= plus_x1))
+        if (TouchInRectExpanded(x, y, plus_x0, y0, plus_x1, y1, 8, 6))
         {
             *idx_out = idx;
             *increase_out = true;
@@ -3637,6 +3650,7 @@ int main(void)
     bool record_mode;
     bool prev_record_mode;
     bool prev_trained_ready;
+    bool ui_settings_dirty = false;
     bool playback_active = false;
     bool playback_warmup_active = false;
     bool playback_warmup_complete = false;
@@ -3897,7 +3911,7 @@ int main(void)
         bool in_help;
         bool opened_modal_this_touch = false;
         bool modal_overlay_visible = (help_visible || settings_visible || limits_visible);
-        bool modal_press_edge = false;
+        bool touch_press_edge;
         bool timeline_changed = GaugeRender_HandleTouch(tx, ty, pressed);
         bool record_start_request;
         bool record_stop_request;
@@ -3938,15 +3952,7 @@ int main(void)
             in_help = false;
         }
 
-        if (modal_overlay_visible)
-        {
-            modal_press_edge = pressed && !s_modal_touch_was_down;
-            s_modal_touch_was_down = pressed;
-        }
-        else
-        {
-            s_modal_touch_was_down = false;
-        }
+        touch_press_edge = pressed && !s_touch_was_down;
 
         /* Immediate open path for top-row modal buttons.
          * Avoid depending on edge-trigger state that can miss taps on some touch scans. */
@@ -3987,8 +3993,7 @@ int main(void)
             !opened_modal_this_touch &&
             !modal_active &&
             (!ui_block_touch || modal_overlay_visible) &&
-            ((modal_overlay_visible && modal_press_edge) ||
-             (!modal_overlay_visible && !s_touch_was_down)))
+            touch_press_edge)
         {
             bool redraw_ui = false;
 
@@ -4028,18 +4033,7 @@ int main(void)
                 else if (TouchInLimitsAdjust(tx, ty, &lim_idx, &increase))
                 {
                     ApplyLimitAdjustment(lim_idx, increase);
-                    SaveUiSettingsIfReady(ext_flash_ok,
-                                          anom_mode,
-                                          AnomalyEngine_GetTune(),
-                                          GaugeRender_IsLiveBannerMode(),
-                                          ai_enabled,
-                                          ai_use_npu,
-                                          s_limit_g_warn_mg,
-                                          s_limit_g_fail_mg,
-                                          s_limit_temp_lo_c10,
-                                          s_limit_temp_hi_c10,
-                                          s_limit_gyro_dps,
-                                          s_log_rate_hz);
+                    ui_settings_dirty = true;
                     redraw_ui = true;
                     handled_limits = true;
                 }
@@ -4163,18 +4157,7 @@ int main(void)
                 if (settings_changed)
                 {
                     GaugeRender_RequestModalRedraw();
-                    SaveUiSettingsIfReady(ext_flash_ok,
-                                          anom_mode,
-                                          AnomalyEngine_GetTune(),
-                                          GaugeRender_IsLiveBannerMode(),
-                                          ai_enabled,
-                                          ai_use_npu,
-                                          s_limit_g_warn_mg,
-                                          s_limit_g_fail_mg,
-                                          s_limit_temp_lo_c10,
-                                          s_limit_temp_hi_c10,
-                                          s_limit_gyro_dps,
-                                          s_log_rate_hz);
+                    ui_settings_dirty = true;
                 }
 
                 if (redraw_ui)
@@ -4339,6 +4322,22 @@ int main(void)
             {
                 GaugeRender_DrawFrame(GetFrameSample(), ai_enabled, PowerData_GetReplayProfile());
             }
+        }
+        if (ui_settings_dirty && !help_visible && !settings_visible && !limits_visible)
+        {
+            SaveUiSettingsIfReady(ext_flash_ok,
+                                  anom_mode,
+                                  AnomalyEngine_GetTune(),
+                                  GaugeRender_IsLiveBannerMode(),
+                                  ai_enabled,
+                                  ai_use_npu,
+                                  s_limit_g_warn_mg,
+                                  s_limit_g_fail_mg,
+                                  s_limit_temp_lo_c10,
+                                  s_limit_temp_hi_c10,
+                                  s_limit_gyro_dps,
+                                  s_log_rate_hz);
+            ui_settings_dirty = false;
         }
         s_touch_was_down = pressed;
         modal_active_now = GaugeRender_IsRecordConfirmActive() || help_visible || settings_visible || limits_visible;
