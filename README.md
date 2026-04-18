@@ -242,4 +242,4 @@ Failsafe restore:
 
 ## License
 
-MIT (`LICENSE`)
+MIT ([LICENSE](./LICENSE))
